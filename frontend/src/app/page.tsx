@@ -387,7 +387,8 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {plans.map((plan) => {
               const isPremium = plan.isPopular;
-              const featuresList = plan.features ? JSON.parse(plan.features) : [];
+              // Features is already parsed by Prisma, no need for JSON.parse
+              const featuresList = plan.features || [];
               
               return (
                 <div
