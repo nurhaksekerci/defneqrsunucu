@@ -125,8 +125,8 @@ app.use('/api/scans', require('./routes/scan.routes'));
 app.use('/api/tables', require('./routes/table.routes'));
 app.use('/api/plans', require('./routes/plan.routes'));
 
-// Monitoring routes (health checks & metrics) - public endpoints on root  
-app.use('/', require('./routes/monitoring.routes'));
+// Monitoring routes (health checks & metrics)
+app.use('/api', require('./routes/monitoring.routes'));
 
 // Sentry error handler (must be before other error handlers)
 app.use(sentryErrorHandler());
