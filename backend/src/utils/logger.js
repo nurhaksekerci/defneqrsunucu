@@ -72,8 +72,8 @@ const transports = [
   })
 ];
 
-// File transports (only in production or if explicitly enabled)
-if (process.env.NODE_ENV === 'production' || process.env.ENABLE_FILE_LOGGING === 'true') {
+// File transports (only in production or if explicitly enabled, can be disabled with FILE_LOGGING=false)
+if (process.env.FILE_LOGGING !== 'false' && (process.env.NODE_ENV === 'production' || process.env.ENABLE_FILE_LOGGING === 'true')) {
   // All logs (combined)
   transports.push(
     new DailyRotateFile({
@@ -199,7 +199,7 @@ logger.logPerformance = (operation, duration, metadata = {}) => {
 logger.info('Logger initialized', {
   environment: process.env.NODE_ENV || 'development',
   logLevel: process.env.LOG_LEVEL || 'info',
-  fileLogging: process.env.NODE_ENV === 'production' || process.env.ENABLE_FILE_LOGGING === 'true'
+  fileLogging: process.env.FILE_LOGGING !== 'false' && (process.env.NODE_ENV === 'production' || process.env.ENABLE_FILE_LOGGING === 'true')
 });
 
 module.exports = logger;
