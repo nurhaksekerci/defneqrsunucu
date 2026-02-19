@@ -127,6 +127,7 @@ router.post('/image',
       // Log successful upload
       console.log('📤 File uploaded:', {
         filename: finalFilename,
+        url: fileUrl,
         size: req.file.size,
         mimetype: req.file.mimetype,
         user: req.user.id,

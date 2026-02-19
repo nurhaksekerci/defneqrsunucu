@@ -117,6 +117,11 @@ export default function AdminProductsPage() {
       });
 
       if (response.data.success) {
+        console.log('🖼️  Image uploaded successfully:', {
+          url: response.data.data.url,
+          filename: response.data.data.filename,
+          fullResponse: response.data
+        });
         setFormData(prev => ({ ...prev, image: response.data.data.url }));
       }
     } catch (error: any) {
