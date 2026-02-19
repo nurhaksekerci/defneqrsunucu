@@ -1,11 +1,13 @@
-require('dotenv').config();
+const path = require('path');
+// Load environment variables from root .env file
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const session = require('express-session');
-const path = require('path');
 const passport = require('./config/passport');
 
 // Logging & Error Tracking

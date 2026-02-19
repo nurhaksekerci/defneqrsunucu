@@ -137,18 +137,42 @@ docker exec -it defneqr-backend npx prisma db seed
 
 ### 💻 Local Development (Docker Olmadan)
 
-#### 1. PostgreSQL Kurulumu
+#### 1. Environment Dosyasını Ayarla (Root'ta - TEK .env)
+
+```bash
+# Root dizinde .env oluştur
+cp .env.example .env
+
+# .env dosyasını düzenle ve şunları değiştir:
+# - DATABASE_URL: "postgres" yerine "localhost" yaz
+# - NODE_ENV: "development" yap
+# - FRONTEND_URL: http://localhost:3000
+# - NEXT_PUBLIC_API_URL: http://localhost:5000/api
+# - GOOGLE_CALLBACK_URL: http://localhost:5000/api/auth/google/callback
+```
+
+**Örnek lokal `.env`:**
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/defneqr?schema=public"
+NODE_ENV=development
+FRONTEND_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+#### 2. PostgreSQL Kurulumu
 
 ```bash
 # PostgreSQL başlat
-# Windows: PostgreSQL service başlat
+# Windows: services.msc → PostgreSQL → Start
 # Linux: sudo systemctl start postgresql
+# Mac: brew services start postgresql
 
 # Database oluştur
 createdb defneqr
 ```
 
-#### 2. Backend Setup
+#### 3. Backend Setup
 
 ```bash
 cd backend
@@ -156,32 +180,39 @@ cd backend
 # Dependencies
 npm install
 
-# Environment
-cp .env.example .env
-# .env dosyasını düzenle
+# Prisma client oluştur
+npx prisma generate
 
-# Prisma migration
+# Prisma migration çalıştır
 npx prisma migrate dev
 
-# Start
+# Admin + Plans oluştur
+npm run prisma:seed
+
+# Backend'i başlat
 npm run dev
 ```
 
-#### 3. Frontend Setup
+#### 4. Frontend Setup
 
 ```bash
+# Yeni terminal aç
 cd frontend
 
 # Dependencies
 npm install
 
-# Environment
-cp .env.example .env.local
-# .env.local dosyasını düzenle
-
-# Start
+# Frontend'i başlat
 npm run dev
 ```
+
+#### 5. Erişim
+
+- **Frontend:** http://localhost:3000
+- **Backend API:** http://localhost:5000
+- **Admin Panel:** http://localhost:3000/admin
+  - Email: `admin@defneqr.com`
+  - Şifre: `Admin123!`
 
 ---
 
