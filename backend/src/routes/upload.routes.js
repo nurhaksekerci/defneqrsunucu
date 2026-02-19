@@ -118,7 +118,11 @@ router.post('/image',
         ? processedImages.optimized 
         : req.file.filename;
       
-      const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${finalFilename}`;
+      // Use environment variable for backend URL (for correct URL behind reverse proxy)
+      const backendBaseUrl = process.env.NEXT_PUBLIC_API_URL 
+        ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '')
+        : `${req.protocol}://${req.get('host')}`;
+      const fileUrl = `${backendBaseUrl}/uploads/${finalFilename}`;
       
       // Log successful upload
       console.log('📤 File uploaded:', {
