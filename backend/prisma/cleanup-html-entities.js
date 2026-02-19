@@ -142,7 +142,7 @@ async function cleanupProducts() {
 
 async function cleanupSettings() {
   console.log('🔍 Cleaning up settings...');
-  const settings = await prisma.settings.findMany();
+  const settings = await prisma.systemSettings.findMany();
   
   let updated = 0;
   for (const setting of settings) {
@@ -165,7 +165,7 @@ async function cleanupSettings() {
     }
     
     if (Object.keys(updates).length > 0) {
-      await prisma.settings.update({
+      await prisma.systemSettings.update({
         where: { id: setting.id },
         data: updates
       });
@@ -175,6 +175,42 @@ async function cleanupSettings() {
   }
   
   console.log(`✅ Cleaned ${updated} settings\n`);
+}
+
+async function cleanupPlans() {
+  console.log('🔍 Cleaning up plans...');
+  const plans = await prisma.plan.findMany();
+  
+  let updated = 0;
+  for (const plan of plans) {
+    const updates = {};
+    
+    if (plan.name && plan.name.includes('&')) {
+      updates.name = decodeHtmlEntities(plan.name);
+    }
+    
+    if (plan.description && plan.description.includes('&')) {
+      updates.description = decodeHtmlEntities(plan.description);
+    }
+    
+    if (plan.features && typeof plan.features === 'object') {
+      const decoded = decodeObject(plan.features);
+      if (JSON.stringify(decoded) !== JSON.stringify(plan.features)) {
+        updates.features = decoded;
+      }
+    }
+    
+    if (Object.keys(updates).length > 0) {
+      await prisma.plan.update({
+        where: { id: plan.id },
+        data: updates
+      });
+      updated++;
+      console.log(`  ✅ Updated plan: ${plan.name} (${plan.id})`);
+    }
+  }
+  
+  console.log(`✅ Cleaned ${updated} plans\n`);
 }
 
 async function cleanupUsers() {
@@ -214,6 +250,7 @@ async function main() {
     await cleanupCategories();
     await cleanupProducts();
     await cleanupSettings();
+    await cleanupPlans();
     await cleanupUsers();
     
     console.log('✅ Cleanup completed successfully!');
