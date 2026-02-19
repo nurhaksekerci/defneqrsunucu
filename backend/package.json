@@ -6,6 +6,11 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "test:unit": "jest --testPathPattern='.*(unit|spec)\\.test\\.js$'",
+    "test:integration": "jest --testPathPattern='.*(integration|api)\\.test\\.js$'",
+    "test:ci": "jest --ci --coverage --maxWorkers=2",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
@@ -50,8 +55,11 @@
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.11",
+    "jest": "^29.7.0",
     "nodemon": "^3.0.2",
-    "prisma": "^5.7.1"
+    "prisma": "^5.7.1",
+    "supertest": "^7.0.0"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

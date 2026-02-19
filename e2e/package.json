@@ -1,0 +1,22 @@
+{
+  "name": "defneqr-e2e-tests",
+  "version": "1.0.0",
+  "description": "End-to-end tests for Defne Qr",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "test:mobile": "playwright test --project=mobile-chrome --project=mobile-safari",
+    "report": "playwright show-report",
+    "codegen": "playwright codegen http://localhost:3000"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^20.10.6",
+    "typescript": "^5.3.3"
+  }
+}
