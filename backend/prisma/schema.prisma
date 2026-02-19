@@ -1,0 +1,502 @@
+// Prisma Schema - QR Menü ve Restoran Yönetim Sistemi
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Kullanıcı Rolleri
+enum UserRole {
+  ADMIN              // Sistem geliştiricileri
+  STAFF              // Sistem çalışanları
+  RESTAURANT_OWNER   // Restoran sahibi
+  CASHIER            // Kasiyer
+  WAITER             // Garson
+  BARISTA            // Barista
+  COOK               // Aşçı
+}
+
+// Sipariş Durumları
+enum OrderStatus {
+  PENDING      // Beklemede
+  PREPARING    // Hazırlanıyor
+  READY        // Hazır
+  DELIVERED    // Teslim Edildi
+  CANCELLED    // İptal Edildi
+}
+
+// Ödeme Durumları
+enum PaymentStatus {
+  UNPAID       // Ödenmedi
+  PARTIAL      // Kısmi Ödendi
+  PAID         // Tamamen Ödendi
+}
+
+// Ödeme Yöntemleri
+enum PaymentMethod {
+  CASH         // Nakit
+  CREDIT_CARD  // Kredi Kartı
+  DEBIT_CARD   // Banka Kartı
+}
+
+// Kullanıcılar Tablosu
+model User {
+  id            String         @id @default(uuid())
+  username      String?        @unique
+  email         String         @unique
+  password      String?        // OAuth kullanıcıları için null olabilir
+  fullName      String
+  role          UserRole       @default(RESTAURANT_OWNER)
+  
+  // OAuth
+  googleId      String?        @unique
+  
+  // Soft Delete & Audit
+  isDeleted     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+  
+  // İlişkiler
+  restaurants      Restaurant[]      @relation("RestaurantOwner")
+  orders           Order[]           @relation("WaiterOrders")
+  payments         Payment[]         @relation("CashierPayments")
+  subscriptions    Subscription[]
+  passwordResets   PasswordReset[]
+  refreshTokens    RefreshToken[]
+  
+  @@index([role])
+  @@index([isDeleted])
+  @@index([createdAt])
+  @@index([email, isDeleted])
+  @@map("users")
+}
+
+// Restoranlar Tablosu
+model Restaurant {
+  id            String         @id @default(uuid())
+  name          String
+  slug          String         @unique  // Türkçe karakter destekli, otomatik oluşturulur
+  description   String?
+  address       String?
+  phone         String?
+  logo          String?        // Logo URL
+  
+  // Menü Özelleştirme Ayarları
+  menuSettings  Json?          // { primaryColor, backgroundColor, viewType, showHeader, showFooter, itemsPerRow }
+  
+  // Soft Delete & Audit
+  isDeleted     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+  
+  // İlişkiler
+  ownerId       String
+  owner         User           @relation("RestaurantOwner", fields: [ownerId], references: [id])
+  
+  categories    Category[]
+  products      Product[]
+  orders        Order[]
+  payments      Payment[]
+  stocks        Stock[]
+  menuScans     MenuScan[]
+  tables        Table[]
+  
+  @@index([ownerId])
+  @@index([isDeleted])
+  @@index([createdAt])
+  @@index([slug, isDeleted])
+  @@map("restaurants")
+}
+
+// Kategoriler Tablosu (Global ve Restoran Özel)
+model Category {
+  id            String         @id @default(uuid())
+  name          String
+  description   String?
+  image         String?
+  order         Int            @default(0)  // Sıralama için
+  
+  // Global veya Restoran Özel
+  isGlobal      Boolean        @default(false)
+  restaurantId  String?
+  restaurant    Restaurant?    @relation(fields: [restaurantId], references: [id])
+  
+  // Soft Delete & Audit
+  isDeleted     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+  
+  // İlişkiler
+  products      Product[]
+  
+  @@index([restaurantId])
+  @@index([isGlobal])
+  @@index([isDeleted])
+  @@index([order])
+  @@index([restaurantId, isDeleted, isGlobal])
+  @@map("categories")
+}
+
+// Ürünler Tablosu (Global ve Restoran Özel)
+model Product {
+  id            String         @id @default(uuid())
+  name          String
+  description   String?
+  image         String?
+  basePrice     Decimal?       @db.Decimal(10, 2)  // Opsiyonel: Global ürünler için null, restoran ürünleri için zorunlu
+  order         Int            @default(0)  // Sıralama için
+  
+  // Global veya Restoran Özel
+  isGlobal      Boolean        @default(false)
+  isActive      Boolean        @default(true)      // Ürün menüde gösterilsin mi?
+  restaurantId  String?
+  restaurant    Restaurant?    @relation(fields: [restaurantId], references: [id])
+  
+  categoryId    String
+  category      Category       @relation(fields: [categoryId], references: [id])
+  
+  // Soft Delete & Audit
+  isDeleted     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+  
+  // İlişkiler
+  stocks        Stock[]
+  orderItems    OrderItem[]
+  
+  @@index([categoryId])
+  @@index([restaurantId])
+  @@index([isGlobal])
+  @@index([isActive])
+  @@index([isDeleted])
+  @@index([order])
+  @@index([restaurantId, categoryId, isDeleted])
+  @@index([isGlobal, isActive, isDeleted])
+  @@map("products")
+}
+
+// Stok Tablosu (Restoran Özel)
+model Stock {
+  id            String         @id @default(uuid())
+  quantity      Int            @default(0)
+  price         Decimal        @db.Decimal(10, 2)  // Restoran özel fiyat
+  minStock      Int            @default(0)         // Minimum stok seviyesi
+  
+  restaurantId  String
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id])
+  
+  productId     String
+  product       Product        @relation(fields: [productId], references: [id])
+  
+  // Soft Delete & Audit
+  isDeleted     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+  
+  @@unique([restaurantId, productId])
+  @@index([restaurantId])
+  @@index([productId])
+  @@index([isDeleted])
+  @@index([quantity])
+  @@map("stocks")
+}
+
+// Siparişler Tablosu
+model Order {
+  id            String         @id @default(uuid())
+  orderNumber   String         @unique  // Sipariş numarası
+  tableNumber   String?        // Masa numarası (eski)
+  status        OrderStatus    @default(PENDING)
+  notes         String?        // Özel notlar
+  
+  restaurantId  String
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id])
+  
+  tableId       String?
+  table         Table?         @relation(fields: [tableId], references: [id])
+  
+  waiterId      String?
+  waiter        User?          @relation("WaiterOrders", fields: [waiterId], references: [id])
+  
+  // Soft Delete & Audit
+  isDeleted     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+  
+  // İlişkiler
+  orderItems    OrderItem[]
+  payments      Payment[]
+  
+  @@index([restaurantId])
+  @@index([tableId])
+  @@index([waiterId])
+  @@index([status])
+  @@index([isDeleted])
+  @@index([createdAt])
+  @@index([restaurantId, status, isDeleted])
+  @@index([tableId, status])
+  @@map("orders")
+}
+
+// Sipariş Detayları
+model OrderItem {
+  id            String         @id @default(uuid())
+  quantity      Int
+  unitPrice     Decimal        @db.Decimal(10, 2)
+  totalPrice    Decimal        @db.Decimal(10, 2)
+  notes         String?        // Ürün özel notlar
+  
+  orderId       String
+  order         Order          @relation(fields: [orderId], references: [id])
+  
+  productId     String
+  product       Product        @relation(fields: [productId], references: [id])
+  
+  // Audit
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  @@map("order_items")
+}
+
+// Ödemeler Tablosu
+model Payment {
+  id            String         @id @default(uuid())
+  amount        Decimal        @db.Decimal(10, 2)
+  method        PaymentMethod
+  status        PaymentStatus  @default(UNPAID)
+  
+  orderId       String
+  order         Order          @relation(fields: [orderId], references: [id])
+  
+  restaurantId  String
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id])
+  
+  cashierId     String?
+  cashier       User?          @relation("CashierPayments", fields: [cashierId], references: [id])
+  
+  // Soft Delete & Audit
+  isDeleted     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+  
+  @@index([restaurantId])
+  @@index([orderId])
+  @@index([status])
+  @@index([isDeleted])
+  @@index([createdAt])
+  @@index([restaurantId, status, isDeleted])
+  @@map("payments")
+}
+
+// Sistem Ayarları Tablosu
+model SystemSettings {
+  id                    String   @id @default(uuid())
+  
+  // Genel Ayarlar
+  siteName              String   @default("Defne Qr")
+  siteDescription       String   @default("QR Menü ve Restoran Yönetim Sistemi")
+  supportEmail          String   @default("destek@defneqr.com")
+  
+  // Kullanıcı Ayarları
+  maxRestaurantsPerUser Int      @default(5)
+  
+  // Kimlik Doğrulama
+  enableGoogleAuth      Boolean  @default(false)
+  
+  // Sistem Durumu
+  maintenanceMode       Boolean  @default(false)
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@map("system_settings")
+}
+
+// QR Menü Taramaları
+model MenuScan {
+  id            String      @id @default(uuid())
+  restaurantId  String
+  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id])
+  
+  // Tarama zamanı
+  scannedAt     DateTime    @default(now())
+  
+  // İsteğe bağlı: IP, user agent gibi bilgiler
+  ipAddress     String?
+  userAgent     String?
+  
+  @@map("menu_scans")
+  @@index([restaurantId, scannedAt])
+}
+
+// Masalar Tablosu
+model Table {
+  id            String      @id @default(uuid())
+  name          String      // Örn: A1, A2, B5
+  restaurantId  String
+  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id])
+  
+  // Masa durumu
+  isOccupied    Boolean     @default(false)
+  
+  // Soft Delete & Audit
+  isDeleted     Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  deletedAt     DateTime?
+  
+  // İlişkiler
+  orders        Order[]
+  
+  @@map("tables")
+  @@unique([restaurantId, name])
+  @@index([restaurantId])
+}
+
+// Plan Tipleri
+enum PlanType {
+  FREE       // Ücretsiz
+  PREMIUM    // Premium
+  CUSTOM     // Kurumsal
+}
+
+// Abonelik Durumları
+enum SubscriptionStatus {
+  ACTIVE     // Aktif
+  EXPIRED    // Süresi Dolmuş
+  CANCELLED  // İptal Edilmiş
+}
+
+// Planlar Tablosu
+model Plan {
+  id                    String   @id @default(uuid())
+  name                  String   @unique
+  type                  PlanType
+  price                 Float    @default(0)
+  duration              Int      @default(365) // Gün cinsinden süre
+  
+  // Limitler
+  maxRestaurants        Int      @default(1)
+  maxCategories         Int      @default(5)
+  maxProducts           Int      @default(20)
+  
+  // Özellikler
+  canRemoveBranding     Boolean  @default(false)
+  hasGlobalCatalog      Boolean  @default(true)
+  hasDetailedReports    Boolean  @default(true)
+  
+  // Popülerlik ve Ek Ücretler
+  isPopular             Boolean  @default(false) // Popüler plan mi?
+  extraRestaurantPrice  Float    @default(0)     // Ek işletme başına ücret
+  
+  // Açıklama
+  description           String?
+  features              Json?    // Plan özellikleri (JSON array)
+  
+  // Durum
+  isActive              Boolean  @default(true)
+  
+  // Audit
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  // İlişkiler
+  subscriptions         Subscription[]
+  
+  @@map("plans")
+}
+
+// Abonelikler Tablosu
+model Subscription {
+  id            String              @id @default(uuid())
+  userId        String
+  user          User                @relation(fields: [userId], references: [id])
+  planId        String
+  plan          Plan                @relation(fields: [planId], references: [id])
+  
+  // Abonelik bilgileri
+  startDate     DateTime            @default(now())
+  endDate       DateTime
+  status        SubscriptionStatus  @default(ACTIVE)
+  
+  // Ödeme bilgileri
+  amount        Float
+  paymentDate   DateTime?
+  
+  // Custom plan için
+  customRestaurantCount Int?  // Kurumsal planda işletme sayısı
+  
+  // Audit
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  cancelledAt   DateTime?
+  
+  @@map("subscriptions")
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+}
+
+// Şifre Sıfırlama Tokenleri
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  
+  @@map("password_resets")
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+// Refresh Tokenlar
+model RefreshToken {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String   @unique
+  expiresAt  DateTime
+  isRevoked  Boolean  @default(false)
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+  
+  // Device/Browser tracking için opsiyonel
+  userAgent  String?
+  ipAddress  String?
+  
+  @@map("refresh_tokens")
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@index([isRevoked])
+}
+
+// Token Blacklist (Revoked access tokens)
+model TokenBlacklist {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  reason    String?  // logout, security, etc.
+  createdAt DateTime @default(now())
+  
+  @@map("token_blacklist")
+  @@index([token])
+  @@index([expiresAt])
+}

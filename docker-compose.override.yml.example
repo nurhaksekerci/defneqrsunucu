@@ -1,0 +1,53 @@
+# docker-compose.override.yml.example
+# Local development için override dosyası
+# 
+# Kullanım:
+# 1. Bu dosyayı kopyala: cp docker-compose.override.yml.example docker-compose.override.yml
+# 2. docker-compose.override.yml otomatik olarak docker-compose.yml ile merge edilir
+
+version: '3.8'
+
+services:
+  postgres:
+    ports:
+      - "5432:5432"  # Local'de PostgreSQL'e direkt erişim için
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev  # Development Dockerfile (hot reload için)
+    volumes:
+      - ./backend/src:/app/src:ro  # Hot reload için source code mount
+    ports:
+      - "5000:5000"  # Direkt erişim
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev  # Development Dockerfile
+    volumes:
+      - ./frontend/src:/app/src:ro  # Hot reload için
+    ports:
+      - "3000:3000"  # Direkt erişim
+    environment:
+      NODE_ENV: development
+
+  # Local development için ek servisler
+  adminer:
+    image: adminer:latest
+    container_name: defneqr-adminer
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      - postgres
+    networks:
+      - defneqr-network
+
+networks:
+  defneqr-network:
+    driver: bridge

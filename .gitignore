@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Misc
+coverage/
+.cache/
+
+# Docker
+docker-compose.override.yml
+
+# Uploads
+backend/uploads/
+**/uploads/
+
+# Logs
+backend/logs/
+**/logs/
+
+# SSL Certificates (Don't commit!)
+nginx/ssl/*.pem
+nginx/ssl/*.key
+
+# Database backups
+*.sql
+*.dump
+backups/
+
+# Production files
+.env.production
