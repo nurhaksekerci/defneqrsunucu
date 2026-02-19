@@ -41,10 +41,9 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   console.log('   callbackURL length:', googleConfig.callbackURL?.length);
   console.log('   callbackURL bytes:', Buffer.from(googleConfig.callbackURL || '').toString('hex').substring(0, 100));
   
-  passport.use(
-    new GoogleStrategy(
-      googleConfig,
-      async (accessToken, refreshToken, profile, done) => {
+  const googleStrategy = new GoogleStrategy(
+    googleConfig,
+    async (accessToken, refreshToken, profile, done) => {
         try {
           console.log('========================================');
           console.log('🎉 STEP 5: Google Token Exchange Başarılı!');
@@ -128,6 +127,37 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       }
     )
   );
+
+  // Wrap OAuth2 client to log token exchange requests
+  const originalGetOAuthAccessToken = googleStrategy._oauth2.getOAuthAccessToken.bind(googleStrategy._oauth2);
+  googleStrategy._oauth2.getOAuthAccessToken = function(code, params, callback) {
+    console.log('========================================');
+    console.log('🔐 STEP 3.5: Token Exchange Request to Google');
+    console.log('   Code (first 30 chars):', code?.substring(0, 30) + '...');
+    console.log('   Code length:', code?.length);
+    console.log('   Params:', JSON.stringify(params, null, 2));
+    console.log('   Client ID:', this._clientId?.substring(0, 35) + '...');
+    console.log('   Client Secret:', this._clientSecret ? '***' + this._clientSecret.substring(this._clientSecret.length - 4) : 'NOT SET');
+    console.log('   Token URL:', this._baseSite + this._getAccessTokenUrl);
+    console.log('========================================');
+    
+    return originalGetOAuthAccessToken(code, params, (err, accessToken, refreshToken, params) => {
+      if (err) {
+        console.log('========================================');
+        console.log('❌ STEP 3.6: Google Token Exchange FAILED');
+        console.log('   Error:', JSON.stringify(err, null, 2));
+        console.log('========================================');
+      } else {
+        console.log('========================================');
+        console.log('✅ STEP 3.6: Google Token Exchange SUCCESS');
+        console.log('   Access Token received:', accessToken?.substring(0, 30) + '...');
+        console.log('========================================');
+      }
+      callback(err, accessToken, refreshToken, params);
+    });
+  };
+
+  passport.use(googleStrategy);
 }
 
 module.exports = passport;
