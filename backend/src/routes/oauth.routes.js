@@ -37,6 +37,8 @@ router.get('/google/callback',
     console.log('   Client ID:', process.env.GOOGLE_CLIENT_ID?.substring(0, 35) + '...');
     console.log('   Code received:', req.query.code?.substring(0, 30) + '...');
     console.log('   Code length:', req.query.code?.length);
+    console.log('   Code HEX (first 60 bytes):', Buffer.from(req.query.code || '').toString('hex').substring(0, 60));
+    console.log('   Code contains HTML entities:', req.query.code?.includes('&#'));
     console.log('   Full request URL:', req.protocol + '://' + req.get('host') + req.originalUrl);
     console.log('   Request method:', req.method);
     console.log('   User agent:', req.get('user-agent')?.substring(0, 50));
