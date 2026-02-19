@@ -72,8 +72,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // XSS Protection & Input Sanitization
+// IMPORTANT: Skip sanitization for OAuth routes to preserve authorization codes
 const { sanitizeRequest } = require('./middleware/sanitize.middleware');
-app.use(sanitizeRequest);
+app.use((req, res, next) => {
+  // Skip sanitization for OAuth callback routes
+  if (req.path.includes('/auth/google')) {
+    console.log('⚠️  Skipping sanitization for OAuth route:', req.path);
+    return next();
+  }
+  sanitizeRequest(req, res, next);
+});
 
 // Session configuration for OAuth
 app.use(session({
