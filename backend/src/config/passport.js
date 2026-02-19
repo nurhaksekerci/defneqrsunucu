@@ -37,6 +37,8 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
+          console.log('✅ Google OAuth başarılı! Profile alındı:', profile.id);
+          
           // Google profilinden email al
           const email = profile.emails && profile.emails[0] ? profile.emails[0].value : null;
           
