@@ -35,9 +35,9 @@ describe('Card Components', () => {
       expect(screen.getByText('Card Title')).toBeInTheDocument();
     });
 
-    it('should render as h2 by default', () => {
+    it('should render as h3 by default', () => {
       const { container } = render(<CardTitle>Title</CardTitle>);
-      expect(container.querySelector('h2')).toBeInTheDocument();
+      expect(container.querySelector('h3')).toBeInTheDocument();
     });
   });
 

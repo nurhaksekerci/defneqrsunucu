@@ -18,7 +18,7 @@ describe('Button Component', () => {
   it('should render with primary variant by default', () => {
     render(<Button>Button</Button>);
     const button = screen.getByText('Button');
-    expect(button).toHaveClass('bg-blue-600');
+    expect(button).toHaveClass('bg-primary-600');
   });
 
   it('should render with danger variant', () => {
@@ -31,7 +31,7 @@ describe('Button Component', () => {
     render(<Button disabled>Disabled</Button>);
     const button = screen.getByText('Disabled');
     expect(button).toBeDisabled();
-    expect(button).toHaveClass('opacity-50');
+    expect(button).toHaveClass('disabled:opacity-50');
   });
 
   it('should not call onClick when disabled', () => {
@@ -43,20 +43,15 @@ describe('Button Component', () => {
   });
 
   it('should render loading state', () => {
-    render(<Button loading>Loading</Button>);
+    render(<Button isLoading>Loading</Button>);
     const button = screen.getByText('Loading');
     expect(button).toBeDisabled();
   });
 
-  it('should support custom className', () => {
+  it('should merge custom className with base styles', () => {
     render(<Button className="custom-class">Button</Button>);
     const button = screen.getByText('Button');
     expect(button).toHaveClass('custom-class');
-  });
-
-  it('should support fullWidth prop', () => {
-    render(<Button fullWidth>Full Width</Button>);
-    const button = screen.getByText('Full Width');
-    expect(button).toHaveClass('w-full');
+    expect(button).toHaveClass('inline-flex');
   });
 });

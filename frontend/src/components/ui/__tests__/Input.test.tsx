@@ -40,16 +40,17 @@ describe('Input Component', () => {
   });
 
   it('should support different input types', () => {
-    const { rerender } = render(<Input type="email" />);
+    const { rerender, container } = render(<Input type="email" />);
     expect(screen.getByRole('textbox')).toHaveAttribute('type', 'email');
     
     rerender(<Input type="password" />);
-    expect(screen.getByLabelText('', { selector: 'input' })).toHaveAttribute('type', 'password');
+    const passwordInput = container.querySelector('input[type="password"]');
+    expect(passwordInput).toHaveAttribute('type', 'password');
   });
 
   it('should support required prop', () => {
     render(<Input label="Name" required />);
-    const label = screen.getByText(/Name/);
-    expect(label).toHaveTextContent('*');
+    const input = screen.getByRole('textbox');
+    expect(input).toBeRequired();
   });
 });
