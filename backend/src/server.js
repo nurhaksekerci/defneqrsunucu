@@ -72,23 +72,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // XSS Protection & Input Sanitization
-// IMPORTANT: Only sanitize user input (POST/PUT/PATCH body and query params)
-// Skip sanitization for OAuth routes and GET requests to avoid breaking data
-const { sanitizeRequest } = require('./middleware/sanitize.middleware');
-app.use((req, res, next) => {
-  // Skip sanitization for OAuth callback routes (authorization codes must be preserved)
-  if (req.path.includes('/auth/google')) {
-    return next();
-  }
-  
-  // Only sanitize body for POST/PUT/PATCH/DELETE (user input)
-  // GET requests only have query params which are already URL-decoded by Express
-  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
-    return sanitizeRequest(req, res, next);
-  }
-  
-  next();
-});
+// DISABLED: HTML entity encoding breaks URLs and JSON data
+// We rely on:
+// - express-validator for input validation
+// - Prisma for SQL injection protection
+// - Content Security Policy headers for XSS protection
+// const { sanitizeRequest } = require('./middleware/sanitize.middleware');
+// app.use(sanitizeRequest);
 
 // Session configuration for OAuth
 app.use(session({
