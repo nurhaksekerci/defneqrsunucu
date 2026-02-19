@@ -49,6 +49,8 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-https://api.defneqr.com/api/auth/google/callback}
+      # Logging
+      FILE_LOGGING: ${FILE_LOGGING:-false}
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/logs:/app/logs
