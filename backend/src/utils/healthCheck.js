@@ -74,8 +74,20 @@ function checkSystemResources() {
   const usedMemory = totalMemory - freeMemory;
   const memoryUsagePercent = ((usedMemory / totalMemory) * 100).toFixed(2);
   
+  // CPU usage calculation using load average
+  const loadAverage = os.loadavg();
+  const cpuCores = os.cpus().length;
+  
+  // 1-minute load average divided by number of CPU cores gives usage percentage
+  const cpuPercent = ((loadAverage[0] / cpuCores) * 100).toFixed(2);
+  
+  // Process CPU time (cumulative since process start)
   const cpuUsage = process.cpuUsage();
-  const cpuPercent = ((cpuUsage.user + cpuUsage.system) / 1000000).toFixed(2);
+  const processUptime = process.uptime();
+  
+  // Calculate process CPU usage percentage
+  const totalCpuTime = (cpuUsage.user + cpuUsage.system) / 1000000; // Convert to seconds
+  const processCpuPercent = ((totalCpuTime / processUptime) * 100).toFixed(2);
   
   const uptime = process.uptime();
   
@@ -92,9 +104,17 @@ function checkSystemResources() {
         usagePercent: `${memoryUsagePercent}%`
       },
       cpu: {
-        user: `${(cpuUsage.user / 1000000).toFixed(2)}s`,
-        system: `${(cpuUsage.system / 1000000).toFixed(2)}s`,
-        percent: `${cpuPercent}%`
+        percent: `${cpuPercent}%`, // System-wide CPU usage
+        loadAverage: {
+          '1min': loadAverage[0].toFixed(2),
+          '5min': loadAverage[1].toFixed(2),
+          '15min': loadAverage[2].toFixed(2)
+        },
+        cores: cpuCores,
+        process: {
+          percent: `${processCpuPercent}%`, // Process CPU usage
+          totalTime: `${totalCpuTime.toFixed(2)}s`
+        }
       },
       process: {
         uptime: `${Math.floor(uptime / 60)} minutes`,

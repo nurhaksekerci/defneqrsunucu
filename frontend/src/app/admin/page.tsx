@@ -297,18 +297,47 @@ export default function AdminDashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">CPU Kullanımı:</span>
-                        <span className="font-medium text-gray-900">{health.checks.system.details.cpu.percent}</span>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-600">Sistem CPU:</span>
+                          <span className={`font-bold ${
+                            parseFloat(health.checks.system.details.cpu.percent) > 80 ? 'text-red-600' :
+                            parseFloat(health.checks.system.details.cpu.percent) > 60 ? 'text-yellow-600' :
+                            'text-green-600'
+                          }`}>
+                            {health.checks.system.details.cpu.percent}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full ${
+                              parseFloat(health.checks.system.details.cpu.percent) > 80 ? 'bg-red-600' :
+                              parseFloat(health.checks.system.details.cpu.percent) > 60 ? 'bg-yellow-600' :
+                              'bg-green-600'
+                            }`}
+                            style={{ width: `${Math.min(parseFloat(health.checks.system.details.cpu.percent), 100)}%` }}
+                          ></div>
+                        </div>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Process ID:</span>
-                        <span className="font-medium text-gray-900">{health.checks.system.details.process?.pid}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Çalışma Süresi:</span>
-                        <span className="font-medium text-gray-900">{health.checks.system.details.process?.uptime}</span>
+                      
+                      <div className="pt-2 border-t border-gray-200">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-gray-500">CPU Çekirdek:</span>
+                          <span className="font-medium text-gray-900">{health.checks.system.details.cpu.cores}</span>
+                        </div>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-gray-500">Load Avg (1m):</span>
+                          <span className="font-medium text-gray-900">{health.checks.system.details.cpu.loadAverage?.['1min']}</span>
+                        </div>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-gray-500">Process CPU:</span>
+                          <span className="font-medium text-gray-900">{health.checks.system.details.cpu.process?.percent}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-500">Process ID:</span>
+                          <span className="font-medium text-gray-900">{health.checks.system.details.process?.pid}</span>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
