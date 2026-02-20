@@ -48,6 +48,34 @@ exports.getAllUsers = async (req, res, next) => {
             orders: true,
             payments: true
           }
+        },
+        subscriptions: {
+          where: {
+            status: 'ACTIVE',
+            endDate: {
+              gte: new Date()
+            }
+          },
+          select: {
+            id: true,
+            startDate: true,
+            endDate: true,
+            status: true,
+            plan: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                maxRestaurants: true,
+                maxCategories: true,
+                maxProducts: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          },
+          take: 1
         }
       },
       orderBy: {
