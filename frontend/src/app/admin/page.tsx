@@ -40,6 +40,16 @@ interface SystemHealth {
         };
         cpu: {
           percent: string;
+          loadAverage?: {
+            '1min': string;
+            '5min': string;
+            '15min': string;
+          };
+          cores?: number;
+          process?: {
+            percent: string;
+            totalTime: string;
+          };
         };
         process: {
           uptime: string;
