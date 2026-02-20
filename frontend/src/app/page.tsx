@@ -198,7 +198,7 @@ export default function Home() {
                 <>
                   <span className="text-gray-700 text-sm sm:text-base hidden sm:inline">Hoş geldiniz, {user.fullName}</span>
                   <Link
-                    href="/dashboard"
+                    href={user.role === 'ADMIN' || user.role === 'STAFF' ? '/admin' : '/dashboard'}
                     className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all shadow-md hover:shadow-lg text-sm sm:text-base"
                   >
                     Dashboard
@@ -247,7 +247,21 @@ export default function Home() {
               tarama analizi özellikleriyle işletmenizi bir üst seviyeye taşıyın.
             </p>
             
-            {!user && (
+            {user ? (
+              <div className="flex justify-center">
+                <Link
+                  href={user.role === 'ADMIN' || user.role === 'STAFF' ? '/admin' : '/dashboard'}
+                  className="group px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-lg rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    Dashboard'a Git
+                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </span>
+                </Link>
+              </div>
+            ) : (
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Link
                   href="/auth/register"
@@ -681,7 +695,16 @@ export default function Home() {
               <ul className="space-y-2 text-gray-400 text-sm">
                 <li><Link href="/auth/register" className="hover:text-white transition">Kayıt Ol</Link></li>
                 <li><Link href="/auth/login" className="hover:text-white transition">Giriş Yap</Link></li>
-                {user && <li><Link href="/dashboard" className="hover:text-white transition">Dashboard</Link></li>}
+                {user && (
+                  <li>
+                    <Link 
+                      href={user.role === 'ADMIN' || user.role === 'STAFF' ? '/admin' : '/dashboard'} 
+                      className="hover:text-white transition"
+                    >
+                      Dashboard
+                    </Link>
+                  </li>
+                )}
               </ul>
             </div>
             
