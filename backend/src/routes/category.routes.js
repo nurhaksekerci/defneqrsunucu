@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const categoryController = require('../controllers/category.controller');
 const { authenticate } = require('../middleware/auth.middleware');
+const { checkCategoryLimitMiddleware } = require('../middleware/planLimit.middleware');
 const {
   createCategoryValidation,
   updateCategoryValidation,
@@ -14,9 +15,9 @@ router.get('/', categoryController.getCategories);
 // Protected routes
 router.use(authenticate);
 
-router.post('/', createCategoryValidation, categoryController.createCategory);
-router.post('/copy-global', categoryController.copyGlobalCategories);
-router.post('/copy-category-with-products', categoryController.copyGlobalCategoryWithProducts);
+router.post('/', checkCategoryLimitMiddleware, createCategoryValidation, categoryController.createCategory);
+router.post('/copy-global', checkCategoryLimitMiddleware, categoryController.copyGlobalCategories);
+router.post('/copy-category-with-products', checkCategoryLimitMiddleware, categoryController.copyGlobalCategoryWithProducts);
 router.post('/reorder', categoryController.reorderCategories);
 router.put('/:id', updateCategoryValidation, categoryController.updateCategory);
 router.delete('/:id', uuidParamValidation('id'), categoryController.deleteCategory);

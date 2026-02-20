@@ -46,38 +46,50 @@ async function main() {
       data: [
         {
           name: 'Ücretsiz',
+          type: 'FREE',
           description: 'Küçük işletmeler için başlangıç paketi',
           price: 0,
-          duration: 'MONTHLY',
+          duration: 365, // 365 days (1 year)
           maxRestaurants: 1,
-          maxProducts: 50,
           maxCategories: 10,
+          maxProducts: 50,
+          canRemoveBranding: false,
+          hasGlobalCatalog: true,
+          hasDetailedReports: false,
           features: JSON.stringify([
-            '1 Restoran',
-            '50 Ürün',
+            '1 İşletme',
             '10 Kategori',
+            '50 Ürün',
             'QR Menü',
+            'Global Katalog',
             'Temel Özelleştirme',
             'Mobil Uyumlu'
           ]),
           isActive: true,
           isPopular: false,
+          extraRestaurantPrice: 0,
         },
         {
           name: 'Premium',
+          type: 'PREMIUM',
           description: 'Büyüyen işletmeler için profesyonel paket',
           price: 299,
-          duration: 'MONTHLY',
+          duration: 30, // 30 days (monthly)
           maxRestaurants: 5,
-          maxProducts: 500,
           maxCategories: 50,
+          maxProducts: 500,
+          canRemoveBranding: true,
+          hasGlobalCatalog: true,
+          hasDetailedReports: true,
           features: JSON.stringify([
-            '5 Restoran',
-            '500 Ürün',
+            '5 İşletme',
             '50 Kategori',
+            '500 Ürün',
             'QR Menü',
+            'Global Katalog',
             'Gelişmiş Özelleştirme',
             'QR Tarama Analizi',
+            'Markalama Kaldırma',
             'Öncelikli Destek'
           ]),
           isActive: true,
@@ -86,21 +98,28 @@ async function main() {
         },
         {
           name: 'Kurumsal',
+          type: 'CUSTOM',
           description: 'Zincir işletmeler için kurumsal çözüm',
           price: 999,
-          duration: 'MONTHLY',
-          maxRestaurants: null, // Unlimited
-          maxProducts: null, // Unlimited
-          maxCategories: null, // Unlimited
+          duration: 30, // 30 days (monthly)
+          maxRestaurants: 999999, // Virtually unlimited
+          maxCategories: 999999, // Virtually unlimited
+          maxProducts: 999999, // Virtually unlimited
+          canRemoveBranding: true,
+          hasGlobalCatalog: true,
+          hasDetailedReports: true,
           features: JSON.stringify([
-            'Sınırsız Restoran',
-            'Sınırsız Ürün',
+            'Sınırsız İşletme',
             'Sınırsız Kategori',
+            'Sınırsız Ürün',
             'QR Menü',
+            'Global Katalog',
             'Tam Özelleştirme',
             'Gelişmiş Analitik',
+            'Markalama Kaldırma',
             '7/24 Destek',
-            'Özel Eğitim'
+            'Özel Eğitim',
+            'API Erişimi'
           ]),
           isActive: true,
           isPopular: false,

@@ -121,6 +121,7 @@ app.use('/api/settings', require('./routes/settings.routes'));
 app.use('/api/scans', require('./routes/scan.routes'));
 app.use('/api/tables', require('./routes/table.routes'));
 app.use('/api/plans', require('./routes/plan.routes'));
+app.use('/api/subscriptions', require('./routes/subscription.routes'));
 
 // Monitoring routes (health checks & metrics)
 app.use('/api', require('./routes/monitoring.routes'));

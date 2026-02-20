@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const restaurantController = require('../controllers/restaurant.controller');
 const { authenticate, authorize } = require('../middleware/auth.middleware');
+const { checkRestaurantLimitMiddleware } = require('../middleware/planLimit.middleware');
 const {
   slugParamValidation,
   uuidParamValidation,
@@ -19,7 +20,7 @@ router.use(authenticate);
 router.get('/my', restaurantController.getMyRestaurants);
 router.get('/', authorize('ADMIN'), restaurantController.getAllRestaurants);
 router.get('/:id', uuidParamValidation('id'), restaurantController.getRestaurantById);
-router.post('/', authorize('RESTAURANT_OWNER', 'ADMIN'), createRestaurantValidation, restaurantController.createRestaurant);
+router.post('/', authorize('RESTAURANT_OWNER', 'ADMIN'), checkRestaurantLimitMiddleware, createRestaurantValidation, restaurantController.createRestaurant);
 router.put('/:id', updateRestaurantValidation, restaurantController.updateRestaurant);
 router.delete('/:id', uuidParamValidation('id'), restaurantController.deleteRestaurant);
 
