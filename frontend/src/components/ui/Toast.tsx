@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -188,6 +188,3 @@ export const useToast = () => {
 
   return { toast, showToast, closeToast };
 };
-
-// React import for useState
-import { useState } from 'react';
