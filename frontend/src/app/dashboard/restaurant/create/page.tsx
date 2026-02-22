@@ -125,7 +125,23 @@ export default function CreateRestaurantPage() {
     } catch (error: any) {
       console.error('Failed to create restaurant:', error);
       
-      if (error.response?.data?.message) {
+      // Plan limiti hatası kontrolü (403)
+      if (error.response?.status === 403) {
+        const errorData = error.response?.data;
+        const message = errorData?.message || 'Plan limitinize ulaştınız!';
+        const limitInfo = errorData?.data;
+        
+        let alertMessage = `⚠️ ${message}`;
+        
+        if (limitInfo) {
+          alertMessage += `\n\n📊 Limit Bilgileri:`;
+          alertMessage += `\n• Kullanılan: ${limitInfo.currentCount}/${limitInfo.maxCount}`;
+          alertMessage += `\n• Plan: ${limitInfo.planName}`;
+          alertMessage += `\n\n💡 Daha fazla işletme eklemek için planınızı yükseltin.`;
+        }
+        
+        alert(alertMessage);
+      } else if (error.response?.data?.message) {
         if (error.response.data.message.includes('slug')) {
           setErrors({ slug: 'Bu slug zaten kullanılıyor' });
         } else {

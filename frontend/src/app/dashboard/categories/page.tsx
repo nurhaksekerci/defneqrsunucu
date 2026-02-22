@@ -122,9 +122,29 @@ export default function CategoriesPage() {
       const activeCount = Object.values(productActiveStates).filter(v => v).length;
       const passiveCount = globalCategory.products.length - activeCount;
       alert(`Kategori başarıyla kopyalandı! ${activeCount} aktif, ${passiveCount} pasif ürün eklendi.`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to copy category:', error);
-      alert('Kategori kopyalanamadı. Lütfen tekrar deneyin.');
+      
+      // Plan limiti hatası kontrolü (403)
+      if (error.response?.status === 403) {
+        const errorData = error.response?.data;
+        const message = errorData?.message || 'Plan limitinize ulaştınız!';
+        const limitInfo = errorData?.data;
+        
+        let alertMessage = `⚠️ ${message}`;
+        
+        if (limitInfo) {
+          alertMessage += `\n\n📊 Limit Bilgileri:`;
+          alertMessage += `\n• Kullanılan: ${limitInfo.currentCount}/${limitInfo.maxCount}`;
+          alertMessage += `\n• Plan: ${limitInfo.planName}`;
+          alertMessage += `\n\n💡 Daha fazla ${message.includes('kategori') ? 'kategori' : 'ürün'} eklemek için planınızı yükseltin.`;
+        }
+        
+        alert(alertMessage);
+      } else {
+        const errorMessage = error.response?.data?.message || 'Kategori kopyalanamadı. Lütfen tekrar deneyin.';
+        alert(errorMessage);
+      }
     }
   };
 
@@ -149,9 +169,30 @@ export default function CategoriesPage() {
       setShowAddForm(false);
       setEditingCategory(null);
       loadCategories();
-    } catch (error) {
+      alert('Kategori başarıyla kaydedildi!');
+    } catch (error: any) {
       console.error('Failed to save category:', error);
-      alert('Kategori kaydedilemedi. Lütfen tekrar deneyin.');
+      
+      // Plan limiti hatası kontrolü (403)
+      if (error.response?.status === 403) {
+        const errorData = error.response?.data;
+        const message = errorData?.message || 'Plan limitinize ulaştınız!';
+        const limitInfo = errorData?.data;
+        
+        let alertMessage = `⚠️ ${message}`;
+        
+        if (limitInfo) {
+          alertMessage += `\n\n📊 Limit Bilgileri:`;
+          alertMessage += `\n• Kullanılan: ${limitInfo.currentCount}/${limitInfo.maxCount}`;
+          alertMessage += `\n• Plan: ${limitInfo.planName}`;
+          alertMessage += `\n\n💡 Daha fazla kategori eklemek için planınızı yükseltin.`;
+        }
+        
+        alert(alertMessage);
+      } else {
+        const errorMessage = error.response?.data?.message || 'Kategori kaydedilemedi. Lütfen tekrar deneyin.';
+        alert(errorMessage);
+      }
     } finally {
       setIsSaving(false);
     }

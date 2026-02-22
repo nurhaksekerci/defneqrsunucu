@@ -255,9 +255,29 @@ export default function ProductsPage() {
       setShowGlobalCatalog(false);
       loadProducts();
       alert('Ürün başarıyla kopyalandı!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to copy product:', error);
-      alert('Ürün kopyalanamadı. Lütfen tekrar deneyin.');
+      
+      // Plan limiti hatası kontrolü (403)
+      if (error.response?.status === 403) {
+        const errorData = error.response?.data;
+        const message = errorData?.message || 'Plan limitinize ulaştınız!';
+        const limitInfo = errorData?.data;
+        
+        let alertMessage = `⚠️ ${message}`;
+        
+        if (limitInfo) {
+          alertMessage += `\n\n📊 Limit Bilgileri:`;
+          alertMessage += `\n• Kullanılan: ${limitInfo.currentCount}/${limitInfo.maxCount}`;
+          alertMessage += `\n• Plan: ${limitInfo.planName}`;
+          alertMessage += `\n\n💡 Daha fazla ürün eklemek için planınızı yükseltin.`;
+        }
+        
+        alert(alertMessage);
+      } else {
+        const errorMessage = error.response?.data?.message || 'Ürün kopyalanamadı. Lütfen tekrar deneyin.';
+        alert(errorMessage);
+      }
     }
   };
 
@@ -282,9 +302,30 @@ export default function ProductsPage() {
       setShowAddForm(false);
       setEditingProduct(null);
       loadProducts();
-    } catch (error) {
+      alert('Ürün başarıyla kaydedildi!');
+    } catch (error: any) {
       console.error('Failed to save product:', error);
-      alert('Ürün kaydedilemedi. Lütfen tekrar deneyin.');
+      
+      // Plan limiti hatası kontrolü (403)
+      if (error.response?.status === 403) {
+        const errorData = error.response?.data;
+        const message = errorData?.message || 'Plan limitinize ulaştınız!';
+        const limitInfo = errorData?.data;
+        
+        let alertMessage = `⚠️ ${message}`;
+        
+        if (limitInfo) {
+          alertMessage += `\n\n📊 Limit Bilgileri:`;
+          alertMessage += `\n• Kullanılan: ${limitInfo.currentCount}/${limitInfo.maxCount}`;
+          alertMessage += `\n• Plan: ${limitInfo.planName}`;
+          alertMessage += `\n\n💡 Daha fazla ürün eklemek için planınızı yükseltin.`;
+        }
+        
+        alert(alertMessage);
+      } else {
+        const errorMessage = error.response?.data?.message || 'Ürün kaydedilemedi. Lütfen tekrar deneyin.';
+        alert(errorMessage);
+      }
     } finally {
       setIsSaving(false);
     }
