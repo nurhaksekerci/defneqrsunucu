@@ -83,19 +83,17 @@ async function checkCategoryLimit(userId, restaurantId = null) {
     throw new Error('Plan bulunamadı');
   }
 
-  // Count user's categories (global or restaurant-specific)
-  const where = {
-    isDeleted: false,
-    OR: [
-      { isGlobal: false, restaurant: { ownerId: userId } }
-    ]
-  };
-
-  if (restaurantId) {
-    where.restaurantId = restaurantId;
-  }
-
-  const categoryCount = await prisma.category.count({ where });
+  // Count user's categories (only non-global categories from user's restaurants)
+  const categoryCount = await prisma.category.count({
+    where: {
+      isDeleted: false,
+      isGlobal: false,
+      restaurant: {
+        ownerId: userId,
+        isDeleted: false
+      }
+    }
+  });
 
   // Check limit
   if (categoryCount >= plan.maxCategories) {
@@ -126,19 +124,17 @@ async function checkProductLimit(userId, restaurantId = null) {
     throw new Error('Plan bulunamadı');
   }
 
-  // Count user's products (global or restaurant-specific)
-  const where = {
-    isDeleted: false,
-    OR: [
-      { isGlobal: false, restaurant: { ownerId: userId } }
-    ]
-  };
-
-  if (restaurantId) {
-    where.restaurantId = restaurantId;
-  }
-
-  const productCount = await prisma.product.count({ where });
+  // Count user's products (only non-global products from user's restaurants)
+  const productCount = await prisma.product.count({
+    where: {
+      isDeleted: false,
+      isGlobal: false,
+      restaurant: {
+        ownerId: userId,
+        isDeleted: false
+      }
+    }
+  });
 
   // Check limit
   if (productCount >= plan.maxProducts) {
