@@ -6,7 +6,22 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { authService } from '@/lib/auth';
 
-const menuItems = [
+// Admin menu items
+const adminMenuItems = [
+  { name: 'Dashboard', href: '/admin', icon: '📊' },
+  { name: 'Planlar', href: '/admin/plans', icon: '💎' },
+  { name: 'Promosyon Kodları', href: '/admin/promo-codes', icon: '🎟️' },
+  { name: 'Affiliate Partnerlar', href: '/admin/affiliates', icon: '🤝' },
+  { name: 'Affiliate Ayarları', href: '/admin/affiliate-settings', icon: '⚙️' },
+  { name: 'Restoranlar', href: '/admin/restaurants', icon: '🏪' },
+  { name: 'Kullanıcılar', href: '/admin/users', icon: '👥' },
+  { name: 'Global Kategoriler', href: '/admin/categories', icon: '📁' },
+  { name: 'Global Ürünler', href: '/admin/products', icon: '🍽️' },
+  { name: 'Sistem Ayarları', href: '/admin/settings', icon: '⚙️' },
+];
+
+// Restaurant owner menu items
+const ownerMenuItems = [
   { name: 'Dashboard', href: '/dashboard', icon: '📊' },
   { name: 'Restoranlarım', href: '/dashboard/restaurants', icon: '🏪' },
   { name: 'Menü Yönetimi', href: '/dashboard/menu', icon: '📋' },
@@ -26,6 +41,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string>('');
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -37,12 +53,13 @@ export default function DashboardLayout({
 
         const user = await authService.getCurrentUser();
         
-        // Sadece restoran sahipleri erişebilir
-        if (user.role !== 'RESTAURANT_OWNER' && user.role !== 'ADMIN') {
+        // Sadece restoran sahipleri ve adminler erişebilir
+        if (user.role !== 'RESTAURANT_OWNER' && user.role !== 'ADMIN' && user.role !== 'STAFF') {
           router.push('/');
           return;
         }
 
+        setUserRole(user.role);
         setIsLoading(false);
       } catch (error) {
         router.push('/auth/login');
@@ -51,6 +68,9 @@ export default function DashboardLayout({
 
     checkAuth();
   }, [router]);
+  
+  // Role'e göre menü seçimi
+  const menuItems = (userRole === 'ADMIN' || userRole === 'STAFF') ? adminMenuItems : ownerMenuItems;
 
   if (isLoading) {
     return (
