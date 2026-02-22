@@ -358,6 +358,11 @@ export default function CategoriesPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
+                      <a href={`/dashboard/products?categoryId=${category.id}`}>
+                        <Button size="sm" variant="ghost">
+                          📦 Ürünleri Gör
+                        </Button>
+                      </a>
                       <Button size="sm" variant="secondary" onClick={() => handleEdit(category)}>
                         Düzenle
                       </Button>

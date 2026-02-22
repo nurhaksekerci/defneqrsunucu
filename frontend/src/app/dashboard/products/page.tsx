@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -30,10 +31,14 @@ interface Category {
 }
 
 export default function ProductsPage() {
+  const searchParams = useSearchParams();
+  const categoryIdFromUrl = searchParams.get('categoryId');
+  
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>(categoryIdFromUrl || 'all');
   const [isLoading, setIsLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showGlobalCatalog, setShowGlobalCatalog] = useState(false);
@@ -64,6 +69,13 @@ export default function ProductsPage() {
       loadCategories();
     }
   }, [selectedRestaurant]);
+
+  // URL'den gelen categoryId ile selectedCategory'yi senkronize et
+  useEffect(() => {
+    if (categoryIdFromUrl && categoryIdFromUrl !== selectedCategory) {
+      setSelectedCategory(categoryIdFromUrl);
+    }
+  }, [categoryIdFromUrl]);
 
   const loadRestaurants = async () => {
     try {
@@ -200,7 +212,8 @@ export default function ProductsPage() {
   const getCategoriesWithProducts = (): Category[] => {
     const categoryMap = new Map<string, Category>();
     
-    products.forEach(product => {
+    // Filtrelenmiş ürünleri kullan
+    filteredProducts.forEach(product => {
       const catId = product.category.id;
       if (!categoryMap.has(catId)) {
         categoryMap.set(catId, {
@@ -372,6 +385,11 @@ export default function ProductsPage() {
     );
   }
 
+  // Filtrelenmiş ürünler
+  const filteredProducts = selectedCategory === 'all' 
+    ? products 
+    : products.filter(product => product.category.id === selectedCategory);
+
   return (
     <div>
       <div className="mb-8 flex justify-between items-start">
@@ -393,24 +411,44 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {restaurants.length > 1 && (
-        <div className="mb-6">
+      <div className="mb-6 flex gap-4">
+        {restaurants.length > 1 && (
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Restoran Seçin
+            </label>
+            <select
+              value={selectedRestaurant}
+              onChange={(e) => setSelectedRestaurant(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+            >
+              {restaurants.map((restaurant) => (
+                <option key={restaurant.id} value={restaurant.id}>
+                  {restaurant.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div className="flex-1">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Restoran Seçin
+            Kategori Filtresi
           </label>
           <select
-            value={selectedRestaurant}
-            onChange={(e) => setSelectedRestaurant(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
           >
-            {restaurants.map((restaurant) => (
-              <option key={restaurant.id} value={restaurant.id}>
-                {restaurant.name}
+            <option value="all">Tüm Kategoriler</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
               </option>
             ))}
           </select>
         </div>
-      )}
+      </div>
 
       <Modal
         isOpen={showAddForm}
@@ -591,14 +629,24 @@ export default function ProductsPage() {
       )}
 
       {/* Kategorilere Göre Ürünler */}
-      {products.length === 0 ? (
+      {filteredProducts.length === 0 ? (
         <Card>
           <CardContent>
             <div className="text-center py-12">
-              <p className="text-gray-500 mb-4">Henüz ürün eklenmemiş</p>
-              <Button onClick={() => setShowAddForm(true)}>
-                İlk Ürünü Ekle
-              </Button>
+              <p className="text-gray-500 mb-4">
+                {selectedCategory === 'all' 
+                  ? 'Henüz ürün eklenmemiş' 
+                  : 'Bu kategoride ürün bulunmuyor'}
+              </p>
+              {selectedCategory === 'all' ? (
+                <Button onClick={() => setShowAddForm(true)}>
+                  İlk Ürünü Ekle
+                </Button>
+              ) : (
+                <Button variant="secondary" onClick={() => setSelectedCategory('all')}>
+                  Tüm Ürünleri Göster
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
