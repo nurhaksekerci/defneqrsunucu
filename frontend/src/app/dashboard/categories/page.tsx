@@ -34,7 +34,7 @@ export default function CategoriesPage() {
     order: 0
   });
   const [isSaving, setIsSaving] = useState(false);
-  const { toast, showToast, closeToast } = useToast();
+  const { toast, showToast, closeToast }: ReturnType<typeof useToast> = useToast();
 
   useEffect(() => {
     loadRestaurants();
