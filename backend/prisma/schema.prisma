@@ -716,11 +716,14 @@ model AffiliatePayout {
 model AffiliateSettings {
   id                    String   @id @default(uuid())
   
-  // Komisyon oranı (%)
+  // Komisyon oranı (%) - Sadece ödenen affiliate'ler için
   commissionRate        Float    @default(10)
   
   // Minimum ödeme tutarı
   minimumPayout         Float    @default(100)
+  
+  // Restoran sahipleri için gün kazanma sistemi
+  daysPerReferral       Int      @default(7)  // Her referral için kazanılan gün sayısı
   
   // Özellikler
   isEnabled             Boolean  @default(true)

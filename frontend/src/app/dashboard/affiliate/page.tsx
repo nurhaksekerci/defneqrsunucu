@@ -51,7 +51,17 @@ interface Commission {
   createdAt: string;
 }
 
+type UserRole = 'ADMIN' | 'STAFF' | 'RESTAURANT_OWNER';
+
+interface UserInfo {
+  id: string;
+  fullName: string;
+  email: string;
+  role: UserRole;
+}
+
 export default function AffiliateDashboardPage() {
+  const [user, setUser] = useState<UserInfo | null>(null);
   const [affiliateInfo, setAffiliateInfo] = useState<AffiliateInfo | null>(null);
   const [referralLink, setReferralLink] = useState('');
   const [referrals, setReferrals] = useState<Referral[]>([]);
@@ -66,12 +76,26 @@ export default function AffiliateDashboardPage() {
   });
 
   useEffect(() => {
-    loadAffiliateInfo();
+    loadUserAndAffiliate();
   }, []);
+
+  const loadUserAndAffiliate = async () => {
+    try {
+      setIsLoading(true);
+      // Kullanıcı bilgisini al
+      const userRes = await api.get('/auth/me');
+      setUser(userRes.data.user);
+
+      await loadAffiliateInfo();
+    } catch (error) {
+      console.error('Failed to load user:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const loadAffiliateInfo = async () => {
     try {
-      setIsLoading(true);
       const response = await api.get('/affiliates/me');
       setAffiliateInfo(response.data.data);
 
@@ -150,6 +174,63 @@ export default function AffiliateDashboardPage() {
 
   // Affiliate kaydı yoksa
   if (!affiliateInfo) {
+    // Restoran sahibi ise otomatik affiliate oluştur
+    if (user?.role === 'RESTAURANT_OWNER') {
+      return (
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">🏪 Referral Programı</h1>
+            <p className="text-gray-600 mt-2">Restoran Sahipleri İçin Özel!</p>
+          </div>
+
+          <Card>
+            <CardContent>
+              <div className="max-w-2xl mx-auto text-center py-12">
+                <div className="text-6xl mb-6">🎁</div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  Ücretsiz Abonelik Kazanın
+                </h2>
+                <p className="text-gray-600 mb-8">
+                  Sizin için özel referral linkiniz hazır! Arkadaşlarınıza gönderin, 
+                  her kayıt için <strong>ücretsiz abonelik günleri</strong> kazanın.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-left">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <div className="text-2xl mb-2">🔗</div>
+                    <h3 className="font-semibold text-gray-900 mb-1">Özel Link</h3>
+                    <p className="text-sm text-gray-600">Size özel referral linkiniz</p>
+                  </div>
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <div className="text-2xl mb-2">📆</div>
+                    <h3 className="font-semibold text-gray-900 mb-1">Gün Kazanın</h3>
+                    <p className="text-sm text-gray-600">Her referral için ek gün</p>
+                  </div>
+                  <div className="p-4 bg-purple-50 rounded-lg">
+                    <div className="text-2xl mb-2">♾️</div>
+                    <h3 className="font-semibold text-gray-900 mb-1">Limit Yok</h3>
+                    <p className="text-sm text-gray-600">İstediğiniz kadar referral</p>
+                  </div>
+                </div>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                  <p className="text-sm text-yellow-900">
+                    ℹ️ Affiliate hesabınız ilk restoranınızı oluşturduğunuzda otomatik olarak oluşturuldu. 
+                    Aşağıdaki butona tıklayarak bilgilerinizi görüntüleyebilirsiniz.
+                  </p>
+                </div>
+
+                <Button onClick={loadAffiliateInfo} size="lg">
+                  Referral Linkimi Göster
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    // Diğer kullanıcılar için başvuru formu
     return (
       <div className="space-y-6">
         <div>
@@ -298,8 +379,8 @@ export default function AffiliateDashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      {affiliateInfo.stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {affiliateInfo.stats && user && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <Card>
             <CardContent>
               <div className="text-center py-4">
@@ -316,22 +397,37 @@ export default function AffiliateDashboardPage() {
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent>
-              <div className="text-center py-4">
-                <p className="text-3xl font-bold text-purple-600">₺{affiliateInfo.stats.totalEarnings.toFixed(2)}</p>
-                <p className="text-gray-600 text-sm mt-1">Toplam Kazanç</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent>
-              <div className="text-center py-4">
-                <p className="text-3xl font-bold text-yellow-600">₺{affiliateInfo.stats.pendingEarnings.toFixed(2)}</p>
-                <p className="text-gray-600 text-sm mt-1">Bekleyen Kazanç</p>
-              </div>
-            </CardContent>
-          </Card>
+          {user.role === 'RESTAURANT_OWNER' ? (
+            <Card>
+              <CardContent>
+                <div className="text-center py-4">
+                  <p className="text-3xl font-bold text-purple-600">
+                    {affiliateInfo.stats.totalReferrals * 7} gün
+                  </p>
+                  <p className="text-gray-600 text-sm mt-1">Toplam Kazanılan Süre</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <Card>
+                <CardContent>
+                  <div className="text-center py-4">
+                    <p className="text-3xl font-bold text-purple-600">₺{affiliateInfo.stats.totalEarnings.toFixed(2)}</p>
+                    <p className="text-gray-600 text-sm mt-1">Toplam Kazanç</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent>
+                  <div className="text-center py-4">
+                    <p className="text-3xl font-bold text-yellow-600">₺{affiliateInfo.stats.pendingEarnings.toFixed(2)}</p>
+                    <p className="text-gray-600 text-sm mt-1">Bekleyen Kazanç</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
       )}
 
@@ -352,12 +448,31 @@ export default function AffiliateDashboardPage() {
                 Kopyala
               </Button>
             </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-900">
-                💡 Bu linki sosyal medyada, blogunuzda veya e-postalarınızda paylaşın. 
-                Link üzerinden kayıt olan ve abonelik satın alan her kullanıcıdan komisyon kazanırsınız!
-              </p>
-            </div>
+            {user && (
+              <div className={`border rounded-lg p-4 ${
+                user.role === 'RESTAURANT_OWNER' 
+                  ? 'bg-green-50 border-green-200' 
+                  : 'bg-blue-50 border-blue-200'
+              }`}>
+                <p className={`text-sm ${
+                  user.role === 'RESTAURANT_OWNER' 
+                    ? 'text-green-900' 
+                    : 'text-blue-900'
+                }`}>
+                  {user.role === 'RESTAURANT_OWNER' ? (
+                    <>
+                      🎁 Bu linki arkadaşlarınıza gönderin. Link üzerinden kayıt olan her kullanıcı için 
+                      <strong> abonelik süreniz otomatik uzar!</strong>
+                    </>
+                  ) : (
+                    <>
+                      💡 Bu linki sosyal medyada, blogunuzda veya e-postalarınızda paylaşın. 
+                      Link üzerinden kayıt olan ve abonelik satın alan her kullanıcıdan komisyon kazanırsınız!
+                    </>
+                  )}
+                </p>
+              </div>
+            )}
             <div className="flex gap-2">
               <Button
                 variant="secondary"
@@ -392,33 +507,35 @@ export default function AffiliateDashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Bank Info */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>🏦 Banka Bilgileri</CardTitle>
-            <Button size="sm" variant="secondary" onClick={() => setShowBankForm(true)}>
-              Düzenle
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Banka</p>
-              <p className="font-medium text-gray-900">{affiliateInfo.bankName || '-'}</p>
+      {/* Bank Info - Sadece ödenen affiliate'ler için */}
+      {user && user.role !== 'RESTAURANT_OWNER' && (
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle>🏦 Banka Bilgileri</CardTitle>
+              <Button size="sm" variant="secondary" onClick={() => setShowBankForm(true)}>
+                Düzenle
+              </Button>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Hesap Sahibi</p>
-              <p className="font-medium text-gray-900">{affiliateInfo.accountHolder || '-'}</p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">Banka</p>
+                <p className="font-medium text-gray-900">{affiliateInfo.bankName || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Hesap Sahibi</p>
+                <p className="font-medium text-gray-900">{affiliateInfo.accountHolder || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">IBAN</p>
+                <p className="font-medium text-gray-900 font-mono text-sm">{affiliateInfo.iban || '-'}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">IBAN</p>
-              <p className="font-medium text-gray-900 font-mono text-sm">{affiliateInfo.iban || '-'}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Referrals */}
       <Card>

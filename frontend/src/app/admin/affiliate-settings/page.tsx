@@ -22,6 +22,7 @@ export default function AffiliateSettingsPage() {
   const [formData, setFormData] = useState({
     commissionRate: 10,
     minimumPayout: 100,
+    daysPerReferral: 7,
     isEnabled: true,
     requireApproval: true,
     cookieDuration: 30
@@ -40,6 +41,7 @@ export default function AffiliateSettingsPage() {
       setFormData({
         commissionRate: data.commissionRate,
         minimumPayout: data.minimumPayout,
+        daysPerReferral: data.daysPerReferral || 7,
         isEnabled: data.isEnabled,
         requireApproval: data.requireApproval,
         cookieDuration: data.cookieDuration
@@ -127,46 +129,75 @@ export default function AffiliateSettingsPage() {
               </label>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Commission Rate */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Komisyon Oranı (%) *
-                </label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  value={formData.commissionRate}
-                  onChange={(e) => setFormData({ ...formData, commissionRate: parseFloat(e.target.value) })}
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Affiliate partnerlar her abonelikten bu oranda komisyon alır
-                </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Days Per Referral - RESTORAN SAHİPLERİ İÇİN */}
+              <div className="col-span-2 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <h3 className="text-sm font-semibold text-green-900 mb-3">
+                  🏪 Restoran Sahipleri İçin (Gün Kazanma Sistemi)
+                </h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Her Referral Başına Kazanılan Gün *
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="365"
+                    value={formData.daysPerReferral}
+                    onChange={(e) => setFormData({ ...formData, daysPerReferral: parseInt(e.target.value) })}
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Restoran sahipleri her referral için bu kadar gün abonelik uzatması kazanır
+                  </p>
+                </div>
               </div>
 
-              {/* Minimum Payout */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Minimum Ödeme Tutarı (₺) *
-                </label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.minimumPayout}
-                  onChange={(e) => setFormData({ ...formData, minimumPayout: parseFloat(e.target.value) })}
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Bu tutara ulaşmadan ödeme yapılamaz
-                </p>
+              {/* Commission Rate - ÖDENEN AFFİLİATE'LER İÇİN */}
+              <div className="col-span-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 className="text-sm font-semibold text-blue-900 mb-3">
+                  💰 Ödenen Affiliate'ler İçin (Para Komisyonu)
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Komisyon Oranı (%) *
+                    </label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={formData.commissionRate}
+                      onChange={(e) => setFormData({ ...formData, commissionRate: parseFloat(e.target.value) })}
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Ödenen affiliate'ler her abonelikten bu oranda komisyon alır
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Minimum Ödeme Tutarı (₺) *
+                    </label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.minimumPayout}
+                      onChange={(e) => setFormData({ ...formData, minimumPayout: parseFloat(e.target.value) })}
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Bu tutara ulaşmadan ödeme yapılamaz
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* Cookie Duration */}
-              <div>
+              <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Cookie Süresi (Gün) *
                 </label>
@@ -185,17 +216,18 @@ export default function AffiliateSettingsPage() {
             </div>
 
             {/* Info Box */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
               <div className="flex gap-3">
-                <div className="text-blue-600 text-xl">ℹ️</div>
+                <div className="text-purple-600 text-xl">ℹ️</div>
                 <div>
-                  <h4 className="text-sm font-semibold text-blue-900 mb-1">
-                    Komisyon Hesaplama Örneği
+                  <h4 className="text-sm font-semibold text-purple-900 mb-1">
+                    Sistem Nasıl Çalışır?
                   </h4>
-                  <p className="text-xs text-blue-800">
-                    Bir affiliate partner referansıyla kayıt olan kullanıcı ₺500 değerinde bir 
-                    abonelik satın alırsa, affiliate partner <strong>₺{(500 * formData.commissionRate / 100).toFixed(2)}</strong> komisyon kazanır.
-                  </p>
+                  <ul className="text-xs text-purple-800 space-y-1">
+                    <li>• <strong>Restoran Sahipleri:</strong> Her referral için <strong>{formData.daysPerReferral} gün</strong> abonelik uzatması kazanırlar (para yok)</li>
+                    <li>• <strong>Ödenen Affiliate'ler:</strong> Her abonelikten <strong>%{formData.commissionRate}</strong> para komisyonu alırlar</li>
+                    <li>• İlk restoran oluşturulduğunda otomatik affiliate partner olunur</li>
+                  </ul>
                 </div>
               </div>
             </div>

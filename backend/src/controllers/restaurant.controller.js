@@ -1,6 +1,7 @@
 const prisma = require('../config/database');
 const { generateUniqueSlug } = require('../utils/slugify');
 const { parsePaginationParams, createPaginatedResponse } = require('../utils/pagination');
+const crypto = require('crypto');
 
 // Tüm restoranları listele (Admin için)
 exports.getAllRestaurants = async (req, res, next) => {
@@ -162,6 +163,50 @@ exports.createRestaurant = async (req, res, next) => {
         }
       }
     });
+
+    // İlk restoran ise otomatik affiliate partner oluştur
+    const restaurantCount = await prisma.restaurant.count({
+      where: { ownerId, isDeleted: false }
+    });
+
+    if (restaurantCount === 1) {
+      try {
+        // Affiliate partner var mı kontrol et
+        const existingAffiliate = await prisma.affiliatePartner.findUnique({
+          where: { userId: ownerId }
+        });
+
+        if (!existingAffiliate) {
+          // Benzersiz referral code oluştur
+          let referralCode;
+          let isUnique = false;
+          while (!isUnique) {
+            referralCode = crypto.randomBytes(4).toString('hex').toUpperCase();
+            const existing = await prisma.affiliatePartner.findUnique({
+              where: { referralCode }
+            });
+            if (!existing) isUnique = true;
+          }
+
+          // Otomatik affiliate partner oluştur (ACTIVE durumda)
+          await prisma.affiliatePartner.create({
+            data: {
+              userId: ownerId,
+              referralCode,
+              status: 'ACTIVE' // Restoran sahipleri otomatik aktif
+            }
+          });
+
+          console.log('✅ Auto-created affiliate partner for restaurant owner:', {
+            userId: ownerId,
+            referralCode
+          });
+        }
+      } catch (affiliateError) {
+        console.error('❌ Failed to create affiliate partner:', affiliateError);
+        // Hata olsa bile restoran oluşturma başarılı
+      }
+    }
 
     res.status(201).json({
       success: true,
