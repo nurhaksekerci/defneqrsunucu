@@ -139,14 +139,6 @@ export default function CategoriesPage() {
           alertMessage += `\n• Plan: ${limitInfo.planName}`;
           alertMessage += `\n\n💡 Daha fazla ${message.includes('kategori') ? 'kategori' : 'ürün'} eklemek için planınızı yükseltin.`;
         }
-        
-        let alertMessage = `⚠️ ${message}`;
-        if (limitInfo) {
-          alertMessage += `\n\n📊 Limit Bilgileri:`;
-          alertMessage += `\n• Kullanılan: ${limitInfo.currentCount}/${limitInfo.maxCount}`;
-          alertMessage += `\n• Plan: ${limitInfo.planName}`;
-          alertMessage += `\n\n💡 Daha fazla ${message.includes('kategori') ? 'kategori' : 'ürün'} eklemek için planınızı yükseltin.`;
-        }
         alert(alertMessage);
       } else {
         const errorMessage = error.response?.data?.message || 'Kategori kopyalanamadı. Lütfen tekrar deneyin.';
