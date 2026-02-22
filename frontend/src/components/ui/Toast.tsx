@@ -165,7 +165,16 @@ export const Toast: React.FC<ToastProps> = ({
 };
 
 // Toast Container Hook
-export const useToast = () => {
+export const useToast = (): {
+  toast: {
+    type: ToastType;
+    title: string;
+    message?: string;
+    details?: any;
+  } | null;
+  showToast: (type: ToastType, title: string, message?: string, details?: any) => void;
+  closeToast: () => void;
+} => {
   const [toast, setToast] = useState<{
     type: ToastType;
     title: string;
