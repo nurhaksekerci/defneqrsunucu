@@ -5,7 +5,6 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { Toast } from '@/components/ui/Toast';
 import api from '@/lib/api';
 
 interface Category {
@@ -34,14 +33,6 @@ export default function CategoriesPage() {
     order: 0
   });
   const [isSaving, setIsSaving] = useState(false);
-  
-  // Toast state (simpler approach without hook)
-  const [toastData, setToastData] = useState<{
-    type: 'success' | 'error' | 'warning' | 'info';
-    title: string;
-    message?: string;
-    details?: any;
-  } | null>(null);
 
   useEffect(() => {
     loadRestaurants();
@@ -130,11 +121,7 @@ export default function CategoriesPage() {
       
       const activeCount = Object.values(productActiveStates).filter(v => v).length;
       const passiveCount = globalCategory.products.length - activeCount;
-      setToastData({ 
-        type: 'success', 
-        title: 'Başarılı', 
-        message: `Kategori başarıyla kopyalandı! ${activeCount} aktif, ${passiveCount} pasif ürün eklendi.` 
-      });
+      alert(`✅ Kategori başarıyla kopyalandı! ${activeCount} aktif, ${passiveCount} pasif ürün eklendi.`);
     } catch (error: any) {
       console.error('Failed to copy category:', error);
       
@@ -153,19 +140,17 @@ export default function CategoriesPage() {
           alertMessage += `\n\n💡 Daha fazla ${message.includes('kategori') ? 'kategori' : 'ürün'} eklemek için planınızı yükseltin.`;
         }
         
-        setToastData({
-          type: 'warning',
-          title: 'Plan Limiti Aşıldı',
-          message,
-          details: limitInfo ? {
-            currentCount: limitInfo.currentCount,
-            maxCount: limitInfo.maxCount,
-            planName: limitInfo.planName
-          } : undefined
-        });
+        let alertMessage = `⚠️ ${message}`;
+        if (limitInfo) {
+          alertMessage += `\n\n📊 Limit Bilgileri:`;
+          alertMessage += `\n• Kullanılan: ${limitInfo.currentCount}/${limitInfo.maxCount}`;
+          alertMessage += `\n• Plan: ${limitInfo.planName}`;
+          alertMessage += `\n\n💡 Daha fazla ${message.includes('kategori') ? 'kategori' : 'ürün'} eklemek için planınızı yükseltin.`;
+        }
+        alert(alertMessage);
       } else {
         const errorMessage = error.response?.data?.message || 'Kategori kopyalanamadı. Lütfen tekrar deneyin.';
-        setToastData({ type: 'error', title: 'Hata', message: errorMessage });
+        alert(errorMessage);
       }
     }
   };
@@ -191,7 +176,7 @@ export default function CategoriesPage() {
       setShowAddForm(false);
       setEditingCategory(null);
       loadCategories();
-      setToastData({ type: 'success', title: 'Başarılı', message: 'Kategori başarıyla kaydedildi!' });
+      alert('✅ Kategori başarıyla kaydedildi!');
     } catch (error: any) {
       console.error('Failed to save category:', error);
       
@@ -201,19 +186,17 @@ export default function CategoriesPage() {
         const message = errorData?.message || 'Plan limitinize ulaştınız!';
         const limitInfo = errorData?.data;
         
-        setToastData({
-          type: 'warning',
-          title: 'Plan Limiti Aşıldı',
-          message,
-          details: limitInfo ? {
-            currentCount: limitInfo.currentCount,
-            maxCount: limitInfo.maxCount,
-            planName: limitInfo.planName
-          } : undefined
-        });
+        let alertMessage = `⚠️ ${message}`;
+        if (limitInfo) {
+          alertMessage += `\n\n📊 Limit Bilgileri:`;
+          alertMessage += `\n• Kullanılan: ${limitInfo.currentCount}/${limitInfo.maxCount}`;
+          alertMessage += `\n• Plan: ${limitInfo.planName}`;
+          alertMessage += `\n\n💡 Daha fazla kategori eklemek için planınızı yükseltin.`;
+        }
+        alert(alertMessage);
       } else {
         const errorMessage = error.response?.data?.message || 'Kategori kaydedilemedi. Lütfen tekrar deneyin.';
-        setToastData({ type: 'error', title: 'Hata', message: errorMessage });
+        alert(errorMessage);
       }
     } finally {
       setIsSaving(false);
@@ -245,13 +228,13 @@ export default function CategoriesPage() {
     try {
       const response = await api.delete(`/categories/${id}`);
       if (response.data.success) {
-        setToastData({ type: 'success', title: 'Başarılı', message: response.data.message || 'Kategori başarıyla silindi' });
+        alert('✅ ' + (response.data.message || 'Kategori başarıyla silindi'));
       }
       loadCategories();
     } catch (error: any) {
       console.error('Failed to delete category:', error);
       const errorMessage = error.response?.data?.message || 'Kategori silinemedi. Lütfen tekrar deneyin.';
-      setToastData({ type: 'error', title: 'Hata', message: errorMessage });
+      alert('❌ ' + errorMessage);
     }
   };
 
@@ -694,16 +677,6 @@ function GlobalCatalogModal({
         </CardContent>
       </Card>
 
-      {/* Toast Notification */}
-      {toastData && (
-        <Toast
-          type={toastData.type}
-          title={toastData.title}
-          message={toastData.message}
-          details={toastData.details}
-          onClose={() => setToastData(null)}
-        />
-      )}
     </div>
   );
 }
