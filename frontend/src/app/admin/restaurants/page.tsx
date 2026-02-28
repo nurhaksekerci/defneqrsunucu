@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
+import { Input } from '@/components/ui/Input';
 import api from '@/lib/api';
 import { authService } from '@/lib/auth';
 
@@ -13,10 +16,17 @@ interface Restaurant {
   address?: string;
   phone?: string;
   owner: {
+    id: string;
     fullName: string;
     email: string;
   };
   createdAt: string;
+  subscription?: {
+    id: string;
+    startDate: string;
+    endDate: string;
+    plan: { name: string; type: string };
+  } | null;
 }
 
 export default function AdminRestaurantsPage() {
@@ -24,6 +34,9 @@ export default function AdminRestaurantsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [extendModal, setExtendModal] = useState<{ open: boolean; restaurantId?: string }>({ open: false });
+  const [extendDays, setExtendDays] = useState('30');
+  const [isExtending, setIsExtending] = useState(false);
 
   useEffect(() => {
     loadRestaurants();
@@ -32,13 +45,36 @@ export default function AdminRestaurantsPage() {
 
   const loadRestaurants = async () => {
     try {
-      const response = await api.get('/restaurants');
+      const response = await api.get('/restaurants?limit=100');
       setRestaurants(response.data.data || []);
     } catch (error) {
       console.error('Failed to load restaurants:', error);
       setRestaurants([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleExtend = async () => {
+    const days = parseInt(extendDays, 10);
+    if (!days || days < 1 || days > 365) {
+      alert('1-365 arası gün girin');
+      return;
+    }
+    try {
+      setIsExtending(true);
+      await api.post('/subscriptions/extend', {
+        days,
+        ...(extendModal.restaurantId && { restaurantId: extendModal.restaurantId })
+      });
+      setExtendModal({ open: false });
+      setExtendDays('30');
+      loadRestaurants();
+      alert('Süre başarıyla eklendi');
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Süre eklenemedi');
+    } finally {
+      setIsExtending(false);
     }
   };
 
@@ -55,6 +91,8 @@ export default function AdminRestaurantsPage() {
       alert('Restoran silinemedi. Lütfen tekrar deneyin.');
     }
   };
+
+  const formatDate = (d: string) => new Date(d).toLocaleDateString('tr-TR', { year: 'numeric', month: 'short', day: 'numeric' });
 
   const filteredRestaurants = restaurants.filter(r =>
     r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -76,14 +114,22 @@ export default function AdminRestaurantsPage() {
         <p className="text-gray-600">Sistemdeki tüm restoranları görüntüleyin</p>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap gap-4 items-center">
         <input
           type="text"
           placeholder="Restoran veya sahip ara..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+          className="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
         />
+        {isAdmin && (
+          <Button
+            onClick={() => setExtendModal({ open: true })}
+            variant="secondary"
+          >
+            Tüm restoranlara süre ekle
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -102,6 +148,9 @@ export default function AdminRestaurantsPage() {
                   <tr className="border-b border-gray-200">
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Restoran</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Sahip</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Plan</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Başlangıç</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Bitiş</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">İletişim</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Oluşturulma</th>
                     {isAdmin && (
@@ -127,16 +176,40 @@ export default function AdminRestaurantsPage() {
                           <p className="text-sm text-gray-600">{restaurant.owner.email}</p>
                         </div>
                       </td>
+                      <td className="py-3 px-4">
+                        {restaurant.subscription ? (
+                          <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {restaurant.subscription.plan.name}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-sm">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-600">
+                        {restaurant.subscription ? formatDate(restaurant.subscription.startDate) : '—'}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-600">
+                        {restaurant.subscription ? formatDate(restaurant.subscription.endDate) : '—'}
+                      </td>
                       <td className="py-3 px-4 text-sm">
                         {restaurant.address && <p>{restaurant.address}</p>}
                         {restaurant.phone && <p>{restaurant.phone}</p>}
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-600">
-                        {new Date(restaurant.createdAt).toLocaleDateString('tr-TR')}
+                        {formatDate(restaurant.createdAt)}
                       </td>
                       {isAdmin && (
                         <td className="py-3 px-4 text-right">
-                          <div className="flex gap-2 justify-end">
+                          <div className="flex flex-wrap gap-2 justify-end">
+                            <button
+                              onClick={() => {
+                                setExtendModal({ open: true, restaurantId: restaurant.id });
+                                setExtendDays('30');
+                              }}
+                              className="px-3 py-1.5 text-sm text-amber-600 hover:text-amber-700 font-medium"
+                            >
+                              Süre ekle
+                            </button>
                             <button
                               onClick={() => window.open(`/${restaurant.slug}/menu`, '_blank')}
                               className="px-3 py-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium"
@@ -160,6 +233,37 @@ export default function AdminRestaurantsPage() {
           )}
         </CardContent>
       </Card>
+
+      {isAdmin && (
+        <Modal
+          isOpen={extendModal.open}
+          onClose={() => setExtendModal({ open: false })}
+          title={extendModal.restaurantId ? 'Bu restorana süre ekle' : 'Tüm restoranlara süre ekle'}
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Eklenecek gün sayısı</label>
+              <Input
+                type="number"
+                min={1}
+                max={365}
+                value={extendDays}
+                onChange={(e) => setExtendDays(e.target.value)}
+                placeholder="30"
+              />
+              <p className="text-xs text-gray-500 mt-1">1-365 arası gün girin</p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button onClick={handleExtend} disabled={isExtending}>
+                {isExtending ? 'İşleniyor...' : 'Ekle'}
+              </Button>
+              <Button variant="secondary" onClick={() => setExtendModal({ open: false })}>
+                İptal
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

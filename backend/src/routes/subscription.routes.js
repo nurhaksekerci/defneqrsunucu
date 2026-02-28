@@ -17,6 +17,7 @@ router.post('/subscribe', subscriptionController.subscribeSelf);
 router.get('/all', authorize('ADMIN', 'STAFF'), subscriptionController.getAllSubscriptions);
 router.get('/stats', authorize('ADMIN', 'STAFF'), subscriptionController.getSubscriptionStats);
 router.post('/', authorize('ADMIN'), subscriptionController.createSubscription);
+router.post('/extend', authorize('ADMIN'), subscriptionController.extendSubscription);
 router.put('/:id/cancel', subscriptionController.cancelSubscription);
 
 module.exports = router;

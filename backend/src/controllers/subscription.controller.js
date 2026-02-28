@@ -445,6 +445,81 @@ exports.createSubscription = async (req, res, next) => {
 };
 
 /**
+ * Admin: Abonelik bitiş süresine ek gün ekle
+ * Body: { restaurantId?: string, days: number }
+ * - restaurantId varsa: sadece o restoranın sahibinin aktif aboneliğine ekler
+ * - restaurantId yoksa: tüm restoran sahiplerinin aktif aboneliklerine ekler
+ */
+exports.extendSubscription = async (req, res, next) => {
+  try {
+    const { restaurantId, days } = req.body;
+    const daysNum = parseInt(days, 10);
+
+    if (!daysNum || daysNum < 1 || daysNum > 365) {
+      return res.status(400).json({
+        success: false,
+        message: 'Geçerli bir gün sayısı girin (1-365)'
+      });
+    }
+
+    let ownerIds = [];
+
+    if (restaurantId) {
+      const restaurant = await prisma.restaurant.findUnique({
+        where: { id: restaurantId, isDeleted: false }
+      });
+      if (!restaurant) {
+        return res.status(404).json({
+          success: false,
+          message: 'Restoran bulunamadı'
+        });
+      }
+      ownerIds = [restaurant.ownerId];
+    } else {
+      const owners = await prisma.restaurant.findMany({
+        where: { isDeleted: false },
+        select: { ownerId: true }
+      });
+      ownerIds = [...new Set(owners.map((r) => r.ownerId))];
+    }
+
+    const now = new Date();
+    const activeSubs = await prisma.subscription.findMany({
+      where: {
+        userId: { in: ownerIds },
+        status: 'ACTIVE'
+      }
+    });
+
+    const msPerDay = 24 * 60 * 60 * 1000;
+    let updated = 0;
+
+    for (const sub of activeSubs) {
+      const currentEnd = new Date(sub.endDate);
+      const newEnd = currentEnd < now
+        ? new Date(now.getTime() + daysNum * msPerDay)
+        : new Date(currentEnd.getTime() + daysNum * msPerDay);
+
+      await prisma.subscription.update({
+        where: { id: sub.id },
+        data: { endDate: newEnd }
+      });
+      updated++;
+    }
+
+    res.json({
+      success: true,
+      message: restaurantId
+        ? `${updated} aboneliğe ${daysNum} gün eklendi`
+        : `Tüm restoran sahiplerinin ${updated} aboneliğine ${daysNum} gün eklendi`,
+      data: { extendedCount: updated, daysAdded: daysNum }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Cancel subscription
  */
 exports.cancelSubscription = async (req, res, next) => {

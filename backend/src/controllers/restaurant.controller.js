@@ -28,7 +28,7 @@ exports.getAllRestaurants = async (req, res, next) => {
     // Get total count
     const totalCount = await prisma.restaurant.count({ where });
 
-    // Get paginated restaurants
+    // Get paginated restaurants with owner's active subscription
     const restaurants = await prisma.restaurant.findMany({
       where,
       include: {
@@ -52,7 +52,32 @@ exports.getAllRestaurants = async (req, res, next) => {
       take: limit
     });
 
-    res.json(createPaginatedResponse(restaurants, totalCount, { page, limit }));
+    // Her restoran sahibinin aktif aboneliğini al
+    const ownerIds = [...new Set(restaurants.map((r) => r.ownerId))];
+    const now = new Date();
+    const activeSubscriptions = await prisma.subscription.findMany({
+      where: {
+        userId: { in: ownerIds },
+        status: 'ACTIVE',
+        endDate: { gte: now }
+      },
+      include: {
+        plan: { select: { id: true, name: true, type: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const subByOwner = {};
+    activeSubscriptions.forEach((s) => {
+      if (!subByOwner[s.userId]) subByOwner[s.userId] = s;
+    });
+
+    const enriched = restaurants.map((r) => ({
+      ...r,
+      subscription: subByOwner[r.ownerId] || null
+    }));
+
+    res.json(createPaginatedResponse(enriched, totalCount, { page, limit }));
   } catch (error) {
     next(error);
   }
