@@ -94,6 +94,17 @@ export default function AdminRestaurantsPage() {
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('tr-TR', { year: 'numeric', month: 'short', day: 'numeric' });
 
+  const getDaysRemaining = (endDate: string) => {
+    const end = new Date(endDate);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    const diff = Math.ceil((end.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+    if (diff < 0) return { text: `${Math.abs(diff)} gün geçti`, expired: true };
+    if (diff === 0) return { text: 'Bugün bitiyor', expired: true };
+    return { text: `${diff} gün kaldı`, expired: false };
+  };
+
   const filteredRestaurants = restaurants.filter(r =>
     r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.owner.fullName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -151,6 +162,7 @@ export default function AdminRestaurantsPage() {
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Plan</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Başlangıç</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Bitiş</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Kalan</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">İletişim</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Oluşturulma</th>
                     {isAdmin && (
@@ -190,6 +202,18 @@ export default function AdminRestaurantsPage() {
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-600">
                         {restaurant.subscription ? formatDate(restaurant.subscription.endDate) : '—'}
+                      </td>
+                      <td className="py-3 px-4 text-sm">
+                        {restaurant.subscription ? (() => {
+                          const { text, expired } = getDaysRemaining(restaurant.subscription!.endDate);
+                          return (
+                            <span className={expired ? 'text-red-600 font-medium' : 'text-gray-600'}>
+                              {text}
+                            </span>
+                          );
+                        })() : (
+                          <span className="text-gray-400">—</span>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-sm">
                         {restaurant.address && <p>{restaurant.address}</p>}
