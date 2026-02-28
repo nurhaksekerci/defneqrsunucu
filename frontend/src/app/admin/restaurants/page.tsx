@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import api from '@/lib/api';
+import { authService } from '@/lib/auth';
 
 interface Restaurant {
   id: string;
@@ -22,9 +23,11 @@ export default function AdminRestaurantsPage() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     loadRestaurants();
+    authService.getCurrentUser().then((u) => setIsAdmin(u.role === 'ADMIN')).catch(() => setIsAdmin(false));
   }, []);
 
   const loadRestaurants = async () => {
@@ -101,7 +104,9 @@ export default function AdminRestaurantsPage() {
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Sahip</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">İletişim</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Oluşturulma</th>
-                    <th className="text-right py-3 px-4 font-medium text-gray-700">İşlemler</th>
+                    {isAdmin && (
+                      <th className="text-right py-3 px-4 font-medium text-gray-700">İşlemler</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -129,22 +134,24 @@ export default function AdminRestaurantsPage() {
                       <td className="py-3 px-4 text-sm text-gray-600">
                         {new Date(restaurant.createdAt).toLocaleDateString('tr-TR')}
                       </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex gap-2 justify-end">
-                          <button
-                            onClick={() => window.open(`/${restaurant.slug}/menu`, '_blank')}
-                            className="px-3 py-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium"
-                          >
-                            Görüntüle
-                          </button>
-                          <button
-                            onClick={() => handleDelete(restaurant.id)}
-                            className="px-3 py-1.5 text-sm text-red-600 hover:text-red-700 font-medium"
-                          >
-                            Sil
-                          </button>
-                        </div>
-                      </td>
+                      {isAdmin && (
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex gap-2 justify-end">
+                            <button
+                              onClick={() => window.open(`/${restaurant.slug}/menu`, '_blank')}
+                              className="px-3 py-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                            >
+                              Görüntüle
+                            </button>
+                            <button
+                              onClick={() => handleDelete(restaurant.id)}
+                              className="px-3 py-1.5 text-sm text-red-600 hover:text-red-700 font-medium"
+                            >
+                              Sil
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

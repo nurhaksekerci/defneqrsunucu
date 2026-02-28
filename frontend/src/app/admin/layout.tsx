@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { authService } from '@/lib/auth';
 
-const adminMenuItems = [
+const allAdminMenuItems = [
   { name: 'Dashboard', href: '/admin', icon: '📊' },
   { name: 'Finans', href: '/admin/finance', icon: '💰' },
   { name: 'Planlar', href: '/admin/plans', icon: '💎' },
@@ -21,14 +21,22 @@ const adminMenuItems = [
   { name: 'Sistem Ayarları', href: '/admin/settings', icon: '⚙️' },
 ];
 
+const STAFF_ALLOWED_HREFS = ['/admin', '/admin/restaurants', '/admin/categories', '/admin/products', '/admin/tickets'];
+
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [userRole, setUserRole] = useState<'ADMIN' | 'STAFF' | null>(null);
+
+  const adminMenuItems = userRole === 'STAFF'
+    ? allAdminMenuItems.filter((item) => STAFF_ALLOWED_HREFS.includes(item.href))
+    : allAdminMenuItems;
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -40,12 +48,13 @@ export default function AdminLayout({
 
         const user = await authService.getCurrentUser();
         
-        // Sadece adminler erişebilir
+        // Sadece admin ve staff erişebilir
         if (user.role !== 'ADMIN' && user.role !== 'STAFF') {
           router.push('/');
           return;
         }
 
+        setUserRole(user.role);
         setIsLoading(false);
       } catch (error) {
         router.push('/auth/login');
@@ -54,6 +63,13 @@ export default function AdminLayout({
 
     checkAuth();
   }, [router]);
+
+  // Staff sadece izinli sayfalara erişebilir
+  useEffect(() => {
+    if (userRole === 'STAFF' && pathname && !STAFF_ALLOWED_HREFS.includes(pathname)) {
+      router.replace('/admin');
+    }
+  }, [userRole, pathname, router]);
 
   if (isLoading) {
     return (
