@@ -18,7 +18,7 @@ router.get('/public-slugs', restaurantController.getPublicSlugs); // For sitemap
 router.use(authenticate);
 
 router.get('/my', restaurantController.getMyRestaurants);
-router.get('/', authorize('ADMIN'), restaurantController.getAllRestaurants);
+router.get('/', authorize('ADMIN', 'STAFF'), restaurantController.getAllRestaurants);
 router.get('/:id', uuidParamValidation('id'), restaurantController.getRestaurantById);
 router.post('/', authorize('RESTAURANT_OWNER', 'ADMIN'), checkRestaurantLimitMiddleware, createRestaurantValidation, restaurantController.createRestaurant);
 router.put('/:id', updateRestaurantValidation, restaurantController.updateRestaurant);
