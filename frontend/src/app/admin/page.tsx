@@ -482,7 +482,12 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Sistem Aktivitesi</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Sistem Aktivitesi</CardTitle>
+              <a href="/admin/activity" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                Tümünü gör
+              </a>
+            </div>
           </CardHeader>
           <CardContent>
             {activities.length === 0 ? (

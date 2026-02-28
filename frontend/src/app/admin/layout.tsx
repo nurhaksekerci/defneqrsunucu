@@ -21,7 +21,7 @@ const allAdminMenuItems = [
   { name: 'Sistem Ayarları', href: '/admin/settings', icon: '⚙️' },
 ];
 
-const STAFF_ALLOWED_HREFS = ['/admin', '/admin/restaurants', '/admin/categories', '/admin/products', '/admin/tickets'];
+const STAFF_ALLOWED_HREFS = ['/admin', '/admin/restaurants', '/admin/categories', '/admin/products', '/admin/tickets', '/admin/activity'];
 
 export default function AdminLayout({
   children,

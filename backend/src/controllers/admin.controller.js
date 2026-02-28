@@ -5,6 +5,7 @@ const prisma = require('../config/database');
  */
 exports.getDashboardData = async (req, res, next) => {
   try {
+    const activityLimit = Math.min(parseInt(req.query.activityLimit) || 15, 100);
     const [recentRestaurants, recentUsers, recentSubscriptions, recentTickets, recentScans] = await Promise.all([
       prisma.restaurant.findMany({
         where: { isDeleted: false },
@@ -16,12 +17,12 @@ exports.getDashboardData = async (req, res, next) => {
       }),
       prisma.user.findMany({
         where: { isDeleted: false },
-        take: 5,
+        take: Math.min(activityLimit, 20),
         orderBy: { createdAt: 'desc' },
         select: { id: true, fullName: true, email: true, role: true, createdAt: true }
       }),
       prisma.subscription.findMany({
-        take: 5,
+        take: Math.min(activityLimit, 20),
         orderBy: { createdAt: 'desc' },
         include: {
           user: { select: { fullName: true, email: true } },
@@ -29,14 +30,14 @@ exports.getDashboardData = async (req, res, next) => {
         }
       }),
       prisma.supportTicket.findMany({
-        take: 5,
+        take: Math.min(activityLimit, 20),
         orderBy: { createdAt: 'desc' },
         include: {
           user: { select: { fullName: true, email: true } }
         }
       }),
       prisma.menuScan.findMany({
-        take: 10,
+        take: Math.min(activityLimit * 2, 50),
         orderBy: { scannedAt: 'desc' },
         include: {
           restaurant: { select: { name: true, slug: true } }
@@ -83,7 +84,7 @@ exports.getDashboardData = async (req, res, next) => {
       }))
     ]
       .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 15);
+      .slice(0, activityLimit);
 
     res.json({
       success: true,
