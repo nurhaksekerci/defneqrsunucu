@@ -126,6 +126,127 @@ exports.getMySubscription = async (req, res, next) => {
 };
 
 /**
+ * Admin: Tüm abonelikleri listele (finans takibi için)
+ */
+exports.getAllSubscriptions = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20, status, planId, startDate, endDate } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const where = {};
+    if (status) where.status = status;
+    if (planId) where.planId = planId;
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt.lte = end;
+      }
+    }
+
+    const [subscriptions, total] = await Promise.all([
+      prisma.subscription.findMany({
+        where,
+        skip,
+        take: parseInt(limit),
+        orderBy: { createdAt: 'desc' },
+        include: {
+          plan: { select: { id: true, name: true, type: true, price: true } },
+          user: { select: { id: true, fullName: true, email: true } }
+        }
+      }),
+      prisma.subscription.count({ where })
+    ]);
+
+    res.json({
+      success: true,
+      data: subscriptions,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Admin: Finans istatistikleri
+ */
+exports.getSubscriptionStats = async (req, res, next) => {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [
+      totalRevenue,
+      todayRevenue,
+      monthRevenue,
+      activeCount,
+      todayCount,
+      monthCount
+    ] = await Promise.all([
+      prisma.subscription.aggregate({
+        _sum: { amount: true },
+        where: { status: { in: ['ACTIVE', 'EXPIRED'] } }
+      }),
+      prisma.subscription.aggregate({
+        _sum: { amount: true },
+        where: {
+          createdAt: { gte: todayStart },
+          status: { in: ['ACTIVE', 'EXPIRED'] }
+        }
+      }),
+      prisma.subscription.aggregate({
+        _sum: { amount: true },
+        where: {
+          createdAt: { gte: monthStart },
+          status: { in: ['ACTIVE', 'EXPIRED'] }
+        }
+      }),
+      prisma.subscription.count({
+        where: {
+          status: 'ACTIVE',
+          endDate: { gte: now }
+        }
+      }),
+      prisma.subscription.count({
+        where: {
+          createdAt: { gte: todayStart },
+          status: { in: ['ACTIVE', 'EXPIRED'] }
+        }
+      }),
+      prisma.subscription.count({
+        where: {
+          createdAt: { gte: monthStart },
+          status: { in: ['ACTIVE', 'EXPIRED'] }
+        }
+      })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalRevenue: totalRevenue._sum.amount || 0,
+        todayRevenue: todayRevenue._sum.amount || 0,
+        monthRevenue: monthRevenue._sum.amount || 0,
+        activeSubscriptions: activeCount,
+        todaySubscriptions: todayCount,
+        monthSubscriptions: monthCount
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get all subscriptions for current user
  */
 exports.getMySubscriptions = async (req, res, next) => {

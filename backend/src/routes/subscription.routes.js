@@ -14,6 +14,8 @@ router.get('/my/history', subscriptionController.getMySubscriptions);
 router.post('/subscribe', subscriptionController.subscribeSelf);
 
 // Admin routes
+router.get('/all', authorize('ADMIN', 'STAFF'), subscriptionController.getAllSubscriptions);
+router.get('/stats', authorize('ADMIN', 'STAFF'), subscriptionController.getSubscriptionStats);
 router.post('/', authorize('ADMIN'), subscriptionController.createSubscription);
 router.put('/:id/cancel', subscriptionController.cancelSubscription);
 

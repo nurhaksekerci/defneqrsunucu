@@ -8,6 +8,7 @@ import { authService } from '@/lib/auth';
 
 const adminMenuItems = [
   { name: 'Dashboard', href: '/admin', icon: '📊' },
+  { name: 'Finans', href: '/admin/finance', icon: '💰' },
   { name: 'Planlar', href: '/admin/plans', icon: '💎' },
   { name: 'Promosyon Kodları', href: '/admin/promo-codes', icon: '🎟️' },
   { name: 'Affiliate Partnerlar', href: '/admin/affiliates', icon: '🤝' },
