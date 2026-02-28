@@ -29,6 +29,7 @@ const ownerMenuItems = [
   { name: 'Ürünler', href: '/dashboard/products', icon: '🍽️' },
   { name: 'Menü Özelleştirme', href: '/dashboard/menu-settings', icon: '🎨' },
   { name: 'Raporlar', href: '/dashboard/reports', icon: '📈' },
+  { name: 'Plan & Abonelik', href: '/dashboard/subscription', icon: '💎' },
   { name: 'Affiliate', href: '/dashboard/affiliate', icon: '🤝' },
   { name: 'Şifre Değiştir', href: '/dashboard/change-password', icon: '🔐' },
 ];

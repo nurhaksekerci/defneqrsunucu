@@ -125,22 +125,14 @@ export default function CreateRestaurantPage() {
     } catch (error: any) {
       console.error('Failed to create restaurant:', error);
       
-      // Plan limiti hatası kontrolü (403)
+      // Plan limiti hatası kontrolü (403) - Premium'a yükseltmeye yönlendir
       if (error.response?.status === 403) {
-        const errorData = error.response?.data;
-        const message = errorData?.message || 'Plan limitinize ulaştınız!';
-        const limitInfo = errorData?.data;
-        
-        let alertMessage = `⚠️ ${message}`;
-        
-        if (limitInfo) {
-          alertMessage += `\n\n📊 Limit Bilgileri:`;
-          alertMessage += `\n• Kullanılan: ${limitInfo.currentCount}/${limitInfo.maxCount}`;
-          alertMessage += `\n• Plan: ${limitInfo.planName}`;
-          alertMessage += `\n\n💡 Daha fazla işletme eklemek için planınızı yükseltin.`;
-        }
-        
+        const { getPlanLimitErrorMessage, redirectToPremiumUpgrade } = await import('@/lib/planLimitHelper');
+        const alertMessage = getPlanLimitErrorMessage(error);
         alert(alertMessage);
+        if (confirm('Premium pakete yükseltmek ister misiniz?')) {
+          redirectToPremiumUpgrade();
+        }
       } else if (error.response?.data?.message) {
         if (error.response.data.message.includes('slug')) {
           setErrors({ slug: 'Bu slug zaten kullanılıyor' });

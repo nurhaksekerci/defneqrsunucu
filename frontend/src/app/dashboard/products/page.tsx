@@ -258,22 +258,13 @@ export default function ProductsPage() {
     } catch (error: any) {
       console.error('Failed to copy product:', error);
       
-      // Plan limiti hatası kontrolü (403)
+      // Plan limiti hatası kontrolü (403) - Premium'a yükseltmeye yönlendir
       if (error.response?.status === 403) {
-        const errorData = error.response?.data;
-        const message = errorData?.message || 'Plan limitinize ulaştınız!';
-        const limitInfo = errorData?.data;
-        
-        let alertMessage = `⚠️ ${message}`;
-        
-        if (limitInfo) {
-          alertMessage += `\n\n📊 Limit Bilgileri:`;
-          alertMessage += `\n• Kullanılan: ${limitInfo.currentCount}/${limitInfo.maxCount}`;
-          alertMessage += `\n• Plan: ${limitInfo.planName}`;
-          alertMessage += `\n\n💡 Daha fazla ürün eklemek için planınızı yükseltin.`;
+        const { getPlanLimitErrorMessage, redirectToPremiumUpgrade } = await import('@/lib/planLimitHelper');
+        alert(getPlanLimitErrorMessage(error));
+        if (confirm('Premium pakete yükseltmek ister misiniz?')) {
+          redirectToPremiumUpgrade();
         }
-        
-        alert(alertMessage);
       } else {
         const errorMessage = error.response?.data?.message || 'Ürün kopyalanamadı. Lütfen tekrar deneyin.';
         alert(errorMessage);
@@ -306,22 +297,13 @@ export default function ProductsPage() {
     } catch (error: any) {
       console.error('Failed to save product:', error);
       
-      // Plan limiti hatası kontrolü (403)
+      // Plan limiti hatası kontrolü (403) - Premium'a yükseltmeye yönlendir
       if (error.response?.status === 403) {
-        const errorData = error.response?.data;
-        const message = errorData?.message || 'Plan limitinize ulaştınız!';
-        const limitInfo = errorData?.data;
-        
-        let alertMessage = `⚠️ ${message}`;
-        
-        if (limitInfo) {
-          alertMessage += `\n\n📊 Limit Bilgileri:`;
-          alertMessage += `\n• Kullanılan: ${limitInfo.currentCount}/${limitInfo.maxCount}`;
-          alertMessage += `\n• Plan: ${limitInfo.planName}`;
-          alertMessage += `\n\n💡 Daha fazla ürün eklemek için planınızı yükseltin.`;
+        const { getPlanLimitErrorMessage, redirectToPremiumUpgrade } = await import('@/lib/planLimitHelper');
+        alert(getPlanLimitErrorMessage(error));
+        if (confirm('Premium pakete yükseltmek ister misiniz?')) {
+          redirectToPremiumUpgrade();
         }
-        
-        alert(alertMessage);
       } else {
         const errorMessage = error.response?.data?.message || 'Ürün kaydedilemedi. Lütfen tekrar deneyin.';
         alert(errorMessage);

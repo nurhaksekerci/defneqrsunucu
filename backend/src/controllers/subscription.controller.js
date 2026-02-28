@@ -152,6 +152,31 @@ exports.getMySubscriptions = async (req, res, next) => {
 };
 
 /**
+ * Kullanıcının kendi planını satın alması (RESTAURANT_OWNER)
+ * Deneme/ücretsiz plan limiti aşıldığında Premium'a yükseltmek için
+ */
+exports.subscribeSelf = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { planId, customRestaurantCount, amount, paymentDate } = req.body;
+
+    // Sadece RESTAURANT_OWNER kendi planını satın alabilir (ADMIN zaten createSubscription kullanır)
+    if (req.user.role !== 'RESTAURANT_OWNER' && req.user.role !== 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Bu işlem için yetkiniz yok'
+      });
+    }
+
+    // createSubscription mantığını kullan (userId = req.user.id)
+    req.body.userId = userId;
+    return exports.createSubscription(req, res, next);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Create a new subscription (for admin)
  */
 exports.createSubscription = async (req, res, next) => {

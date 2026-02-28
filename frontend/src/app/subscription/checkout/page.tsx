@@ -126,14 +126,14 @@ function CheckoutContent() {
       // Şimdilik demo olarak direkt abonelik oluşturalım
 
       const subscriptionData = {
-        userId: (await authService.getCurrentUser()).id,
         planId: plan.id,
         amount: getFinalAmount(),
         paymentDate: new Date().toISOString(),
         customRestaurantCount: plan.type === 'CUSTOM' ? restaurantCount : null
       };
 
-      await api.post('/subscriptions', subscriptionData);
+      // Kullanıcı kendi planını satın alır (/subscribe endpoint'i)
+      await api.post('/subscriptions/subscribe', subscriptionData);
 
       // Promo code kullanıldıysa kaydet
       if (promoDiscount) {

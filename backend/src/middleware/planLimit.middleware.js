@@ -159,11 +159,12 @@ async function checkProductLimit(userId, restaurantId = null) {
  * Auto-assign FREE plan to user if they don't have one
  */
 async function assignFreePlanIfNeeded(userId) {
-  // Check if user already has a subscription
+  // Check if user already has an active (non-expired) subscription
   const existingSubscription = await prisma.subscription.findFirst({
     where: {
       userId,
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      endDate: { gte: new Date() }
     }
   });
 

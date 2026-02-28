@@ -125,21 +125,13 @@ export default function CategoriesPage() {
     } catch (error: any) {
       console.error('Failed to copy category:', error);
       
-      // Plan limiti hatası kontrolü (403)
+      // Plan limiti hatası kontrolü (403) - Premium'a yükseltmeye yönlendir
       if (error.response?.status === 403) {
-        const errorData = error.response?.data;
-        const message = errorData?.message || 'Plan limitinize ulaştınız!';
-        const limitInfo = errorData?.data;
-        
-        let alertMessage = `⚠️ ${message}`;
-        
-        if (limitInfo) {
-          alertMessage += `\n\n📊 Limit Bilgileri:`;
-          alertMessage += `\n• Kullanılan: ${limitInfo.currentCount}/${limitInfo.maxCount}`;
-          alertMessage += `\n• Plan: ${limitInfo.planName}`;
-          alertMessage += `\n\n💡 Daha fazla ${message.includes('kategori') ? 'kategori' : 'ürün'} eklemek için planınızı yükseltin.`;
+        const { getPlanLimitErrorMessage, redirectToPremiumUpgrade } = await import('@/lib/planLimitHelper');
+        alert(getPlanLimitErrorMessage(error));
+        if (confirm('Premium pakete yükseltmek ister misiniz?')) {
+          redirectToPremiumUpgrade();
         }
-        alert(alertMessage);
       } else {
         const errorMessage = error.response?.data?.message || 'Kategori kopyalanamadı. Lütfen tekrar deneyin.';
         alert(errorMessage);
@@ -172,20 +164,13 @@ export default function CategoriesPage() {
     } catch (error: any) {
       console.error('Failed to save category:', error);
       
-      // Plan limiti hatası kontrolü (403)
+      // Plan limiti hatası kontrolü (403) - Premium'a yükseltmeye yönlendir
       if (error.response?.status === 403) {
-        const errorData = error.response?.data;
-        const message = errorData?.message || 'Plan limitinize ulaştınız!';
-        const limitInfo = errorData?.data;
-        
-        let alertMessage = `⚠️ ${message}`;
-        if (limitInfo) {
-          alertMessage += `\n\n📊 Limit Bilgileri:`;
-          alertMessage += `\n• Kullanılan: ${limitInfo.currentCount}/${limitInfo.maxCount}`;
-          alertMessage += `\n• Plan: ${limitInfo.planName}`;
-          alertMessage += `\n\n💡 Daha fazla kategori eklemek için planınızı yükseltin.`;
+        const { getPlanLimitErrorMessage, redirectToPremiumUpgrade } = await import('@/lib/planLimitHelper');
+        alert(getPlanLimitErrorMessage(error));
+        if (confirm('Premium pakete yükseltmek ister misiniz?')) {
+          redirectToPremiumUpgrade();
         }
-        alert(alertMessage);
       } else {
         const errorMessage = error.response?.data?.message || 'Kategori kaydedilemedi. Lütfen tekrar deneyin.';
         alert(errorMessage);
