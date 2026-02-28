@@ -57,3 +57,11 @@ backups/
 
 # Production files
 .env.production
+
+# security
+nginx/ssl/
+*.pem
+*.csr
+*.key
+*.backup
+*.old*
