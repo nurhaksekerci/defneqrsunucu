@@ -379,6 +379,62 @@ exports.createTableValidation = [
 ];
 
 /**
+ * Ticket Validations
+ */
+const TICKET_CATEGORIES = ['TECHNICAL', 'BILLING', 'FEATURE_REQUEST', 'BUG_REPORT', 'GENERAL'];
+const TICKET_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
+const TICKET_STATUSES = ['OPEN', 'IN_PROGRESS', 'WAITING_CUSTOMER', 'RESOLVED', 'CLOSED'];
+
+exports.createTicketValidation = [
+  body('subject')
+    .trim()
+    .notEmpty().withMessage('Konu gereklidir')
+    .isLength({ min: 3, max: 200 }).withMessage('Konu 3-200 karakter olmalıdır'),
+  body('description')
+    .trim()
+    .notEmpty().withMessage('Açıklama gereklidir')
+    .isLength({ min: 10, max: 5000 }).withMessage('Açıklama 10-5000 karakter olmalıdır'),
+  body('category')
+    .notEmpty().withMessage('Kategori gereklidir')
+    .isIn(TICKET_CATEGORIES).withMessage('Geçersiz kategori'),
+  body('priority')
+    .optional()
+    .isIn(TICKET_PRIORITIES).withMessage('Geçersiz öncelik'),
+  body('restaurantId')
+    .optional()
+    .isUUID().withMessage('Geçersiz restoran ID'),
+  handleValidationErrors
+];
+
+exports.updateTicketValidation = [
+  body('status')
+    .optional()
+    .isIn(TICKET_STATUSES).withMessage('Geçersiz durum'),
+  body('priority')
+    .optional()
+    .isIn(TICKET_PRIORITIES).withMessage('Geçersiz öncelik'),
+  body('assignedToId')
+    .optional()
+    .isUUID().withMessage('Geçersiz atama'),
+  body('resolution')
+    .optional()
+    .trim()
+    .isLength({ max: 5000 }).withMessage('Çözüm notu maksimum 5000 karakter olabilir'),
+  handleValidationErrors
+];
+
+exports.createTicketMessageValidation = [
+  body('message')
+    .trim()
+    .notEmpty().withMessage('Mesaj gereklidir')
+    .isLength({ min: 1, max: 5000 }).withMessage('Mesaj 1-5000 karakter olmalıdır'),
+  body('isInternal')
+    .optional()
+    .isBoolean().withMessage('isInternal boolean olmalıdır'),
+  handleValidationErrors
+];
+
+/**
  * UUID Param Validation
  */
 exports.uuidParamValidation = (paramName = 'id') => [

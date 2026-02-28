@@ -31,6 +31,7 @@ const ownerMenuItems = [
   { name: 'Raporlar', href: '/dashboard/reports', icon: '📈' },
   { name: 'Plan & Abonelik', href: '/dashboard/subscription', icon: '💎' },
   { name: 'Affiliate', href: '/dashboard/affiliate', icon: '🤝' },
+  { name: 'Destek', href: '/dashboard/support', icon: '🎫' },
   { name: 'Şifre Değiştir', href: '/dashboard/change-password', icon: '🔐' },
 ];
 

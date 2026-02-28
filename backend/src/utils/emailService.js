@@ -117,8 +117,73 @@ async function sendPasswordResetEmail(to, resetLink, userName = 'Kullanıcı') {
   return sendEmail({ to, subject, html });
 }
 
+/**
+ * Destek talebi oluşturuldu bildirimi
+ */
+async function sendTicketCreatedEmail(ticket) {
+  const to = ticket.user?.email;
+  if (!to) return false;
+
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const ticketUrl = `${frontendUrl}/dashboard/support/${ticket.id}`;
+  const categoryLabels = {
+    TECHNICAL: 'Teknik',
+    BILLING: 'Faturalama',
+    FEATURE_REQUEST: 'Özellik Talebi',
+    BUG_REPORT: 'Hata Bildirimi',
+    GENERAL: 'Genel'
+  };
+  const categoryLabel = categoryLabels[ticket.category] || ticket.category;
+
+  const subject = `Defne Qr - Destek Talebiniz Alındı: ${ticket.ticketNumber}`;
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #dc2626; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 24px; border-radius: 0 0 8px 8px; }
+    .button { display: inline-block; background: #dc2626; color: white !important; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin: 16px 0; font-weight: bold; }
+    .footer { margin-top: 20px; font-size: 12px; color: #6b7280; }
+    .meta { background: #e5e7eb; padding: 12px; border-radius: 6px; margin: 8px 0; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎫 Destek Talebiniz Alındı</h1>
+    </div>
+    <div class="content">
+      <p>Merhaba ${ticket.user?.fullName || 'Kullanıcı'},</p>
+      <p>Destek talebiniz başarıyla oluşturuldu. En kısa sürede size dönüş yapacağız.</p>
+      <div class="meta">
+        <strong>Talep No:</strong> ${ticket.ticketNumber}<br>
+        <strong>Konu:</strong> ${ticket.subject}<br>
+        <strong>Kategori:</strong> ${categoryLabel}<br>
+        <strong>Öncelik:</strong> ${ticket.priority}
+      </div>
+      <p style="text-align: center;">
+        <a href="${ticketUrl}" class="button">Talebi Görüntüle</a>
+      </p>
+      <div class="footer">
+        <p>Defne Qr - QR Menü ve Dijital Menü Sistemi</p>
+        <p>destek@defneqr.com</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  return sendEmail({ to, subject, html });
+}
+
 module.exports = {
   sendEmail,
   sendPasswordResetEmail,
+  sendTicketCreatedEmail,
   getTransporter
 };

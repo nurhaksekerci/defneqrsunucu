@@ -71,7 +71,11 @@ model User {
   promoCodeUsages  PromoCodeUsage[]
   affiliatePartner AffiliatePartner?
   referrals        Referral[]
-  
+  supportTickets   SupportTicket[]
+  assignedTickets  SupportTicket[]  @relation("AssignedTickets")
+  resolvedTickets SupportTicket[]  @relation("ResolvedTickets")
+  ticketMessages   TicketMessage[]  @relation("TicketMessages")
+
   @@index([role])
   @@index([isDeleted])
   @@index([createdAt])
@@ -109,7 +113,8 @@ model Restaurant {
   stocks        Stock[]
   menuScans     MenuScan[]
   tables        Table[]
-  
+  supportTickets SupportTicket[]
+
   @@index([ownerId])
   @@index([isDeleted])
   @@index([createdAt])
@@ -710,6 +715,93 @@ model AffiliatePayout {
   @@index([affiliateId])
   @@index([status])
   @@index([createdAt])
+}
+
+// Destek Talebi Önceliği
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// Destek Talebi Durumu
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+// Destek Talebi Kategorisi
+enum TicketCategory {
+  TECHNICAL
+  BILLING
+  FEATURE_REQUEST
+  BUG_REPORT
+  GENERAL
+}
+
+// Destek Talepleri
+model SupportTicket {
+  id            String         @id @default(uuid())
+  ticketNumber  String         @unique
+
+  userId        String
+  user          User           @relation(fields: [userId], references: [id])
+  restaurantId  String?
+  restaurant    Restaurant?    @relation(fields: [restaurantId], references: [id])
+
+  subject       String
+  description   String         @db.Text
+  category      TicketCategory
+  priority      TicketPriority @default(MEDIUM)
+  status        TicketStatus   @default(OPEN)
+
+  assignedToId  String?
+  assignedTo    User?          @relation("AssignedTickets", fields: [assignedToId], references: [id])
+
+  resolution    String?        @db.Text
+  resolvedAt    DateTime?
+  resolvedById  String?
+  resolvedBy    User?          @relation("ResolvedTickets", fields: [resolvedById], references: [id])
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  closedAt      DateTime?
+
+  messages      TicketMessage[]
+
+  @@index([userId])
+  @@index([restaurantId])
+  @@index([status])
+  @@index([priority])
+  @@index([category])
+  @@index([assignedToId])
+  @@index([createdAt])
+  @@map("support_tickets")
+}
+
+// Destek Talebi Mesajları
+model TicketMessage {
+  id          String        @id @default(uuid())
+  ticketId    String
+  ticket      SupportTicket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  authorId    String
+  author      User           @relation("TicketMessages", fields: [authorId], references: [id])
+  isInternal  Boolean        @default(false)
+
+  message     String         @db.Text
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([ticketId])
+  @@index([authorId])
+  @@index([createdAt])
+  @@map("ticket_messages")
 }
 
 // Affiliate Ayarları (Sistem geneli)
