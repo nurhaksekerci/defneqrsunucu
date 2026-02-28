@@ -205,7 +205,10 @@ export default function PromoCodesPage() {
           <CardContent>
             <div className="text-center py-4">
               <p className="text-3xl font-bold text-yellow-600">
-                {promoCodes.filter(p => p.maxUses && p.usedCount >= p.maxUses).length}
+                {promoCodes.filter(p => {
+                  const usageCount = p._count?.usages ?? p.usedCount;
+                  return p.maxUses && usageCount >= p.maxUses;
+                }).length}
               </p>
               <p className="text-gray-600 mt-2">Limit Dolmuş</p>
             </div>
@@ -268,15 +271,15 @@ export default function PromoCodesPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">
-                          {code.usedCount} / {code.maxUses || '∞'}
+                          {code._count?.usages ?? code.usedCount} / {code.maxUses || '∞'}
                         </div>
                         {code.maxUses && (
                           <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
                             <div 
                               className={`h-1.5 rounded-full ${
-                                code.usedCount >= code.maxUses ? 'bg-red-500' : 'bg-green-500'
+                                (code._count?.usages ?? code.usedCount) >= code.maxUses ? 'bg-red-500' : 'bg-green-500'
                               }`}
-                              style={{ width: `${Math.min((code.usedCount / code.maxUses) * 100, 100)}%` }}
+                              style={{ width: `${Math.min(((code._count?.usages ?? code.usedCount) / code.maxUses) * 100, 100)}%` }}
                             />
                           </div>
                         )}

@@ -181,7 +181,7 @@ exports.subscribeSelf = async (req, res, next) => {
  */
 exports.createSubscription = async (req, res, next) => {
   try {
-    const { userId, planId, customRestaurantCount, amount, paymentDate } = req.body;
+    const { userId, planId, customRestaurantCount, amount, paymentDate, promoCodeId, originalAmount, discountAmount } = req.body;
 
     // Get plan
     const plan = await prisma.plan.findUnique({
@@ -245,6 +245,40 @@ exports.createSubscription = async (req, res, next) => {
         }
       }
     });
+
+    // Promosyon kodu kullanıldıysa kaydet ve usedCount artır
+    if (promoCodeId) {
+      try {
+        const promoCode = await prisma.promoCode.findUnique({
+          where: { id: promoCodeId }
+        });
+        if (promoCode) {
+          const orig = parseFloat(originalAmount) || subscription.amount;
+          const disc = parseFloat(discountAmount) || 0;
+          const final = Math.max(0, orig - disc);
+
+          await prisma.$transaction([
+            prisma.promoCodeUsage.create({
+              data: {
+                promoCodeId,
+                userId,
+                subscriptionId: subscription.id,
+                discountAmount: disc,
+                originalAmount: orig,
+                finalAmount: final
+              }
+            }),
+            prisma.promoCode.update({
+              where: { id: promoCodeId },
+              data: { usedCount: { increment: 1 } }
+            })
+          ]);
+        }
+      } catch (promoError) {
+        console.error('❌ Promo code usage recording failed:', promoError);
+        // Promo kaydı hatası abonelik oluşturmayı engellemez
+      }
+    }
 
     // Affiliate komisyon oluştur (varsa)
     try {

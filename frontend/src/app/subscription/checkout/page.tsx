@@ -128,20 +128,21 @@ function CheckoutContent() {
       // Ödeme işlemi burada yapılacak (Stripe, iyzico, vb.)
       // Şimdilik demo olarak direkt abonelik oluşturalım
 
-      const subscriptionData = {
+      const subscriptionData: Record<string, unknown> = {
         planId: plan.id,
         amount: getFinalAmount(),
         paymentDate: new Date().toISOString(),
         customRestaurantCount: plan.type === 'CUSTOM' ? restaurantCount : null
       };
 
+      if (promoDiscount?.promoCodeId) {
+        subscriptionData.promoCodeId = promoDiscount.promoCodeId;
+        subscriptionData.originalAmount = calculateTotal();
+        subscriptionData.discountAmount = promoDiscount.discountAmount;
+      }
+
       // Kullanıcı kendi planını satın alır (/subscribe endpoint'i)
       await api.post('/subscriptions/subscribe', subscriptionData);
-
-      // Promo code kullanıldıysa kaydet
-      if (promoDiscount) {
-        // Backend'de otomatik kaydedilecek
-      }
 
       alert('✅ Abonelik başarıyla oluşturuldu!');
       router.push('/dashboard');
