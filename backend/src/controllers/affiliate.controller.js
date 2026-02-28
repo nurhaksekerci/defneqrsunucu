@@ -364,7 +364,6 @@ exports.getAffiliateSettings = async (req, res, next) => {
     let settings = await prisma.affiliateSettings.findFirst();
 
     if (!settings) {
-      // İlk ayarları oluştur
       settings = await prisma.affiliateSettings.create({
         data: {}
       });
@@ -372,7 +371,11 @@ exports.getAffiliateSettings = async (req, res, next) => {
 
     res.json({
       success: true,
-      data: settings
+      data: {
+        ...settings,
+        daysPerReferralFree: settings.daysPerReferralFree ?? settings.daysPerReferral ?? 7,
+        daysPerReferralPaid: settings.daysPerReferralPaid ?? settings.daysPerReferral ?? 14
+      }
     });
   } catch (error) {
     next(error);
