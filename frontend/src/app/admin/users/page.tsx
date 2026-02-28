@@ -50,6 +50,16 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleRoleChange = async (userId: string, newRole: User['role']) => {
+    try {
+      await api.put(`/users/${userId}/role`, { role: newRole });
+      loadUsers();
+    } catch (error: any) {
+      console.error('Failed to update role:', error);
+      alert(error.response?.data?.message || 'Rol güncellenemedi. Lütfen tekrar deneyin.');
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
       return;
@@ -202,9 +212,19 @@ export default function AdminUsersPage() {
                           </div>
                         </td>
                         <td className="py-3 px-4">
-                          <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getRoleBadgeColor(user.role)}`}>
-                            {getRoleName(user.role)}
-                          </span>
+                          <select
+                            value={user.role}
+                            onChange={(e) => handleRoleChange(user.id, e.target.value as User['role'])}
+                            className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 bg-white text-gray-900 hover:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 cursor-pointer min-w-[140px]"
+                          >
+                            <option value="ADMIN">Admin</option>
+                            <option value="STAFF">Staff</option>
+                            <option value="RESTAURANT_OWNER">Restoran Sahibi</option>
+                            <option value="CASHIER">Kasiyer</option>
+                            <option value="WAITER">Garson</option>
+                            <option value="BARISTA">Barista</option>
+                            <option value="COOK">Aşçı</option>
+                          </select>
                         </td>
                         <td className="py-3 px-4">
                           {activeSubscription ? (

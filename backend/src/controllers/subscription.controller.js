@@ -230,7 +230,7 @@ exports.createSubscription = async (req, res, next) => {
         startDate,
         endDate,
         status: 'ACTIVE',
-        amount: amount || plan.price,
+        amount: (amount === 0 || amount === '0') ? 0 : (amount ?? plan.price),
         paymentDate: paymentDate ? new Date(paymentDate) : null,
         customRestaurantCount: customRestaurantCount || null
       },

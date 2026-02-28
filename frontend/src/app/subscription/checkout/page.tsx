@@ -114,6 +114,8 @@ function CheckoutContent() {
     return calculateTotal();
   };
 
+  const isFree = getFinalAmount() === 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -266,84 +268,104 @@ function CheckoutContent() {
             </CardContent>
           </Card>
 
-          {/* Payment Form */}
+          {/* Payment Form veya Ücretsiz Aktivasyon */}
           <Card>
             <CardHeader>
-              <CardTitle>💳 Ödeme Bilgileri</CardTitle>
+              <CardTitle>{isFree ? '✅ Planı Aktifleştir' : '💳 Ödeme Bilgileri'}</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kart Numarası *
-                  </label>
-                  <Input
-                    value={paymentData.cardNumber}
-                    onChange={(e) => setPaymentData({ ...paymentData, cardNumber: e.target.value })}
-                    placeholder="1234 5678 9012 3456"
-                    maxLength={19}
-                    required
-                  />
-                </div>
+                {isFree ? (
+                  <>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <p className="text-green-800 font-medium">
+                        🎉 Promosyon kodu ile planınız tamamen ücretsiz! Kart bilgisi girmeden planı aktifleştirebilirsiniz.
+                      </p>
+                    </div>
+                    <Button
+                      type="submit"
+                      isLoading={isProcessing}
+                      className="w-full"
+                      size="lg"
+                    >
+                      Planı Aktifleştir
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Kart Numarası *
+                      </label>
+                      <Input
+                        value={paymentData.cardNumber}
+                        onChange={(e) => setPaymentData({ ...paymentData, cardNumber: e.target.value })}
+                        placeholder="1234 5678 9012 3456"
+                        maxLength={19}
+                        required
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kart Üzerindeki İsim *
-                  </label>
-                  <Input
-                    value={paymentData.cardHolder}
-                    onChange={(e) => setPaymentData({ ...paymentData, cardHolder: e.target.value })}
-                    placeholder="AD SOYAD"
-                    required
-                  />
-                </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Kart Üzerindeki İsim *
+                      </label>
+                      <Input
+                        value={paymentData.cardHolder}
+                        onChange={(e) => setPaymentData({ ...paymentData, cardHolder: e.target.value })}
+                        placeholder="AD SOYAD"
+                        required
+                      />
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Son Kullanma Tarihi *
-                    </label>
-                    <Input
-                      value={paymentData.expiryDate}
-                      onChange={(e) => setPaymentData({ ...paymentData, expiryDate: e.target.value })}
-                      placeholder="AA/YY"
-                      maxLength={5}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      CVV *
-                    </label>
-                    <Input
-                      type="password"
-                      value={paymentData.cvv}
-                      onChange={(e) => setPaymentData({ ...paymentData, cvv: e.target.value })}
-                      placeholder="123"
-                      maxLength={4}
-                      required
-                    />
-                  </div>
-                </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Son Kullanma Tarihi *
+                        </label>
+                        <Input
+                          value={paymentData.expiryDate}
+                          onChange={(e) => setPaymentData({ ...paymentData, expiryDate: e.target.value })}
+                          placeholder="AA/YY"
+                          maxLength={5}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          CVV *
+                        </label>
+                        <Input
+                          type="password"
+                          value={paymentData.cvv}
+                          onChange={(e) => setPaymentData({ ...paymentData, cvv: e.target.value })}
+                          placeholder="123"
+                          maxLength={4}
+                          required
+                        />
+                      </div>
+                    </div>
 
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <p className="text-xs text-yellow-900">
-                    🔒 Ödeme bilgileriniz güvenli bir şekilde şifrelenir. 
-                    Kart bilgileriniz saklanmaz.
-                  </p>
-                </div>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <p className="text-xs text-yellow-900">
+                        🔒 Ödeme bilgileriniz güvenli bir şekilde şifrelenir. 
+                        Kart bilgileriniz saklanmaz.
+                      </p>
+                    </div>
 
-                <Button
-                  type="submit"
-                  isLoading={isProcessing}
-                  className="w-full"
-                  size="lg"
-                >
-                  ₺{getFinalAmount().toFixed(2)} Öde
-                </Button>
+                    <Button
+                      type="submit"
+                      isLoading={isProcessing}
+                      className="w-full"
+                      size="lg"
+                    >
+                      ₺{getFinalAmount().toFixed(2)} Öde
+                    </Button>
+                  </>
+                )}
 
                 <p className="text-xs text-gray-500 text-center">
-                  Ödeme yaparak{' '}
+                  Devam ederek{' '}
                   <a href="/terms" className="text-primary-600 hover:underline">
                     Kullanım Şartlarını
                   </a>
