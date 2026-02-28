@@ -86,4 +86,6 @@ export const ticketService = {
 
   addMessage: (id: string, data: { message: string; isInternal?: boolean }) =>
     api.post(`/tickets/${id}/messages`, data),
+
+  deleteTicket: (id: string) => api.delete(`/tickets/${id}`),
 };

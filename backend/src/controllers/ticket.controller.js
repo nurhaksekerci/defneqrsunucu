@@ -272,3 +272,27 @@ exports.addMessage = async (req, res, next) => {
     next(error);
   }
 };
+
+// Talep sil (sadece Admin/Staff)
+exports.deleteTicket = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+
+    if (user.role !== 'ADMIN' && user.role !== 'STAFF') {
+      return res.status(403).json({ success: false, message: 'Bu işlem için yetkiniz yok' });
+    }
+
+    const ticket = await prisma.supportTicket.findUnique({ where: { id } });
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: 'Talep bulunamadı' });
+    }
+
+    await prisma.supportTicket.delete({ where: { id } });
+    logger.info('Destek talebi silindi', { ticketId: id, ticketNumber: ticket.ticketNumber });
+
+    res.json({ success: true, message: 'Talep silindi' });
+  } catch (error) {
+    next(error);
+  }
+};

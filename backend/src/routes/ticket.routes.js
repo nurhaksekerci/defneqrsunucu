@@ -30,4 +30,7 @@ router.put('/:id', uuidParamValidation('id'), updateTicketValidation, ticketCont
 // POST /api/tickets/:id/messages - Mesaj ekle
 router.post('/:id/messages', uuidParamValidation('id'), createTicketMessageValidation, ticketController.addMessage);
 
+// DELETE /api/tickets/:id - Talep sil (Admin/Staff)
+router.delete('/:id', uuidParamValidation('id'), authorize('ADMIN', 'STAFF'), ticketController.deleteTicket);
+
 module.exports = router;

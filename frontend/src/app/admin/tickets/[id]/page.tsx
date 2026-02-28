@@ -36,6 +36,7 @@ export default function AdminTicketDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadTicket();
@@ -88,6 +89,20 @@ export default function AdminTicketDetailPage() {
       alert('Mesaj gönderilemedi.');
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Bu talebi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) return;
+    try {
+      setIsDeleting(true);
+      await ticketService.deleteTicket(id);
+      router.push('/admin/tickets');
+    } catch (error) {
+      console.error('Talep silinemedi:', error);
+      alert('Talep silinirken bir hata oluştu.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -277,6 +292,15 @@ export default function AdminTicketDetailPage() {
               </div>
               <Button onClick={handleUpdateTicket} isLoading={isUpdating} className="w-full">
                 Güncelle
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={handleDelete}
+                isLoading={isDeleting}
+                disabled={isDeleting}
+                className="w-full text-red-600 hover:bg-red-50 hover:text-red-700"
+              >
+                Talebi Sil
               </Button>
             </CardContent>
           </Card>

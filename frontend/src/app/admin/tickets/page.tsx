@@ -29,6 +29,23 @@ export default function AdminTicketsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, totalCount: 0 });
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (e: React.MouseEvent, ticketId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm('Bu talebi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) return;
+    try {
+      setDeletingId(ticketId);
+      await ticketService.deleteTicket(ticketId);
+      setTickets((prev) => prev.filter((t) => t.id !== ticketId));
+    } catch (err) {
+      console.error('Talep silinemedi:', err);
+      alert('Talep silinirken bir hata oluştu.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   useEffect(() => {
     loadTickets();
@@ -111,11 +128,10 @@ export default function AdminTicketsPage() {
       ) : (
         <div className="space-y-4">
           {tickets.map((ticket) => (
-            <Link key={ticket.id} href={`/admin/tickets/${ticket.id}`}>
-              <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardContent className="py-4">
+            <Card key={ticket.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="py-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex-1 min-w-0">
+                  <Link href={`/admin/tickets/${ticket.id}`} className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="font-mono text-sm text-gray-500">{ticket.ticketNumber}</span>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[ticket.status] || 'bg-gray-100'}`}>
@@ -129,14 +145,22 @@ export default function AdminTicketsPage() {
                     <p className="text-sm text-gray-500 mt-1">
                       {ticket.user.fullName} ({ticket.user.email}) • {CATEGORY_LABELS[ticket.category]} • {ticket._count?.messages ?? 0} mesaj
                     </p>
-                  </div>
-                  <div className="text-sm text-gray-500 shrink-0">
-                    {formatDate(ticket.createdAt)}
+                  </Link>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-sm text-gray-500">{formatDate(ticket.createdAt)}</span>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                      onClick={(e) => handleDelete(e, ticket.id)}
+                      disabled={deletingId === ticket.id}
+                    >
+                      {deletingId === ticket.id ? '...' : 'Sil'}
+                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            </Link>
           ))}
 
           {pagination.totalPages > 1 && (
