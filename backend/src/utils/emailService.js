@@ -18,7 +18,7 @@ function getTransporter() {
   const pass = process.env.SMTP_PASS;
 
   if (!host || !user || !pass) {
-    logger.warn('SMTP yapılandırması eksik. Email gönderilemez.');
+    logger.warn('SMTP yapılandırması eksik. Email gönderilemez.', { hasHost: !!host, hasUser: !!user, hasPass: !!pass });
     return null;
   }
 
@@ -63,7 +63,7 @@ async function sendEmail({ to, subject, text, html }) {
     logger.info('Email gönderildi', { to, subject });
     return true;
   } catch (error) {
-    logger.error('Email gönderilemedi:', { to, subject, error: error.message });
+    logger.error('Email gönderilemedi', { to, subject, error: error.message, stack: error.stack });
     return false;
   }
 }

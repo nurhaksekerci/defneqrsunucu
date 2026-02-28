@@ -6,6 +6,7 @@ const { validatePassword } = require('../utils/passwordValidator');
 const tokenManager = require('../utils/tokenManager');
 const { sendPasswordResetEmail } = require('../utils/emailService');
 const { recordUserRegistration, recordLoginAttempt } = require('../utils/metrics');
+const logger = require('../utils/logger');
 const { processReferral } = require('../middleware/referral.middleware');
 
 // Kayıt olma
@@ -290,6 +291,7 @@ exports.forgotPassword = async (req, res, next) => {
 
     // Güvenlik: Email bulunamasa bile başarılı mesaj dön (email enumeration saldırısını önle)
     if (!user) {
+      logger.info('Şifre sıfırlama talebi - kayıtlı kullanıcı bulunamadı (email DB\'de yok)');
       return res.json({
         success: true,
         message: 'Eğer bu email adresi sistemde kayıtlıysa, şifre sıfırlama bağlantısı gönderilecektir'
@@ -320,7 +322,11 @@ exports.forgotPassword = async (req, res, next) => {
     });
 
     const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
-    await sendPasswordResetEmail(user.email, resetLink, user.fullName || user.username || 'Kullanıcı');
+    logger.info('Şifre sıfırlama maili gönderiliyor', { to: user.email });
+    const sent = await sendPasswordResetEmail(user.email, resetLink, user.fullName || user.username || 'Kullanıcı');
+    if (!sent) {
+      logger.error('Şifre sıfırlama maili gönderilemedi', { to: user.email });
+    }
 
     if (process.env.NODE_ENV === 'development') {
       console.log('🔐 Password Reset Token:', resetToken);
