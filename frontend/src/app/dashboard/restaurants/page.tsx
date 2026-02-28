@@ -29,10 +29,12 @@ export default function RestaurantsPage() {
 
   const loadSettings = async () => {
     try {
-      const response = await api.get('/settings');
-      setMaxRestaurants(response.data.data.maxRestaurantsPerUser || 5);
+      const response = await api.get('/subscriptions/my');
+      const data = response.data.data;
+      setMaxRestaurants(data?.limits?.restaurants ?? data?.plan?.maxRestaurants ?? 1);
     } catch (error) {
-      console.error('Failed to load settings:', error);
+      console.error('Failed to load subscription:', error);
+      setMaxRestaurants(1);
     }
   };
 
@@ -71,16 +73,6 @@ export default function RestaurantsPage() {
   }
 
   const canAddMoreRestaurants = restaurants.length < maxRestaurants;
-  
-  // Grid sütun sayısını max sayısına göre belirle
-  const getGridCols = () => {
-    if (maxRestaurants === 1) return 'grid-cols-1';
-    if (maxRestaurants === 2) return 'grid-cols-1 lg:grid-cols-2';
-    if (maxRestaurants === 3) return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
-    if (maxRestaurants === 4) return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4';
-    // 5 ve üzeri için 3 sütun yeterli
-    return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
-  };
 
   return (
     <div>
@@ -101,11 +93,11 @@ export default function RestaurantsPage() {
         )}
       </div>
 
-      {!canAddMoreRestaurants && (
+      {!canAddMoreRestaurants && restaurants.length > 0 && (
         <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-yellow-800 text-sm">
-            ⚠️ Maksimum restoran sayısına ulaştınız ({maxRestaurants} restoran). 
-            Yeni restoran eklemek için lütfen sistem yöneticisi ile iletişime geçin.
+            ⚠️ Plan limitinize ulaştınız ({maxRestaurants} restoran). 
+            Daha fazla restoran eklemek için planınızı yükseltin.
           </p>
         </div>
       )}
@@ -129,7 +121,7 @@ export default function RestaurantsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className={`grid ${getGridCols()} gap-6`}>
+        <div className="grid grid-cols-1 gap-6">
           {restaurants.map((restaurant) => (
             <Card key={restaurant.id}>
               <CardHeader>
