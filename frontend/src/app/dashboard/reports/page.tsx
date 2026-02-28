@@ -4,6 +4,19 @@ import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import api from '@/lib/api';
 
+function getTurkeyDateStr(): string {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Istanbul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const parts = formatter.formatToParts(new Date());
+  const obj: Record<string, string> = {};
+  parts.forEach((p) => { obj[p.type] = p.value; });
+  return `${obj.year}-${obj.month}-${obj.day}`;
+}
+
 interface ScanStats {
   totalScans: number;
   yearScans: number;
@@ -18,9 +31,7 @@ interface ScanStats {
 export default function ReportsPage() {
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>('');
-  const [selectedDate, setSelectedDate] = useState<string>(
-    () => new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' })
-  );
+  const [selectedDate, setSelectedDate] = useState<string>(getTurkeyDateStr);
   const [scanStats, setScanStats] = useState<ScanStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -53,7 +64,7 @@ export default function ReportsPage() {
 
   const loadScanStats = async () => {
     try {
-      const response = await api.get(`/scans/stats/${selectedRestaurant}?date=${selectedDate}`);
+      const response = await api.get(`/scans/stats/${selectedRestaurant}?date=${encodeURIComponent(selectedDate)}`);
       setScanStats(response.data.data || null);
     } catch (error) {
       console.error('Failed to load scan stats:', error);
@@ -193,10 +204,12 @@ export default function ReportsPage() {
                   <span className="text-3xl">⏰</span>
                 </div>
                 <p className="text-4xl font-bold text-white mb-1">
-                  {scanStats.hourlyScans.indexOf(Math.max(...scanStats.hourlyScans))}:00
+                  {(scanStats.hourlyScans || []).length > 0
+                    ? `${(scanStats.hourlyScans || []).indexOf(Math.max(...(scanStats.hourlyScans || [0])))}:00`
+                    : '—'}
                 </p>
                 <p className="text-emerald-100 text-xs">
-                  {Math.max(...scanStats.hourlyScans)} tarama
+                  {Math.max(0, ...(scanStats.hourlyScans || [0]))} tarama
                 </p>
               </div>
             </div>
@@ -207,7 +220,7 @@ export default function ReportsPage() {
               <div className="flex-1">
                 <h3 className="text-xl font-bold text-gray-900">Saatlik Tarama Dağılımı</h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  {selectedDate === new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' }) 
+                  {selectedDate === getTurkeyDateStr() 
                     ? 'Bugünün saat bazlı analizi' 
                     : `${new Date(selectedDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })} tarihinin saat bazlı analizi`}
                   {scanStats.selectedDateTotal !== undefined && (
@@ -226,13 +239,13 @@ export default function ReportsPage() {
                     <input
                       type="date"
                       value={selectedDate}
-                      max={new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' })}
+                      max={getTurkeyDateStr()}
                       onChange={(e) => setSelectedDate(e.target.value)}
                       className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900 bg-white text-sm"
                     />
-                    {selectedDate !== new Date().toISOString().split('T')[0] && (
+                    {selectedDate !== getTurkeyDateStr() && (
                       <button
-                        onClick={() => setSelectedDate(new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' }))}
+                        onClick={() => setSelectedDate(getTurkeyDateStr())}
                         className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium whitespace-nowrap"
                       >
                         Bugün
@@ -243,9 +256,9 @@ export default function ReportsPage() {
                 <span className="text-3xl">📈</span>
               </div>
             </div>
-            <div className="w-full pb-4">
-              <div className="grid grid-cols-12 sm:grid-cols-12 md:grid-cols-24 gap-1 sm:gap-2 items-end px-2" style={{ height: '300px' }}>
-                {scanStats.hourlyScans.map((count, hour) => {
+            <div className="w-full pb-4 overflow-x-auto">
+              <div className="grid grid-cols-12 sm:grid-cols-12 md:grid-cols-24 gap-1 sm:gap-2 items-end px-2 min-w-[480px]" style={{ height: '300px' }}>
+                {(scanStats.hourlyScans || Array(24).fill(0)).map((count, hour) => {
                   const maxCount = Math.max(...scanStats.hourlyScans, 1);
                   const heightPercent = (count / maxCount) * 100;
                   const barHeight = Math.max(heightPercent * 2.4, count > 0 ? 30 : 5);
@@ -302,7 +315,7 @@ export default function ReportsPage() {
                   .map(([date, count], index) => {
                     const maxCount = Math.max(...Object.values(scanStats.dailyScans));
                     const percentage = (count / maxCount) * 100;
-                    const isToday = date === new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' });
+                    const isToday = date === getTurkeyDateStr();
                     const isSelected = date === selectedDate;
                     
                     return (

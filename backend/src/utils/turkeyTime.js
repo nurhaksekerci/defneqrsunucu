@@ -28,11 +28,23 @@ function getTurkeyDateAndHour(utcDate) {
 
 /**
  * Türkiye'de belirli bir günün başlangıç ve bitiş anını (UTC Date) döndürür
- * @param {string} dateStr - YYYY-MM-DD formatında (veya YYYY/MM/DD)
+ * @param {string} dateStr - YYYY-MM-DD veya M/D/YYYY formatında
  */
 function getTurkeyDayRange(dateStr) {
-  const normalized = dateStr.replace(/\//g, '-');
-  const [y, m, d] = normalized.split('-').map(Number);
+  const normalized = String(dateStr || '').trim().replace(/\//g, '-');
+  const parts = normalized.split('-').map(Number).filter((n) => !isNaN(n));
+  let y, m, d;
+  if (parts.length >= 3) {
+    if (parts[0] > 31) {
+      [y, m, d] = parts;
+    } else {
+      [m, d, y] = parts;
+    }
+  } else {
+    y = new Date().getFullYear();
+    m = 1;
+    d = 1;
+  }
   const start = new Date(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T00:00:00+03:00`);
   const end = new Date(start);
   end.setUTCDate(end.getUTCDate() + 1);
