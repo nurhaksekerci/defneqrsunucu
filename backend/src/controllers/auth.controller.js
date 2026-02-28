@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const prisma = require('../config/database');
 const { validatePassword } = require('../utils/passwordValidator');
 const tokenManager = require('../utils/tokenManager');
+const { sendPasswordResetEmail } = require('../utils/emailService');
 const { recordUserRegistration, recordLoginAttempt } = require('../utils/metrics');
 const { processReferral } = require('../middleware/referral.middleware');
 
@@ -318,19 +319,18 @@ exports.forgotPassword = async (req, res, next) => {
       }
     });
 
-    // TODO: Email gönderme servisi buraya eklenecek
-    // Reset link: ${process.env.FRONTEND_URL}/auth/reset-password?token=${resetToken}
-    console.log('🔐 Password Reset Token:', resetToken);
-    console.log('🔗 Reset Link:', `${process.env.FRONTEND_URL}/auth/reset-password?token=${resetToken}`);
+    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
+    await sendPasswordResetEmail(user.email, resetLink, user.fullName || user.username || 'Kullanıcı');
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔐 Password Reset Token:', resetToken);
+      console.log('🔗 Reset Link:', resetLink);
+    }
 
     res.json({
       success: true,
       message: 'Eğer bu email adresi sistemde kayıtlıysa, şifre sıfırlama bağlantısı gönderilecektir',
-      // Development only - production'da kaldırılmalı
-      ...(process.env.NODE_ENV === 'development' && { 
-        resetToken, 
-        resetLink: `${process.env.FRONTEND_URL}/auth/reset-password?token=${resetToken}` 
-      })
+      ...(process.env.NODE_ENV === 'development' && { resetToken, resetLink })
     });
   } catch (error) {
     next(error);
