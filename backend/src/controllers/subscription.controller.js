@@ -163,9 +163,31 @@ exports.getAllSubscriptions = async (req, res, next) => {
       prisma.subscription.count({ where })
     ]);
 
+    // CANCELLED + FREE plan: kullanıcının Premium'a yükseltmiş olup olmadığını kontrol et
+    const cancelledFreeIds = subscriptions
+      .filter((s) => s.status === 'CANCELLED' && s.plan?.type === 'FREE')
+      .map((s) => s.userId);
+    const userIdsWithUpgrade = new Set();
+    if (cancelledFreeIds.length > 0) {
+      const upgraded = await prisma.subscription.findMany({
+        where: {
+          userId: { in: [...new Set(cancelledFreeIds)] },
+          status: 'ACTIVE',
+          plan: { type: { in: ['PREMIUM', 'CUSTOM'] } }
+        },
+        select: { userId: true }
+      });
+      upgraded.forEach((u) => userIdsWithUpgrade.add(u.userId));
+    }
+
+    const enriched = subscriptions.map((s) => ({
+      ...s,
+      isUpgraded: s.status === 'CANCELLED' && s.plan?.type === 'FREE' && userIdsWithUpgrade.has(s.userId)
+    }));
+
     res.json({
       success: true,
-      data: subscriptions,
+      data: enriched,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),

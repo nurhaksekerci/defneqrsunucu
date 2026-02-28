@@ -25,6 +25,7 @@ interface Subscription {
   plan: { id: string; name: string; type: string; price: number };
   user: { id: string; fullName: string; email: string };
   promoCodeUsages?: PromoUsage[];
+  isUpgraded?: boolean;
 }
 
 interface Stats {
@@ -335,10 +336,12 @@ export default function AdminFinancePage() {
                         <td className="px-6 py-4">
                           <span
                             className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              STATUS_COLORS[sub.status] || 'bg-gray-100 text-gray-800'
+                              sub.isUpgraded
+                                ? 'bg-blue-100 text-blue-800'
+                                : STATUS_COLORS[sub.status] || 'bg-gray-100 text-gray-800'
                             }`}
                           >
-                            {STATUS_LABELS[sub.status] || sub.status}
+                            {sub.isUpgraded ? 'Yükseltme' : STATUS_LABELS[sub.status] || sub.status}
                           </span>
                         </td>
                       </tr>
