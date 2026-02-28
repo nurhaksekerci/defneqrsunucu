@@ -8,14 +8,8 @@
   --background-end-rgb: 255, 255, 255;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
-
+/* Metin her zaman siyah - beyaz arka planlarda okunabilirlik için.
+   Dark mode kaldırıldı çünkü bg-white kullanan bileşenlerde beyaz metin görünmez oluyordu. */
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(

@@ -145,7 +145,7 @@ export default function RootLayout({
   }
 
   return (
-    <html lang="tr">
+    <html lang="tr" style={{ colorScheme: 'light' }}>
       <head>
         <script
           type="application/ld+json"
@@ -154,7 +154,7 @@ export default function RootLayout({
         <GoogleAnalytics />
         <GoogleTagManager />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} text-gray-900`}>
         <GoogleTagManagerNoScript />
         <Suspense fallback={null}>
           <Analytics />
