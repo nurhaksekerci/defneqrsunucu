@@ -32,6 +32,9 @@ router.put('/me/bank-info', affiliateController.updateBankInfo);
 
 // Admin routes
 router.get('/all', authorize('ADMIN'), affiliateController.getAllAffiliates);
+router.get('/pending-rewards', authorize('ADMIN'), affiliateController.getPendingReferralRewards);
+router.post('/approve-all-rewards', authorize('ADMIN'), affiliateController.approveAllPendingReferralRewards);
+router.post('/referrals/:id/approve-reward', authorize('ADMIN'), affiliateController.approveReferralReward);
 router.put('/:id/status', authorize('ADMIN'), affiliateController.updateAffiliateStatus);
 router.get('/stats', authorize('ADMIN'), affiliateController.getAffiliateStats);
 

@@ -382,31 +382,37 @@ exports.getAffiliateSettings = async (req, res, next) => {
 // Affiliate ayarlarını güncelle (Admin)
 exports.updateAffiliateSettings = async (req, res, next) => {
   try {
-    const { commissionRate, minimumPayout, isEnabled, requireApproval, cookieDuration } = req.body;
+    const {
+      commissionRate,
+      minimumPayout,
+      isEnabled,
+      requireApproval,
+      cookieDuration,
+      daysPerReferral,
+      daysPerReferralFree,
+      daysPerReferralPaid
+    } = req.body;
+
+    const data = {};
+    if (commissionRate !== undefined) data.commissionRate = commissionRate;
+    if (minimumPayout !== undefined) data.minimumPayout = minimumPayout;
+    if (isEnabled !== undefined) data.isEnabled = isEnabled;
+    if (requireApproval !== undefined) data.requireApproval = requireApproval;
+    if (cookieDuration !== undefined) data.cookieDuration = cookieDuration;
+    if (daysPerReferral !== undefined) data.daysPerReferral = daysPerReferral;
+    if (daysPerReferralFree !== undefined) data.daysPerReferralFree = daysPerReferralFree;
+    if (daysPerReferralPaid !== undefined) data.daysPerReferralPaid = daysPerReferralPaid;
 
     let settings = await prisma.affiliateSettings.findFirst();
 
     if (!settings) {
-      // İlk ayarları oluştur
       settings = await prisma.affiliateSettings.create({
-        data: {
-          commissionRate,
-          minimumPayout,
-          isEnabled,
-          requireApproval,
-          cookieDuration
-        }
+        data: { ...data }
       });
     } else {
       settings = await prisma.affiliateSettings.update({
         where: { id: settings.id },
-        data: {
-          commissionRate,
-          minimumPayout,
-          isEnabled,
-          requireApproval,
-          cookieDuration
-        }
+        data
       });
     }
 
@@ -414,6 +420,113 @@ exports.updateAffiliateSettings = async (req, res, next) => {
       success: true,
       message: 'Affiliate ayarları güncellendi',
       data: settings
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Bekleyen referral ödüllerini listele (Admin - ücretsiz plan onayları)
+exports.getPendingReferralRewards = async (req, res, next) => {
+  try {
+    const referrals = await prisma.referral.findMany({
+      where: {
+        hasSubscribed: true,
+        pendingDaysApproval: true
+      },
+      include: {
+        affiliate: {
+          include: {
+            user: { select: { fullName: true, email: true } }
+          }
+        },
+        referredUser: { select: { fullName: true, email: true } }
+      },
+      orderBy: { firstSubscription: 'asc' }
+    });
+
+    const settings = await prisma.affiliateSettings.findFirst();
+    const daysToAward = settings?.daysPerReferralFree ?? 7;
+
+    res.json({
+      success: true,
+      data: referrals.map((r) => ({
+        ...r,
+        daysToAward
+      }))
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Referral ödülünü onayla (Admin - ücretsiz plan için manuel onay)
+exports.approveReferralReward = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const referral = await prisma.referral.findUnique({
+      where: { id },
+      include: { affiliate: { include: { user: true } } }
+    });
+
+    if (!referral || !referral.pendingDaysApproval) {
+      return res.status(404).json({
+        success: false,
+        message: 'Onay bekleyen referral bulunamadı'
+      });
+    }
+
+    const settings = await prisma.affiliateSettings.findFirst();
+    const daysToAdd = settings?.daysPerReferralFree ?? settings?.daysPerReferral ?? 7;
+
+    const { extendSubscriptionForReferral } = require('../middleware/referral.middleware');
+    await extendSubscriptionForReferral(referral.referredUserId, referral.affiliateId, daysToAdd);
+
+    await prisma.referral.update({
+      where: { id },
+      data: {
+        pendingDaysApproval: false,
+        daysAwarded: daysToAdd
+      }
+    });
+
+    res.json({
+      success: true,
+      message: `${daysToAdd} gün ödülü onaylandı`,
+      data: { referralId: id, daysAwarded: daysToAdd }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Tüm bekleyen referral ödüllerini toplu onayla (Admin)
+exports.approveAllPendingReferralRewards = async (req, res, next) => {
+  try {
+    const referrals = await prisma.referral.findMany({
+      where: { hasSubscribed: true, pendingDaysApproval: true },
+      include: { affiliate: true }
+    });
+
+    const settings = await prisma.affiliateSettings.findFirst();
+    const daysToAdd = settings?.daysPerReferralFree ?? settings?.daysPerReferral ?? 7;
+
+    const { extendSubscriptionForReferral } = require('../middleware/referral.middleware');
+    let approved = 0;
+
+    for (const r of referrals) {
+      await extendSubscriptionForReferral(r.referredUserId, r.affiliateId, daysToAdd);
+      await prisma.referral.update({
+        where: { id: r.id },
+        data: { pendingDaysApproval: false, daysAwarded: daysToAdd }
+      });
+      approved++;
+    }
+
+    res.json({
+      success: true,
+      message: `${approved} referral ödülü onaylandı`,
+      data: { approvedCount: approved, daysAwarded: daysToAdd }
     });
   } catch (error) {
     next(error);

@@ -13,6 +13,17 @@ interface AffiliateSettings {
   isEnabled: boolean;
   requireApproval: boolean;
   cookieDuration: number;
+  daysPerReferral?: number;
+  daysPerReferralFree?: number;
+  daysPerReferralPaid?: number;
+}
+
+interface PendingReward {
+  id: string;
+  referredUser: { fullName: string; email: string };
+  affiliate: { user: { fullName: string; email: string } };
+  firstSubscription: string;
+  daysToAward: number;
 }
 
 export default function AffiliateSettingsPage() {
@@ -22,14 +33,18 @@ export default function AffiliateSettingsPage() {
   const [formData, setFormData] = useState({
     commissionRate: 10,
     minimumPayout: 100,
-    daysPerReferral: 7,
+    daysPerReferralFree: 7,
+    daysPerReferralPaid: 14,
     isEnabled: true,
     requireApproval: true,
     cookieDuration: 30
   });
+  const [pendingRewards, setPendingRewards] = useState<PendingReward[]>([]);
+  const [isApproving, setIsApproving] = useState(false);
 
   useEffect(() => {
     loadSettings();
+    loadPendingRewards();
   }, []);
 
   const loadSettings = async () => {
@@ -41,7 +56,8 @@ export default function AffiliateSettingsPage() {
       setFormData({
         commissionRate: data.commissionRate,
         minimumPayout: data.minimumPayout,
-        daysPerReferral: data.daysPerReferral || 7,
+        daysPerReferralFree: data.daysPerReferralFree ?? data.daysPerReferral ?? 7,
+        daysPerReferralPaid: data.daysPerReferralPaid ?? data.daysPerReferral ?? 14,
         isEnabled: data.isEnabled,
         requireApproval: data.requireApproval,
         cookieDuration: data.cookieDuration
@@ -53,11 +69,51 @@ export default function AffiliateSettingsPage() {
     }
   };
 
+  const loadPendingRewards = async () => {
+    try {
+      const response = await api.get('/affiliates/pending-rewards');
+      setPendingRewards(response.data.data || []);
+    } catch (error) {
+      console.error('Failed to load pending rewards:', error);
+    }
+  };
+
+  const handleApproveReward = async (id: string) => {
+    try {
+      setIsApproving(true);
+      await api.post(`/affiliates/referrals/${id}/approve-reward`);
+      loadPendingRewards();
+      alert('Ödül onaylandı');
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Onay başarısız');
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handleApproveAll = async () => {
+    if (!confirm(`${pendingRewards.length} bekleyen ödülü onaylamak istediğinize emin misiniz?`)) return;
+    try {
+      setIsApproving(true);
+      await api.post('/affiliates/approve-all-rewards');
+      loadPendingRewards();
+      alert('Tüm ödüller onaylandı');
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Onay başarısız');
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setIsSaving(true);
-      await api.put('/affiliates/settings', formData);
+      await api.put('/affiliates/settings', {
+        ...formData,
+        daysPerReferralFree: formData.daysPerReferralFree,
+        daysPerReferralPaid: formData.daysPerReferralPaid
+      });
       alert('✅ Ayarlar başarıyla kaydedildi!');
       loadSettings();
     } catch (error) {
@@ -110,10 +166,10 @@ export default function AffiliateSettingsPage() {
               </label>
             </div>
 
-            {/* Require Approval */}
+            {/* Require Approval - Affiliate başvurusu */}
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900">Başvuru Onayı</h3>
+                <h3 className="text-sm font-semibold text-gray-900">Affiliate Başvuru Onayı</h3>
                 <p className="text-xs text-gray-600 mt-1">
                   Yeni affiliate başvuruları manuel onay gerektirsin
                 </p>
@@ -130,26 +186,47 @@ export default function AffiliateSettingsPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Days Per Referral - RESTORAN SAHİPLERİ İÇİN */}
+              {/* Gün Kazanma - Plan Tipine Göre */}
               <div className="col-span-2 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <h3 className="text-sm font-semibold text-green-900 mb-3">
                   🏪 Restoran Sahipleri İçin (Gün Kazanma Sistemi)
                 </h3>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Her Referral Başına Kazanılan Gün *
-                  </label>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="365"
-                    value={formData.daysPerReferral}
-                    onChange={(e) => setFormData({ ...formData, daysPerReferral: parseInt(e.target.value) })}
-                    required
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Restoran sahipleri her referral için bu kadar gün abonelik uzatması kazanır
-                  </p>
+                <p className="text-xs text-green-800 mb-3">
+                  Ücretsiz plana geçen referral → admin onayı gerekir. Ücretli plana geçen → otomatik onay.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ücretsiz Plan (gün) *
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="365"
+                      value={formData.daysPerReferralFree}
+                      onChange={(e) => setFormData({ ...formData, daysPerReferralFree: parseInt(e.target.value) || 0 })}
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Ücretsiz plana geçen referral için kazanılan gün (admin onayı sonrası)
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ücretli Plan (gün) *
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="365"
+                      value={formData.daysPerReferralPaid}
+                      onChange={(e) => setFormData({ ...formData, daysPerReferralPaid: parseInt(e.target.value) || 0 })}
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Ücretli plana geçen referral için kazanılan gün (otomatik)
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -224,9 +301,9 @@ export default function AffiliateSettingsPage() {
                     Sistem Nasıl Çalışır?
                   </h4>
                   <ul className="text-xs text-purple-800 space-y-1">
-                    <li>• <strong>Restoran Sahipleri:</strong> Her referral için <strong>{formData.daysPerReferral} gün</strong> abonelik uzatması kazanırlar (para yok)</li>
-                    <li>• <strong>Ödenen Affiliate'ler:</strong> Her abonelikten <strong>%{formData.commissionRate}</strong> para komisyonu alırlar</li>
-                    <li>• İlk restoran oluşturulduğunda otomatik affiliate partner olunur</li>
+                    <li>• <strong>Ücretsiz plan:</strong> Referral ücretsiz plana geçerse <strong>{formData.daysPerReferralFree} gün</strong> kazanılır (admin onayı gerekir)</li>
+                    <li>• <strong>Ücretli plan:</strong> Referral ücretli plana geçerse <strong>{formData.daysPerReferralPaid} gün</strong> otomatik kazanılır</li>
+                    <li>• <strong>Ödenen Affiliate'ler:</strong> Ücretli abonelikten <strong>%{formData.commissionRate}</strong> para komisyonu</li>
                   </ul>
                 </div>
               </div>
@@ -241,6 +318,51 @@ export default function AffiliateSettingsPage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Bekleyen Onaylar */}
+      {pendingRewards.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>⏳ Onay Bekleyen Referral Ödülleri ({pendingRewards.length})</CardTitle>
+            <p className="text-sm text-gray-500 mt-1">
+              Ücretsiz plana geçen kullanıcılar için affiliate ödülü onayı
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 mb-4">
+              {pendingRewards.map((r) => (
+                <div
+                  key={r.id}
+                  className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-lg"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {r.referredUser.fullName} ({r.referredUser.email})
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Affiliate: {r.affiliate.user.fullName} • {r.daysToAward} gün kazanacak
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => handleApproveReward(r.id)}
+                    disabled={isApproving}
+                  >
+                    Onayla
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Button
+              variant="secondary"
+              onClick={handleApproveAll}
+              disabled={isApproving}
+            >
+              Tümünü Onayla
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Help Section */}
       <Card>
@@ -262,8 +384,8 @@ export default function AffiliateSettingsPage() {
               <p>Link üzerinden kayıt olan kullanıcılar {formData.cookieDuration} gün içinde affiliate ile eşleştirilir</p>
             </div>
             <div>
-              <h4 className="font-semibold mb-2">4. Komisyon</h4>
-              <p>Referans kullanıcı abonelik satın aldığında, affiliate %{formData.commissionRate} komisyon kazanır</p>
+              <h4 className="font-semibold mb-2">4. Ödül / Komisyon</h4>
+              <p>Ücretsiz plan: Admin onayı sonrası {formData.daysPerReferralFree} gün. Ücretli plan: Otomatik {formData.daysPerReferralPaid} gün. Para komisyonu: %{formData.commissionRate}</p>
             </div>
             <div>
               <h4 className="font-semibold mb-2">5. Ödeme</h4>

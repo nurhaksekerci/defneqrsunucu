@@ -140,12 +140,15 @@ exports.processReferral = async (referralCode, userId, ipAddress, userAgent) => 
 };
 
 // Helper: Referral için abonelik süresini uzat (Restoran sahipleri için)
-exports.extendSubscriptionForReferral = async (referredUserId, affiliateId) => {
+exports.extendSubscriptionForReferral = async (referredUserId, affiliateId, daysToAdd) => {
   try {
     const settings = await prisma.affiliateSettings.findFirst();
-    if (!settings || !settings.isEnabled || !settings.daysPerReferral) {
+    if (!settings || !settings.isEnabled) {
       return null;
     }
+
+    const days = daysToAdd ?? settings.daysPerReferral ?? settings.daysPerReferralPaid ?? 7;
+    if (!days || days < 1) return null;
 
     // Affiliate'in aktif aboneliğini bul
     const activeSubscription = await prisma.subscription.findFirst({
@@ -169,9 +172,8 @@ exports.extendSubscriptionForReferral = async (referredUserId, affiliateId) => {
     }
 
     // Abonelik süresini uzat
-    const daysToAdd = settings.daysPerReferral;
     const newEndDate = new Date(activeSubscription.endDate);
-    newEndDate.setDate(newEndDate.getDate() + daysToAdd);
+    newEndDate.setDate(newEndDate.getDate() + days);
 
     const updatedSubscription = await prisma.subscription.update({
       where: { id: activeSubscription.id },
@@ -183,7 +185,7 @@ exports.extendSubscriptionForReferral = async (referredUserId, affiliateId) => {
     console.log('✅ Subscription extended for referral:', {
       affiliateId,
       referredUserId,
-      daysAdded: daysToAdd,
+      daysAdded: days,
       newEndDate: newEndDate.toISOString()
     });
 
@@ -202,6 +204,13 @@ exports.createCommission = async (referredUserId, subscriptionId, subscriptionAm
       return null;
     }
 
+    // Aboneliğin plan tipini al (FREE vs PAID)
+    const subscription = await prisma.subscription.findUnique({
+      where: { id: subscriptionId },
+      include: { plan: true }
+    });
+    const isPaidPlan = subscription?.plan?.type && !['FREE'].includes(subscription.plan.type);
+
     // Bu kullanıcı bir referral mı?
     const referral = await prisma.referral.findFirst({
       where: { referredUserId },
@@ -212,33 +221,43 @@ exports.createCommission = async (referredUserId, subscriptionId, subscriptionAm
       return null;
     }
 
-    // Restoran sahibi ise abonelik süresini uzat, para komisyonu yok
+    // Restoran sahibi ise gün kazanır (para komisyonu yok)
     if (referral.affiliate.user.role === 'RESTAURANT_OWNER') {
-      await exports.extendSubscriptionForReferral(referredUserId, referral.affiliateId);
-      
-      // Referral'ı güncelle
-      if (!referral.hasSubscribed) {
+      const daysFree = settings.daysPerReferralFree ?? settings.daysPerReferral ?? 7;
+      const daysPaid = settings.daysPerReferralPaid ?? settings.daysPerReferral ?? 14;
+
+      if (isPaidPlan) {
+        // Ücretli plan: otomatik onay, hemen gün ekle
+        await exports.extendSubscriptionForReferral(referredUserId, referral.affiliateId, daysPaid);
         await prisma.referral.update({
           where: { id: referral.id },
           data: {
             hasSubscribed: true,
-            firstSubscription: new Date()
+            firstSubscription: new Date(),
+            pendingDaysApproval: false,
+            daysAwarded: daysPaid
           }
         });
+        return { type: 'subscription_extension', daysAdded: daysPaid, autoApproved: true };
+      } else {
+        // Ücretsiz plan: admin onayı gerekli, gün eklenmez
+        await prisma.referral.update({
+          where: { id: referral.id },
+          data: {
+            hasSubscribed: true,
+            firstSubscription: new Date(),
+            pendingDaysApproval: true,
+            daysAwarded: null
+          }
+        });
+        return { type: 'pending_approval', daysToAward: daysFree };
       }
-
-      // İstatistikleri güncelle
-      await prisma.affiliatePartner.update({
-        where: { id: referral.affiliateId },
-        data: {
-          totalReferrals: { increment: 1 }
-        }
-      });
-
-      return { type: 'subscription_extension', daysAdded: settings.daysPerReferral };
     }
 
-    // Diğer affiliate'ler (ödenen) için para komisyonu
+    // Diğer affiliate'ler (ödenen) için para komisyonu - sadece ücretli abonelikte
+    if (!isPaidPlan) {
+      return null;
+    }
     const commissionAmount = (subscriptionAmount * settings.commissionRate) / 100;
 
     const commission = await prisma.$transaction(async (tx) => {
