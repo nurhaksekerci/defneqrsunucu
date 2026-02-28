@@ -28,7 +28,7 @@ const ownerMenuItems = [
   { name: 'Kategoriler', href: '/dashboard/categories', icon: '📁' },
   { name: 'Ürünler', href: '/dashboard/products', icon: '🍽️' },
   { name: 'Menü Özelleştirme', href: '/dashboard/menu-settings', icon: '🎨' },
-  { name: 'Raporlar', href: '/dashboard/reports', icon: '📈' },
+  { name: 'QR Tarama İstatistikleri', href: '/dashboard/reports', icon: '📊' },
   { name: 'Plan & Abonelik', href: '/dashboard/subscription', icon: '💎' },
   { name: 'Affiliate', href: '/dashboard/affiliate', icon: '🤝' },
   { name: 'Destek', href: '/dashboard/support', icon: '🎫' },

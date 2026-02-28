@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import api from '@/lib/api';
-import { formatCurrency } from '@/lib/utils';
 import { authService } from '@/lib/auth';
 import { getImageUrl } from '@/lib/imageHelper';
 
@@ -21,18 +20,9 @@ interface Restaurant {
   logo?: string;
 }
 
-interface DashboardStats {
-  todayOrders: number;
-  todaySales: number;
-  activeOrders: number;
-  lowStockCount: number;
-}
-
 interface SubscriptionData {
   hasSubscription?: boolean;
   plan?: { name: string; type: string };
-  usage?: { restaurants: number };
-  limits?: { restaurants: number };
   subscription?: { daysRemaining: number };
 }
 
@@ -42,7 +32,7 @@ const quickActions = [
   { href: '/dashboard/categories', icon: '📁', label: 'Kategoriler', desc: 'Menü kategorileri' },
   { href: '/dashboard/products', icon: '🍽️', label: 'Ürünler', desc: 'Ürün ekle ve düzenle' },
   { href: '/dashboard/menu-settings', icon: '🎨', label: 'Menü Özelleştirme', desc: 'Renk ve görünüm' },
-  { href: '/dashboard/reports', icon: '📈', label: 'Raporlar', desc: 'Satış ve sipariş raporları' },
+  { href: '/dashboard/reports', icon: '📊', label: 'QR Tarama İstatistikleri', desc: 'Menü tarama verileri' },
   { href: '/dashboard/subscription', icon: '💎', label: 'Plan & Abonelik', desc: 'Planınızı yönetin' },
   { href: '/dashboard/support', icon: '🎫', label: 'Destek', desc: 'Yardım alın' },
 ];
@@ -50,7 +40,6 @@ const quickActions = [
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<{ fullName: string } | null>(null);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
@@ -61,12 +50,6 @@ export default function DashboardPage() {
     loadRestaurants();
     loadSubscription();
   }, []);
-
-  useEffect(() => {
-    if (selectedRestaurant) {
-      loadStats();
-    }
-  }, [selectedRestaurant?.id]);
 
   const loadUser = async () => {
     try {
@@ -98,18 +81,6 @@ export default function DashboardPage() {
       setSubscription(res.data.data);
     } catch {
       setSubscription(null);
-    }
-  };
-
-  const loadStats = async () => {
-    if (!selectedRestaurant) return;
-    try {
-      const res = await api.get('/reports/dashboard', {
-        params: { restaurantId: selectedRestaurant.id },
-      });
-      setStats(res.data.data);
-    } catch {
-      setStats(null);
     }
   };
 
@@ -149,13 +120,11 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Welcome & Greeting */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-            {getGreeting()}, {user?.fullName?.split(' ')[0] || 'Kullanıcı'} 👋
-          </h1>
-          <p className="text-gray-600 mt-1">İşletmenizin özetine buradan ulaşabilirsiniz.</p>
-        </div>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          {getGreeting()}, {user?.fullName?.split(' ')[0] || 'Kullanıcı'} 👋
+        </h1>
+        <p className="text-gray-600 mt-1">Dijital menünüzü buradan yönetebilirsiniz.</p>
       </div>
 
       {/* Quick Actions */}
@@ -260,39 +229,9 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Stats & Defne Qr Bilgisi */}
-        <div className="lg:col-span-2 space-y-6">
-          {stats && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="pt-4">
-                  <p className="text-sm text-gray-500">Bugünkü Sipariş</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stats.todayOrders}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4">
-                  <p className="text-sm text-gray-500">Bugünkü Satış</p>
-                  <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(stats.todaySales)}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4">
-                  <p className="text-sm text-gray-500">Aktif Sipariş</p>
-                  <p className="text-2xl font-bold text-blue-600 mt-1">{stats.activeOrders}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4">
-                  <p className="text-sm text-gray-500">Düşük Stok</p>
-                  <p className="text-2xl font-bold text-red-600 mt-1">{stats.lowStockCount}</p>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Defne Qr Şirket Bilgisi */}
-          <Card className="bg-gradient-to-br from-primary-50 to-white border-primary-100">
+        {/* Defne Qr Bilgisi */}
+        <div className="lg:col-span-2">
+          <Card className="bg-gradient-to-br from-primary-50 to-white border-primary-100 h-full">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <span>🔷</span> Defne Qr

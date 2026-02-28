@@ -358,7 +358,7 @@ export default function AdminPlansPage() {
                 )}
                 {plan.canRemoveBranding && <p className="text-sm text-green-600">✓ Powered by kaldırma</p>}
                 {plan.hasGlobalCatalog && <p className="text-sm text-green-600">✓ Global Katalog</p>}
-                {plan.hasDetailedReports && <p className="text-sm text-green-600">✓ Detaylı Raporlar</p>}
+                {plan.hasDetailedReports && <p className="text-sm text-green-600">✓ QR Tarama İstatistikleri</p>}
               </div>
               {plan.description && (
                 <p className="text-sm text-gray-600 mb-4 italic">{plan.description}</p>

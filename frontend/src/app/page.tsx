@@ -118,8 +118,8 @@ export default function Home() {
     },
     {
       icon: '📊',
-      title: 'Detaylı Raporlar',
-      description: 'QR menü tarama istatistikleri, saatlik/günlük/aylık analizler, en yoğun saatler, grafik ve tablolarla veri görselleştirme.',
+      title: 'QR Tarama İstatistikleri',
+      description: 'QR menü tarama verileri, saatlik/günlük/aylık analizler, en yoğun saatler, grafik ve tablolarla veri görselleştirme.',
       color: 'from-pink-500 to-rose-500'
     },
     {
@@ -726,7 +726,7 @@ export default function Home() {
                 <li>Özelleştirilebilir QR Menü</li>
                 <li>Global Katalog</li>
                 <li>Ürün Yönetimi</li>
-                <li>Detaylı Raporlar</li>
+                <li>QR Tarama İstatistikleri</li>
               </ul>
             </div>
           </div>
