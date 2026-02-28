@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, type FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -114,9 +114,10 @@ function CheckoutContent() {
     return calculateTotal();
   };
 
-  const isFree = getFinalAmount() === 0;
+  // 0 veya 0.00 (floating point/string) - kart bilgisi gerekmez
+  const isFree = Number(getFinalAmount()) < 0.01;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
     if (!plan) return;
