@@ -81,7 +81,24 @@ PGPASSWORD=yourpass     # PostgreSQL password (optional)
 
 ---
 
-### 2. `db-health-check.sh`
+### 2. `add-promo-to-premium.js`
+
+Mevcut premium abonelikleri olan hesaplara **IYIKIDOGDUNDEFNE** promosyon kodu kullanımı ekler. Sadece henüz promosyon kaydı olmayan abonelikler işlenir.
+
+**Docker ile çalıştırma:**
+```bash
+docker compose exec backend node scripts/add-promo-to-premium.js
+```
+
+**Yerel ortamda:**
+```bash
+cd backend
+node scripts/add-promo-to-premium.js
+```
+
+---
+
+### 3. `db-health-check.sh`
 
 Comprehensive database health monitoring script.
 
