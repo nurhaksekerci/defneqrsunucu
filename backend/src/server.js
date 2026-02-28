@@ -128,6 +128,14 @@ app.use('/api/affiliates', require('./routes/affiliate.routes'));
 // Monitoring routes (health checks & metrics)
 app.use('/api', require('./routes/monitoring.routes'));
 
+// Root-level /health (Docker, load balancer, K8s için - /api/health ile aynı)
+const { quickHealthCheck } = require('./utils/healthCheck');
+app.get('/health', async (req, res) => {
+  const health = await quickHealthCheck();
+  const statusCode = health.status === 'ok' ? 200 : 503;
+  res.status(statusCode).json(health);
+});
+
 // Sentry error handler (must be before other error handlers)
 app.use(sentryErrorHandler());
 
