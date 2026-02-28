@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ticketService, type SupportTicket, STATUS_LABELS, CATEGORY_LABELS, PRIORITY_LABELS } from '@/lib/ticketService';
@@ -110,12 +111,9 @@ export default function AdminTicketsPage() {
       ) : (
         <div className="space-y-4">
           {tickets.map((ticket) => (
-            <Card
-              key={ticket.id}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => router.push(`/admin/tickets/${ticket.id}`)}
-            >
-              <CardContent className="py-4">
+            <Link key={ticket.id} href={`/admin/tickets/${ticket.id}`}>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="py-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -138,6 +136,7 @@ export default function AdminTicketsPage() {
                 </div>
               </CardContent>
             </Card>
+            </Link>
           ))}
 
           {pagination.totalPages > 1 && (
