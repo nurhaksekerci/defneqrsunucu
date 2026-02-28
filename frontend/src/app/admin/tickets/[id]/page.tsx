@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Card, CardContent } from '@/components/ui/Card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ticketService, type SupportTicket, type TicketMessage, STATUS_LABELS, CATEGORY_LABELS, PRIORITY_LABELS, type TicketStatus, type TicketPriority } from '@/lib/ticketService';
 import api from '@/lib/api';
