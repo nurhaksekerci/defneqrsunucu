@@ -1,5 +1,13 @@
 const prisma = require('../config/database');
 const { recordQrScan } = require('../utils/metrics');
+const {
+  getTurkeyDateAndHour,
+  getTurkeyDayRange,
+  getTurkeyTodayRange,
+  getTurkeyYearStart,
+  getTurkeyMonthStart,
+  getTurkeySevenDaysAgo
+} = require('../utils/turkeyTime');
 
 // QR Menü taraması kaydet
 exports.recordScan = async (req, res, next) => {
@@ -61,9 +69,8 @@ exports.getScanStats = async (req, res, next) => {
     // Toplam tarama sayısı
     const totalScans = await prisma.menuScan.count({ where });
 
-    // Bu yılki tarama sayısı
-    const yearStart = new Date(new Date().getFullYear(), 0, 1);
-    yearStart.setHours(0, 0, 0, 0);
+    // Bu yılki tarama sayısı (Türkiye saati)
+    const yearStart = getTurkeyYearStart();
     const yearScans = await prisma.menuScan.count({
       where: {
         restaurantId,
@@ -71,9 +78,8 @@ exports.getScanStats = async (req, res, next) => {
       }
     });
 
-    // Bu ayki tarama sayısı
-    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    monthStart.setHours(0, 0, 0, 0);
+    // Bu ayki tarama sayısı (Türkiye saati)
+    const monthStart = getTurkeyMonthStart();
     const monthScans = await prisma.menuScan.count({
       where: {
         restaurantId,
@@ -81,9 +87,8 @@ exports.getScanStats = async (req, res, next) => {
       }
     });
 
-    // Günlük tarama sayıları (son 7 gün)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // Günlük tarama sayıları (son 7 gün, Türkiye saati)
+    const sevenDaysAgo = getTurkeySevenDaysAgo();
 
     const recentScans = await prisma.menuScan.findMany({
       where: {
@@ -98,27 +103,25 @@ exports.getScanStats = async (req, res, next) => {
       }
     });
 
-    // Günlere göre grupla
+    // Günlere göre grupla (Türkiye saati)
     const dailyScans = {};
     recentScans.forEach(scan => {
-      const date = scan.scannedAt.toISOString().split('T')[0];
+      const { date } = getTurkeyDateAndHour(scan.scannedAt);
       dailyScans[date] = (dailyScans[date] || 0) + 1;
     });
 
-    // Saatlere göre grupla (belirli bir tarih için)
+    // Saatlere göre grupla (belirli bir tarih için, Türkiye saati)
     const { date } = req.query;
-    const targetDate = date ? new Date(date) : new Date();
-    targetDate.setHours(0, 0, 0, 0);
-    
-    const nextDay = new Date(targetDate);
-    nextDay.setDate(nextDay.getDate() + 1);
-    
+    const todayTurkey = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' });
+    const targetDateStr = date || todayTurkey;
+    const { start: targetDayStart, end: targetDayEnd } = getTurkeyDayRange(targetDateStr);
+
     const dayScans = await prisma.menuScan.findMany({
       where: {
         restaurantId,
-        scannedAt: { 
-          gte: targetDate,
-          lt: nextDay
+        scannedAt: {
+          gte: targetDayStart,
+          lt: targetDayEnd
         }
       },
       select: {
@@ -128,22 +131,18 @@ exports.getScanStats = async (req, res, next) => {
 
     const hourlyScans = Array(24).fill(0);
     dayScans.forEach(scan => {
-      const hour = scan.scannedAt.getHours();
+      const { hour } = getTurkeyDateAndHour(scan.scannedAt);
       hourlyScans[hour]++;
     });
 
-    // Bugünün toplam taraması
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayNext = new Date(today);
-    todayNext.setDate(todayNext.getDate() + 1);
-    
+    // Bugünün toplam taraması (Türkiye saati)
+    const { start: todayStart, end: todayEnd } = getTurkeyTodayRange();
     const todayTotal = await prisma.menuScan.count({
       where: {
         restaurantId,
-        scannedAt: { 
-          gte: today,
-          lt: todayNext
+        scannedAt: {
+          gte: todayStart,
+          lt: todayEnd
         }
       }
     });
@@ -157,7 +156,7 @@ exports.getScanStats = async (req, res, next) => {
         dailyScans,
         hourlyScans,
         todayTotal,
-        selectedDate: targetDate.toISOString().split('T')[0],
+        selectedDate: targetDateStr,
         selectedDateTotal: dayScans.length
       }
     });

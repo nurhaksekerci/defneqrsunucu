@@ -18,7 +18,9 @@ interface ScanStats {
 export default function ReportsPage() {
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>('');
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(
+    () => new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' })
+  );
   const [scanStats, setScanStats] = useState<ScanStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -205,7 +207,7 @@ export default function ReportsPage() {
               <div className="flex-1">
                 <h3 className="text-xl font-bold text-gray-900">Saatlik Tarama Dağılımı</h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  {selectedDate === new Date().toISOString().split('T')[0] 
+                  {selectedDate === new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' }) 
                     ? 'Bugünün saat bazlı analizi' 
                     : `${new Date(selectedDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })} tarihinin saat bazlı analizi`}
                   {scanStats.selectedDateTotal !== undefined && (
@@ -224,13 +226,13 @@ export default function ReportsPage() {
                     <input
                       type="date"
                       value={selectedDate}
-                      max={new Date().toISOString().split('T')[0]}
+                      max={new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' })}
                       onChange={(e) => setSelectedDate(e.target.value)}
                       className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900 bg-white text-sm"
                     />
                     {selectedDate !== new Date().toISOString().split('T')[0] && (
                       <button
-                        onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+                        onClick={() => setSelectedDate(new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' }))}
                         className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium whitespace-nowrap"
                       >
                         Bugün
@@ -300,7 +302,7 @@ export default function ReportsPage() {
                   .map(([date, count], index) => {
                     const maxCount = Math.max(...Object.values(scanStats.dailyScans));
                     const percentage = (count / maxCount) * 100;
-                    const isToday = new Date(date).toDateString() === new Date().toDateString();
+                    const isToday = date === new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' });
                     const isSelected = date === selectedDate;
                     
                     return (
