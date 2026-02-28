@@ -6,26 +6,22 @@
 const TZ = 'Europe/Istanbul';
 
 /**
- * UTC Date'i Türkiye saatine göre tarih (YYYY-MM-DD) ve saat (0-23) döndürür
+ * UTC Date'i Türkiye saatine göre tarih (YYYY-MM-DD) ve saat (0-23) döndürür.
+ * Türkiye = UTC+3 (manuel hesaplama, Intl API sunucuda tutarsız olabiliyor)
  */
 function getTurkeyDateAndHour(utcDate) {
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: TZ,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    hour12: false,
-    hourCycle: 'h23'
-  });
-  const parts = formatter.formatToParts(utcDate);
-  const obj = {};
-  parts.forEach((p) => { obj[p.type] = p.value; });
-  let hour = parseInt(obj.hour, 10);
-  if (isNaN(hour) || hour < 0) hour = 0;
+  const d = new Date(utcDate);
+  const utcMs = d.getTime();
+  const turkeyMs = utcMs + 3 * 60 * 60 * 1000;
+  const turkeyDate = new Date(turkeyMs);
+  const year = turkeyDate.getUTCFullYear();
+  const month = String(turkeyDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(turkeyDate.getUTCDate()).padStart(2, '0');
+  let hour = turkeyDate.getUTCHours();
+  if (hour < 0 || isNaN(hour)) hour = 0;
   if (hour > 23) hour = 23;
   return {
-    date: `${obj.year}-${obj.month}-${obj.day}`,
+    date: `${year}-${month}-${day}`,
     hour
   };
 }
