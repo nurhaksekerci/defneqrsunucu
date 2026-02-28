@@ -451,6 +451,9 @@ model Subscription {
   updatedAt     DateTime            @updatedAt
   cancelledAt   DateTime?
   
+  // İlişkiler
+  promoCodeUsages PromoCodeUsage[]
+  
   @@map("subscriptions")
   @@index([userId])
   @@index([planId])
@@ -565,6 +568,7 @@ model PromoCodeUsage {
   user          User      @relation(fields: [userId], references: [id])
   
   subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
   
   // İndirim detayları
   discountAmount Float
@@ -576,6 +580,7 @@ model PromoCodeUsage {
   @@map("promo_code_usages")
   @@index([promoCodeId])
   @@index([userId])
+  @@index([subscriptionId])
   @@index([usedAt])
 }
 

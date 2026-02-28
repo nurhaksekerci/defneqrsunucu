@@ -154,7 +154,10 @@ exports.getAllSubscriptions = async (req, res, next) => {
         orderBy: { createdAt: 'desc' },
         include: {
           plan: { select: { id: true, name: true, type: true, price: true } },
-          user: { select: { id: true, fullName: true, email: true } }
+          user: { select: { id: true, fullName: true, email: true } },
+          promoCodeUsages: {
+            include: { promoCode: { select: { code: true, type: true, discountValue: true } } }
+          }
         }
       }),
       prisma.subscription.count({ where })

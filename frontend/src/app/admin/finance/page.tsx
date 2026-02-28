@@ -6,6 +6,11 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import api from '@/lib/api';
 
+interface PromoUsage {
+  promoCode: { code: string; type: string; discountValue: number };
+  discountAmount: number;
+}
+
 interface Subscription {
   id: string;
   userId: string;
@@ -19,6 +24,7 @@ interface Subscription {
   createdAt: string;
   plan: { id: string; name: string; type: string; price: number };
   user: { id: string; fullName: string; email: string };
+  promoCodeUsages?: PromoUsage[];
 }
 
 interface Stats {
@@ -263,6 +269,9 @@ export default function AdminFinancePage() {
                         Tutar
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Promosyon
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                         Başlangıç
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -294,6 +303,28 @@ export default function AdminFinancePage() {
                         </td>
                         <td className="px-6 py-4 font-semibold text-gray-900">
                           {formatCurrency(sub.amount)}
+                        </td>
+                        <td className="px-6 py-4">
+                          {sub.promoCodeUsages && sub.promoCodeUsages.length > 0 ? (
+                            <div className="space-y-1">
+                              {sub.promoCodeUsages.map((u, i) => (
+                                <div key={i} className="flex items-center gap-1">
+                                  <code className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-medium rounded">
+                                    {u.promoCode.code}
+                                  </code>
+                                  <span className="text-xs text-gray-500">
+                                    ({u.promoCode.type === 'PERCENTAGE'
+                                      ? `%${u.promoCode.discountValue}`
+                                      : u.promoCode.type === 'FIXED'
+                                      ? `-${formatCurrency(u.discountAmount)}`
+                                      : `${u.promoCode.discountValue} gün`})
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-sm">—</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
                           {formatDate(sub.startDate)}
