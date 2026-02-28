@@ -1,12 +1,27 @@
 const prisma = require('../config/database');
 
+function parseUserAgent(ua) {
+  if (!ua) return null;
+  const u = ua.toLowerCase();
+  let browser = 'Tarayıcı';
+  if (u.includes('chrome') && !u.includes('edg')) browser = 'Chrome';
+  else if (u.includes('firefox')) browser = 'Firefox';
+  else if (u.includes('safari') && !u.includes('chrome')) browser = 'Safari';
+  else if (u.includes('edg')) browser = 'Edge';
+  else if (u.includes('opera') || u.includes('opr')) browser = 'Opera';
+  let device = u.includes('mobile') || u.includes('android') || u.includes('iphone') ? 'Mobil' : 'Masaüstü';
+  if (u.includes('iphone') || u.includes('ipad')) device = 'iOS';
+  else if (u.includes('android')) device = 'Android';
+  return `${browser} / ${device}`;
+}
+
 /**
  * Admin dashboard - son restoranlar ve sistem aktivitesi
  */
 exports.getDashboardData = async (req, res, next) => {
   try {
     const activityLimit = Math.min(parseInt(req.query.activityLimit) || 15, 100);
-    const [recentRestaurants, recentUsers, recentSubscriptions, recentTickets, recentScans] = await Promise.all([
+    const [recentRestaurants, recentUsers, recentSubscriptions, recentTickets, recentScans, recentReferrals] = await Promise.all([
       prisma.restaurant.findMany({
         where: { isDeleted: false },
         take: 5,
@@ -42,6 +57,14 @@ exports.getDashboardData = async (req, res, next) => {
         include: {
           restaurant: { select: { name: true, slug: true } }
         }
+      }),
+      prisma.referral.findMany({
+        take: Math.min(activityLimit, 20),
+        orderBy: { createdAt: 'desc' },
+        include: {
+          referredUser: { select: { fullName: true, email: true } },
+          affiliate: { include: { user: { select: { fullName: true } } } }
+        }
       })
     ]);
 
@@ -52,35 +75,60 @@ exports.getDashboardData = async (req, res, next) => {
         icon: '🏪',
         label: `Yeni restoran: ${r.name}`,
         sublabel: r.owner?.fullName,
-        date: r.createdAt
+        date: r.createdAt,
+        ipAddress: null,
+        userAgent: null,
+        device: null
       })),
       ...recentUsers.map((u) => ({
         type: 'user',
         icon: '👤',
         label: `Yeni kullanıcı: ${u.fullName}`,
         sublabel: u.email,
-        date: u.createdAt
+        date: u.createdAt,
+        ipAddress: null,
+        userAgent: null,
+        device: null
       })),
       ...recentSubscriptions.map((s) => ({
         type: 'subscription',
         icon: '💎',
         label: `${s.user?.fullName} → ${s.plan?.name}`,
         sublabel: 'Abonelik oluşturuldu',
-        date: s.createdAt
+        date: s.createdAt,
+        ipAddress: null,
+        userAgent: null,
+        device: null
       })),
       ...recentTickets.map((t) => ({
         type: 'ticket',
         icon: '🎫',
         label: `Destek talebi: ${t.subject}`,
         sublabel: t.user?.fullName,
-        date: t.createdAt
+        date: t.createdAt,
+        ipAddress: null,
+        userAgent: null,
+        device: null
       })),
       ...recentScans.map((s) => ({
         type: 'scan',
         icon: '📱',
         label: `QR tarama: ${s.restaurant?.name}`,
         sublabel: null,
-        date: s.scannedAt
+        date: s.scannedAt,
+        ipAddress: s.ipAddress || null,
+        userAgent: s.userAgent || null,
+        device: parseUserAgent(s.userAgent)
+      })),
+      ...recentReferrals.map((r) => ({
+        type: 'referral',
+        icon: '🔗',
+        label: `Referral: ${r.referredUser?.fullName} (${r.affiliate?.user?.fullName})`,
+        sublabel: r.referredUser?.email,
+        date: r.createdAt,
+        ipAddress: r.ipAddress || null,
+        userAgent: r.userAgent || null,
+        device: parseUserAgent(r.userAgent)
       }))
     ]
       .sort((a, b) => new Date(b.date) - new Date(a.date))
