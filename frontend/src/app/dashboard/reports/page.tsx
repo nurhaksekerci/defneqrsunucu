@@ -258,7 +258,7 @@ export default function ReportsPage() {
             </div>
             <div className="w-full pb-4 overflow-x-auto">
               <div className="grid grid-cols-12 sm:grid-cols-12 md:grid-cols-24 gap-1 sm:gap-2 items-end px-2 min-w-[480px]" style={{ height: '300px' }}>
-                {(scanStats.hourlyScans || Array(24).fill(0)).map((count, hour) => {
+                {(scanStats.hourlyScans || Array(24).fill(0)).slice(0, 24).map((count, hour) => {
                   const maxCount = Math.max(...scanStats.hourlyScans, 1);
                   const heightPercent = (count / maxCount) * 100;
                   const barHeight = Math.max(heightPercent * 2.4, count > 0 ? 30 : 5);

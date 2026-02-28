@@ -15,28 +15,35 @@ function getTurkeyDateAndHour(utcDate) {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
-    hour12: false
+    hour12: false,
+    hourCycle: 'h23'
   });
   const parts = formatter.formatToParts(utcDate);
   const obj = {};
   parts.forEach((p) => { obj[p.type] = p.value; });
+  let hour = parseInt(obj.hour, 10);
+  if (isNaN(hour) || hour < 0) hour = 0;
+  if (hour > 23) hour = 23;
   return {
     date: `${obj.year}-${obj.month}-${obj.day}`,
-    hour: parseInt(obj.hour, 10)
+    hour
   };
 }
 
 /**
  * Türkiye'de belirli bir günün başlangıç ve bitiş anını (UTC Date) döndürür
- * @param {string} dateStr - YYYY-MM-DD veya M/D/YYYY formatında
+ * @param {string} dateStr - YYYY-MM-DD, DD.MM.YYYY veya M/D/YYYY formatında
  */
 function getTurkeyDayRange(dateStr) {
-  const normalized = String(dateStr || '').trim().replace(/\//g, '-');
+  const raw = String(dateStr || '').trim();
+  const normalized = raw.replace(/\//g, '-').replace(/\./g, '-');
   const parts = normalized.split('-').map(Number).filter((n) => !isNaN(n));
   let y, m, d;
   if (parts.length >= 3) {
     if (parts[0] > 31) {
       [y, m, d] = parts;
+    } else if (parts[2] > 31) {
+      [d, m, y] = parts;
     } else {
       [m, d, y] = parts;
     }

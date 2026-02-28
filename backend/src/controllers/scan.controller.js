@@ -112,7 +112,15 @@ exports.getScanStats = async (req, res, next) => {
 
     // Saatlere göre grupla (belirli bir tarih için, Türkiye saati)
     const { date } = req.query;
-    const todayTurkey = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' });
+    const todayParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Istanbul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(new Date());
+    const todayObj = {};
+    todayParts.forEach((p) => { todayObj[p.type] = p.value; });
+    const todayTurkey = `${todayObj.year}-${todayObj.month}-${todayObj.day}`;
     const targetDateStr = date || todayTurkey;
     const { start: targetDayStart, end: targetDayEnd } = getTurkeyDayRange(targetDateStr);
 
@@ -132,7 +140,8 @@ exports.getScanStats = async (req, res, next) => {
     const hourlyScans = Array(24).fill(0);
     dayScans.forEach(scan => {
       const { hour } = getTurkeyDateAndHour(scan.scannedAt);
-      hourlyScans[hour]++;
+      const idx = Math.min(23, Math.max(0, hour));
+      hourlyScans[idx]++;
     });
 
     // Bugünün toplam taraması (Türkiye saati)
