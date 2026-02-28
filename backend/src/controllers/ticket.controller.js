@@ -148,11 +148,16 @@ exports.createTicket = async (req, res, next) => {
       include: ticketInclude
     });
 
-    await sendTicketCreatedEmail(ticket);
+    try {
+      await sendTicketCreatedEmail(ticket);
+    } catch (emailErr) {
+      logger.warn('Destek talebi maili gönderilemedi', { ticketId: ticket.id, error: emailErr.message });
+    }
     logger.info('Destek talebi oluşturuldu', { ticketId: ticket.id, ticketNumber: ticket.ticketNumber });
 
     res.status(201).json({ success: true, data: ticket, message: 'Destek talebiniz oluşturuldu' });
   } catch (error) {
+    logger.error('Destek talebi oluşturma hatası', { error: error.message, stack: error.stack });
     next(error);
   }
 };
