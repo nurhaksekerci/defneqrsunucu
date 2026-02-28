@@ -555,7 +555,7 @@ export default function QRMenuPage() {
               <div 
                 className={`grid ${getCardGap(menuSettings.cardGap)}`}
                 style={{
-                  gridTemplateColumns: `repeat(${Math.min(menuSettings.itemsPerRow, Math.max(1, category.products.length))}, minmax(0, 1fr))`,
+                  gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, 536px), 1fr))`,
                   maxWidth: '100%'
                 }}
               >
