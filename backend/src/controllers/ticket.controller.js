@@ -1,7 +1,12 @@
 const prisma = require('../config/database');
 const { parsePaginationParams, createPaginatedResponse } = require('../utils/pagination');
 const { generateTicketNumber } = require('../utils/ticketNumberGenerator');
-const { sendTicketCreatedEmail } = require('../utils/emailService');
+const {
+  sendTicketCreatedEmail,
+  sendTicketRepliedEmail,
+  sendTicketWaitingForCustomerEmail,
+  sendTicketResolvedEmail
+} = require('../utils/emailService');
 const logger = require('../utils/logger');
 
 const ticketInclude = {
@@ -186,8 +191,23 @@ exports.updateTicket = async (req, res, next) => {
     const updated = await prisma.supportTicket.update({
       where: { id },
       data: updateData,
-      include: ticketInclude
+      include: { ...ticketInclude, user: { select: { id: true, fullName: true, email: true } } }
     });
+
+    // Durum değişikliğinde kullanıcıya mail gönder
+    if (isAdmin && status) {
+      if (status === 'WAITING_CUSTOMER') {
+        await sendTicketWaitingForCustomerEmail(updated);
+        logger.info('Destek talebi - sizden cevap bekleniyor maili gönderildi', { ticketId: id });
+      } else if (status === 'RESOLVED' || status === 'CLOSED') {
+        const ticketForEmail = await prisma.supportTicket.findUnique({
+          where: { id },
+          include: { user: { select: { id: true, fullName: true, email: true } } }
+        });
+        await sendTicketResolvedEmail(ticketForEmail);
+        logger.info('Destek talebi - çözüldü maili gönderildi', { ticketId: id });
+      }
+    }
 
     res.json({ success: true, data: updated, message: 'Talep güncellendi' });
   } catch (error) {
@@ -230,6 +250,17 @@ exports.addMessage = async (req, res, next) => {
         author: { select: { id: true, fullName: true, email: true } }
       }
     });
+
+    // Admin/Staff müşteriye yanıt verdiğinde (iç not değilse) mail gönder
+    if (isAdmin && !internal) {
+      const fullTicket = await prisma.supportTicket.findUnique({
+        where: { id },
+        include: { user: { select: { id: true, fullName: true, email: true } } }
+      });
+      const replyPreview = message.trim().length > 100 ? message.trim().substring(0, 100) + '...' : message.trim();
+      await sendTicketRepliedEmail(fullTicket, replyPreview);
+      logger.info('Destek talebi - cevaplandı maili gönderildi', { ticketId: id });
+    }
 
     res.status(201).json({ success: true, data: msg, message: 'Mesaj gönderildi' });
   } catch (error) {

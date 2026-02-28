@@ -181,9 +181,164 @@ async function sendTicketCreatedEmail(ticket) {
   return sendEmail({ to, subject, html });
 }
 
+/**
+ * Destek talebi cevaplandı bildirimi (Admin/Staff yanıt verdi)
+ */
+async function sendTicketRepliedEmail(ticket, replyPreview = '') {
+  const to = ticket.user?.email;
+  if (!to) return false;
+
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const ticketUrl = `${frontendUrl}/dashboard/support/${ticket.id}`;
+
+  const subject = `Defne Qr - Destek Talebiniz Cevaplandı: ${ticket.ticketNumber}`;
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #dc2626; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 24px; border-radius: 0 0 8px 8px; }
+    .button { display: inline-block; background: #dc2626; color: white !important; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin: 16px 0; font-weight: bold; }
+    .footer { margin-top: 20px; font-size: 12px; color: #6b7280; }
+    .preview { background: #e5e7eb; padding: 12px; border-radius: 6px; margin: 12px 0; font-size: 14px; font-style: italic; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>💬 Destek Talebiniz Cevaplandı</h1>
+    </div>
+    <div class="content">
+      <p>Merhaba ${ticket.user?.fullName || 'Kullanıcı'},</p>
+      <p>Destek talebinize yeni bir yanıt gönderildi.</p>
+      ${replyPreview ? `<div class="preview">"${replyPreview}"</div>` : ''}
+      <p style="text-align: center;">
+        <a href="${ticketUrl}" class="button">Yanıtı Görüntüle</a>
+      </p>
+      <div class="footer">
+        <p>Defne Qr - QR Menü ve Dijital Menü Sistemi</p>
+        <p>destek@defneqr.com</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  return sendEmail({ to, subject, html });
+}
+
+/**
+ * Destek talebi sizden cevap bekliyor bildirimi
+ */
+async function sendTicketWaitingForCustomerEmail(ticket) {
+  const to = ticket.user?.email;
+  if (!to) return false;
+
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const ticketUrl = `${frontendUrl}/dashboard/support/${ticket.id}`;
+
+  const subject = `Defne Qr - Destek Talebiniz Sizden Cevap Bekliyor: ${ticket.ticketNumber}`;
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #dc2626; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 24px; border-radius: 0 0 8px 8px; }
+    .button { display: inline-block; background: #dc2626; color: white !important; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin: 16px 0; font-weight: bold; }
+    .footer { margin-top: 20px; font-size: 12px; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⏳ Sizden Cevap Bekleniyor</h1>
+    </div>
+    <div class="content">
+      <p>Merhaba ${ticket.user?.fullName || 'Kullanıcı'},</p>
+      <p>Destek talebiniz <strong>${ticket.ticketNumber}</strong> için sizden cevap bekleniyor. Lütfen talebinize yanıt verin.</p>
+      <p style="text-align: center;">
+        <a href="${ticketUrl}" class="button">Talebe Yanıt Ver</a>
+      </p>
+      <div class="footer">
+        <p>Defne Qr - QR Menü ve Dijital Menü Sistemi</p>
+        <p>destek@defneqr.com</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  return sendEmail({ to, subject, html });
+}
+
+/**
+ * Destek talebi çözüldü/kapatıldı bildirimi
+ */
+async function sendTicketResolvedEmail(ticket) {
+  const to = ticket.user?.email;
+  if (!to) return false;
+
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const ticketUrl = `${frontendUrl}/dashboard/support/${ticket.id}`;
+  const statusLabel = ticket.status === 'RESOLVED' ? 'çözüldü' : 'kapatıldı';
+
+  const subject = `Defne Qr - Destek Talebiniz ${statusLabel === 'çözüldü' ? 'Çözüldü' : 'Kapatıldı'}: ${ticket.ticketNumber}`;
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #059669; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 24px; border-radius: 0 0 8px 8px; }
+    .button { display: inline-block; background: #059669; color: white !important; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin: 16px 0; font-weight: bold; }
+    .footer { margin-top: 20px; font-size: 12px; color: #6b7280; }
+    .resolution { background: #d1fae5; padding: 12px; border-radius: 6px; margin: 12px 0; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>✅ Destek Talebiniz ${statusLabel === 'çözüldü' ? 'Çözüldü' : 'Kapatıldı'}</h1>
+    </div>
+    <div class="content">
+      <p>Merhaba ${ticket.user?.fullName || 'Kullanıcı'},</p>
+      <p>Destek talebiniz <strong>${ticket.ticketNumber}</strong> ${statusLabel}.</p>
+      ${ticket.resolution ? `<div class="resolution"><strong>Çözüm:</strong><br>${ticket.resolution}</div>` : ''}
+      <p style="text-align: center;">
+        <a href="${ticketUrl}" class="button">Talebi Görüntüle</a>
+      </p>
+      <div class="footer">
+        <p>Defne Qr - QR Menü ve Dijital Menü Sistemi</p>
+        <p>destek@defneqr.com</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  return sendEmail({ to, subject, html });
+}
+
 module.exports = {
   sendEmail,
   sendPasswordResetEmail,
   sendTicketCreatedEmail,
+  sendTicketRepliedEmail,
+  sendTicketWaitingForCustomerEmail,
+  sendTicketResolvedEmail,
   getTransporter
 };
