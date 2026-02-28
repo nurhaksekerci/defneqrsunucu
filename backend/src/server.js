@@ -125,6 +125,7 @@ app.use('/api/subscriptions', require('./routes/subscription.routes'));
 app.use('/api/promo-codes', require('./routes/promoCode.routes'));
 app.use('/api/affiliates', require('./routes/affiliate.routes'));
 app.use('/api/tickets', require('./routes/ticket.routes'));
+app.use('/api/admin', require('./routes/admin.routes'));
 
 // Monitoring routes (health checks & metrics)
 app.use('/api', require('./routes/monitoring.routes'));

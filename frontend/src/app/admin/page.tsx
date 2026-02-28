@@ -67,12 +67,15 @@ export default function AdminDashboard() {
     totalCategories: 0,
     totalProducts: 0
   });
+  const [recentRestaurants, setRecentRestaurants] = useState<any[]>([]);
+  const [activities, setActivities] = useState<any[]>([]);
   const [health, setHealth] = useState<SystemHealth | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [healthLoading, setHealthLoading] = useState(true);
 
   useEffect(() => {
     loadStats();
+    loadDashboardData();
     loadHealth();
     
     // Auto-refresh health every 30 seconds
@@ -85,21 +88,21 @@ export default function AdminDashboard() {
 
   const loadStats = async () => {
     try {
-      // Restoranları al
-      const restaurantsRes = await api.get('/restaurants');
-      const restaurants = restaurantsRes.data.data;
+      const [restaurantsRes, categoriesRes, productsRes, usersRes] = await Promise.all([
+        api.get('/restaurants?limit=100'),
+        api.get('/categories?isGlobal=true'),
+        api.get('/products?isGlobal=true'),
+        api.get('/users/stats').catch(() => ({ data: { data: { totalUsers: 0 } } }))
+      ]);
 
-      // Global kategorileri al
-      const categoriesRes = await api.get('/categories?isGlobal=true');
-      const categories = categoriesRes.data.data;
-
-      // Global ürünleri al
-      const productsRes = await api.get('/products?isGlobal=true');
-      const products = productsRes.data.data;
+      const restaurants = restaurantsRes.data.data || [];
+      const pagination = restaurantsRes.data.pagination;
+      const categories = categoriesRes.data.data || [];
+      const products = productsRes.data.data || [];
 
       setStats({
-        totalRestaurants: restaurants.length,
-        totalUsers: restaurants.reduce((sum: number, r: any) => sum + 1, 0),
+        totalRestaurants: pagination?.totalCount ?? restaurants.length,
+        totalUsers: usersRes.data?.data?.totalUsers ?? 0,
         totalCategories: categories.length,
         totalProducts: products.length
       });
@@ -107,6 +110,17 @@ export default function AdminDashboard() {
       console.error('Failed to load stats:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadDashboardData = async () => {
+    try {
+      const response = await api.get('/admin/dashboard');
+      const data = response.data.data;
+      setRecentRestaurants(data.recentRestaurants || []);
+      setActivities(data.activities || []);
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
     }
   };
 
@@ -438,7 +452,31 @@ export default function AdminDashboard() {
             <CardTitle>Son Eklenen Restoranlar</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-500">Restoran listesi buraya gelecek...</p>
+            {recentRestaurants.length === 0 ? (
+              <p className="text-gray-500 py-4">Henüz restoran eklenmemiş</p>
+            ) : (
+              <ul className="divide-y divide-gray-100">
+                {recentRestaurants.map((r) => (
+                  <li key={r.id} className="py-3 flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">{r.name}</p>
+                      <p className="text-sm text-gray-500">{r.owner?.fullName} • /{r.slug}</p>
+                    </div>
+                    <a
+                      href={`/${r.slug}/menu`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    >
+                      Görüntüle
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <a href="/admin/restaurants" className="block mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium">
+              Tüm restoranlar →
+            </a>
           </CardContent>
         </Card>
 
@@ -447,7 +485,31 @@ export default function AdminDashboard() {
             <CardTitle>Sistem Aktivitesi</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-500">Aktivite logları buraya gelecek...</p>
+            {activities.length === 0 ? (
+              <p className="text-gray-500 py-4">Henüz aktivite yok</p>
+            ) : (
+              <ul className="space-y-3 max-h-80 overflow-y-auto">
+                {activities.map((a, i) => (
+                  <li key={i} className="flex gap-3 text-sm">
+                    <span className="text-lg shrink-0">{a.icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gray-900 truncate">{a.label}</p>
+                      {a.sublabel && (
+                        <p className="text-gray-500 text-xs truncate">{a.sublabel}</p>
+                      )}
+                      <p className="text-gray-400 text-xs mt-0.5">
+                        {new Date(a.date).toLocaleString('tr-TR', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
       </div>
