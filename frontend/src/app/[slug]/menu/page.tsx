@@ -541,9 +541,9 @@ export default function QRMenuPage() {
       )}
 
       {/* Menu Items */}
-      <div className={`max-w-4xl mx-auto flex-1 ${getContentPadding(menuSettings.contentPadding)}`}>
+      <div className={`max-w-4xl mx-auto flex-1 w-full ${getContentPadding(menuSettings.contentPadding)}`}>
         {filteredCategories.map((category) => (
-          <div key={category.id} className="mb-8">
+          <div key={category.id} className="mb-8 w-full">
             <h2 
               className={`text-xl font-bold mb-4 ${getFontSizeClass(menuSettings.fontSize)}`}
               style={{ color: menuSettings.mainTextColor }}
@@ -553,24 +553,26 @@ export default function QRMenuPage() {
             
             {menuSettings.viewType === 'card' ? (
               <div 
-                className={`grid ${getCardGap(menuSettings.cardGap)}`}
+                className={`grid w-full ${getCardGap(menuSettings.cardGap)}`}
                 style={{
-                  gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, 536px), 1fr))`,
-                  maxWidth: '100%'
+                  gridTemplateColumns: `repeat(${Math.min(menuSettings.itemsPerRow, Math.max(1, category.products.length))}, minmax(0, 1fr))`,
+                  width: '100%',
+                  minWidth: '100%'
                 }}
               >
                 {category.products.map((product) => (
                   <div
                     key={product.id}
                     onClick={() => setSelectedProduct(product)}
-                    className={`${getCardBorderRadius(menuSettings.cardBorderRadius)} ${getCardShadow(menuSettings.cardShadow)} overflow-hidden cursor-pointer w-full ${
+                    className={`${getCardBorderRadius(menuSettings.cardBorderRadius)} ${getCardShadow(menuSettings.cardShadow)} overflow-hidden cursor-pointer ${
                       menuSettings.cardHoverEffect !== false && menuSettings.enableAnimations !== false 
                         ? 'hover:shadow-xl hover:scale-105 transition-all duration-300' 
                         : ''
                     }`}
                     style={{ 
                       backgroundColor: menuSettings.cardBgColor,
-                      maxWidth: '100%'
+                      width: '100%',
+                      minWidth: 0
                     }}
                   >
                     {product.image && (
@@ -584,16 +586,16 @@ export default function QRMenuPage() {
                         }}
                       />
                     )}
-                    <div className="p-4">
+                    <div className="p-4 min-w-0 flex-1">
                       <h3 
-                        className={`font-semibold ${getFontSizeClass(menuSettings.fontSize)}`}
+                        className={`font-semibold ${getFontSizeClass(menuSettings.fontSize)} truncate`}
                         style={{ color: menuSettings.cardTextColor }}
                       >
                         {product.name}
                       </h3>
                       {product.description && (
                         <p 
-                          className="text-sm mt-1 line-clamp-2"
+                          className="text-sm mt-1 line-clamp-2 min-w-0"
                           style={{ color: menuSettings.cardTextColor, opacity: 0.7 }}
                         >
                           {product.description}
@@ -610,17 +612,17 @@ export default function QRMenuPage() {
                 ))}
               </div>
             ) : (
-              <div className={getCardGap(menuSettings.cardGap).replace('gap-', 'space-y-')}>
+              <div className={`w-full ${getCardGap(menuSettings.cardGap).replace('gap-', 'space-y-')}`}>
                 {category.products.map((product) => (
                   <div
                     key={product.id}
                     onClick={() => setSelectedProduct(product)}
-                    className={`${getCardBorderRadius(menuSettings.cardBorderRadius)} ${getCardShadow(menuSettings.cardShadow)} overflow-hidden cursor-pointer flex ${
+                    className={`${getCardBorderRadius(menuSettings.cardBorderRadius)} ${getCardShadow(menuSettings.cardShadow)} overflow-hidden cursor-pointer flex w-full min-w-0 ${
                       menuSettings.cardHoverEffect !== false && menuSettings.enableAnimations !== false 
                         ? 'hover:shadow-lg hover:scale-[1.02] transition-all duration-300' 
                         : ''
                     }`}
-                    style={{ backgroundColor: menuSettings.listBgColor }}
+                    style={{ backgroundColor: menuSettings.listBgColor, width: '100%' }}
                   >
                     {product.image && (
                       <img
@@ -633,17 +635,17 @@ export default function QRMenuPage() {
                         }}
                       />
                     )}
-                    <div className="p-4 flex-1 flex justify-between items-center">
-                      <div className="flex-1">
+                    <div className="p-4 flex-1 flex justify-between items-center min-w-0">
+                      <div className="flex-1 min-w-0">
                         <h3 
-                          className={`font-semibold ${getFontSizeClass(menuSettings.fontSize)}`}
+                          className={`font-semibold ${getFontSizeClass(menuSettings.fontSize)} truncate`}
                           style={{ color: menuSettings.listTextColor }}
                         >
                           {product.name}
                         </h3>
                         {product.description && (
                           <p 
-                            className="text-sm mt-1 line-clamp-1"
+                            className="text-sm mt-1 line-clamp-1 min-w-0"
                             style={{ color: menuSettings.listTextColor, opacity: 0.7 }}
                           >
                             {product.description}
