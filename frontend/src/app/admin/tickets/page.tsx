@@ -140,6 +140,11 @@ export default function AdminTicketsPage() {
                       <span className={`px-2 py-0.5 rounded text-xs ${PRIORITY_COLORS[ticket.priority] || 'bg-gray-100'}`}>
                         {PRIORITY_LABELS[ticket.priority]}
                       </span>
+                      {ticket.rating != null && (
+                        <span className="px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-800">
+                          ★ {ticket.rating}/10
+                        </span>
+                      )}
                     </div>
                     <h3 className="font-semibold text-gray-900 truncate">{ticket.subject}</h3>
                     <p className="text-sm text-gray-500 mt-1">

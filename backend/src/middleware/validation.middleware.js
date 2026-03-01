@@ -434,6 +434,13 @@ exports.createTicketMessageValidation = [
   handleValidationErrors
 ];
 
+exports.rateTicketValidation = [
+  body('rating')
+    .notEmpty().withMessage('Değerlendirme gereklidir')
+    .isInt({ min: 1, max: 10 }).withMessage('Değerlendirme 1 ile 10 arasında olmalıdır'),
+  handleValidationErrors
+];
+
 /**
  * UUID Param Validation
  */

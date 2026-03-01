@@ -173,6 +173,11 @@ export default function AdminTicketDetailPage() {
               {ticket.user.fullName} ({ticket.user.email})
               {ticket.restaurant && ` • ${ticket.restaurant.name}`}
             </p>
+            {ticket.rating != null && (
+              <p className="text-sm text-amber-600 font-medium mt-2">
+                Müşteri değerlendirmesi: {ticket.rating}/10 ★
+              </p>
+            )}
           </div>
 
           <Card>

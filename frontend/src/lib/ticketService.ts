@@ -31,6 +31,7 @@ export interface SupportTicket {
   assignedTo?: TicketUser;
   resolution?: string;
   resolvedAt?: string;
+  rating?: number | null;
   createdAt: string;
   updatedAt: string;
   _count?: { messages: number };
@@ -86,6 +87,9 @@ export const ticketService = {
 
   addMessage: (id: string, data: { message: string; isInternal?: boolean }) =>
     api.post(`/tickets/${id}/messages`, data),
+
+  rateTicket: (id: string, data: { rating: number }) =>
+    api.post(`/tickets/${id}/rate`, data),
 
   deleteTicket: (id: string) => api.delete(`/tickets/${id}`),
 };

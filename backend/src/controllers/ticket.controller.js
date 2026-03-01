@@ -273,6 +273,48 @@ exports.addMessage = async (req, res, next) => {
   }
 };
 
+// Talep cevabını değerlendir (1-10 yıldız, sadece talep sahibi, sadece RESOLVED, tek seferlik)
+exports.rateTicket = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rating } = req.body;
+    const user = req.user;
+
+    const ticket = await prisma.supportTicket.findUnique({ where: { id } });
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: 'Talep bulunamadı' });
+    }
+
+    if (ticket.userId !== user.id) {
+      return res.status(403).json({ success: false, message: 'Sadece talep sahibi değerlendirme yapabilir' });
+    }
+
+    if (ticket.status !== 'RESOLVED') {
+      return res.status(400).json({ success: false, message: 'Sadece çözülen talepler değerlendirilebilir' });
+    }
+
+    if (ticket.rating != null) {
+      return res.status(400).json({ success: false, message: 'Bu talep zaten değerlendirildi' });
+    }
+
+    const ratingNum = parseInt(rating, 10);
+    if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 10) {
+      return res.status(400).json({ success: false, message: 'Değerlendirme 1 ile 10 arasında olmalıdır' });
+    }
+
+    const updated = await prisma.supportTicket.update({
+      where: { id },
+      data: { rating: ratingNum },
+      include: ticketInclude
+    });
+
+    logger.info('Destek talebi değerlendirildi', { ticketId: id, rating: ratingNum });
+    res.json({ success: true, data: updated, message: 'Değerlendirmeniz kaydedildi' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Talep sil (sadece Admin/Staff)
 exports.deleteTicket = async (req, res, next) => {
   try {

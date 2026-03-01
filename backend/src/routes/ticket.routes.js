@@ -6,6 +6,7 @@ const {
   createTicketValidation,
   updateTicketValidation,
   createTicketMessageValidation,
+  rateTicketValidation,
   uuidParamValidation
 } = require('../middleware/validation.middleware');
 
@@ -29,6 +30,9 @@ router.put('/:id', uuidParamValidation('id'), updateTicketValidation, ticketCont
 
 // POST /api/tickets/:id/messages - Mesaj ekle
 router.post('/:id/messages', uuidParamValidation('id'), createTicketMessageValidation, ticketController.addMessage);
+
+// POST /api/tickets/:id/rate - Cevabı değerlendir (1-10 yıldız)
+router.post('/:id/rate', uuidParamValidation('id'), rateTicketValidation, ticketController.rateTicket);
 
 // DELETE /api/tickets/:id - Talep sil (Admin/Staff)
 router.delete('/:id', uuidParamValidation('id'), authorize('ADMIN', 'STAFF'), ticketController.deleteTicket);

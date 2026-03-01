@@ -22,6 +22,8 @@ export default function TicketDetailPage() {
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [rating, setRating] = useState<number>(0);
+  const [isRating, setIsRating] = useState(false);
 
   useEffect(() => {
     loadTicket();
@@ -37,6 +39,20 @@ export default function TicketDetailPage() {
       router.push('/dashboard/support');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRate = async () => {
+    if (!rating || rating < 1 || rating > 10) return;
+    try {
+      setIsRating(true);
+      await ticketService.rateTicket(id, { rating });
+      loadTicket();
+    } catch (error) {
+      console.error('Değerlendirme gönderilemedi:', error);
+      alert('Değerlendirme kaydedilemedi. Lütfen tekrar deneyin.');
+    } finally {
+      setIsRating(false);
     }
   };
 
@@ -164,7 +180,45 @@ export default function TicketDetailPage() {
         </Card>
       )}
 
-      {!canReply && (
+      {!canReply && ticket.status === 'RESOLVED' && ticket.rating == null && (
+        <Card className="mb-6 border-amber-200 bg-amber-50">
+          <CardContent className="py-6">
+            <h3 className="font-semibold text-amber-900 mb-2">Cevabı değerlendirin</h3>
+            <p className="text-sm text-amber-800 mb-4">Destek ekibimizin cevabını 1 ile 10 arasında yıldız ile değerlendirin.</p>
+            <div className="flex items-center gap-1 mb-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  className={`w-10 h-10 rounded-lg text-lg font-bold transition-all ${
+                    rating >= star
+                      ? 'bg-amber-500 text-white shadow-md'
+                      : 'bg-amber-100 text-amber-600 hover:bg-amber-200'
+                  }`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-amber-700 mb-4">
+              Seçili: {rating > 0 ? `${rating} / 10` : '—'}
+            </p>
+            <Button
+              onClick={handleRate}
+              isLoading={isRating}
+              disabled={rating < 1 || rating > 10 || isRating}
+            >
+              Değerlendirmeyi Gönder
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {!canReply && ticket.status === 'RESOLVED' && ticket.rating != null && (
+        <p className="text-green-600 text-sm font-medium">Değerlendirmeniz için teşekkür ederiz ({ticket.rating}/10 ★)</p>
+      )}
+      {!canReply && ticket.status === 'CLOSED' && (
         <p className="text-gray-500 text-sm">Bu talep kapatıldığı için yeni mesaj eklenemez.</p>
       )}
     </div>
