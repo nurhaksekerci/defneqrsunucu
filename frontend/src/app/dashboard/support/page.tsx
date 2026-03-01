@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { ticketService, type SupportTicket, STATUS_LABELS, CATEGORY_LABELS, PRIORITY_LABELS } from '@/lib/ticketService';
+import { ticketService, type SupportTicket, type TicketStats, STATUS_LABELS, CATEGORY_LABELS, PRIORITY_LABELS } from '@/lib/ticketService';
 
 const STATUS_COLORS: Record<string, string> = {
   OPEN: 'bg-blue-100 text-blue-800',
@@ -25,13 +25,24 @@ const PRIORITY_COLORS: Record<string, string> = {
 export default function SupportPage() {
   const router = useRouter();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [stats, setStats] = useState<TicketStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, totalCount: 0 });
 
   useEffect(() => {
     loadTickets();
+    loadStats();
   }, [statusFilter]);
+
+  const loadStats = async () => {
+    try {
+      const res = await ticketService.getMyTicketStats();
+      setStats((res.data as { data?: TicketStats })?.data || null);
+    } catch {
+      setStats(null);
+    }
+  };
 
   const loadTickets = async (page = 1) => {
     try {
@@ -78,6 +89,37 @@ export default function SupportPage() {
           + Yeni Talep Oluştur
         </Button>
       </div>
+
+      {stats && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardContent className="py-4">
+              <p className="text-sm text-gray-500">Toplam Kayıt</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="py-4">
+              <p className="text-sm text-gray-500">Çözümlenmiş</p>
+              <p className="text-2xl font-bold text-green-600">{stats.resolved}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="py-4">
+              <p className="text-sm text-gray-500">Açık</p>
+              <p className="text-2xl font-bold text-blue-600">{stats.open}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="py-4">
+              <p className="text-sm text-gray-500">Ortalama Değerlendirme</p>
+              <p className="text-2xl font-bold text-amber-600">
+                {stats.averageRating != null ? `${stats.averageRating}/10 ★` : '—'}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="mb-4 flex gap-2 flex-wrap">
         <select

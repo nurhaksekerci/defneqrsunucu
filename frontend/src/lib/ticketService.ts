@@ -70,12 +70,23 @@ export const STATUS_LABELS: Record<TicketStatus, string> = {
   CLOSED: 'Kapatıldı',
 };
 
+export interface TicketStats {
+  total: number;
+  resolved: number;
+  open: number;
+  averageRating: number | null;
+}
+
 export const ticketService = {
   getMyTickets: (params?: { page?: number; status?: TicketStatus; category?: TicketCategory }) =>
     api.get('/tickets/my', { params }),
 
+  getMyTicketStats: () => api.get('/tickets/my/stats'),
+
   getAllTickets: (params?: { page?: number; status?: TicketStatus; category?: TicketCategory; priority?: TicketPriority; search?: string }) =>
     api.get('/tickets', { params }),
+
+  getAllTicketStats: () => api.get('/tickets/stats'),
 
   getTicket: (id: string) => api.get(`/tickets/${id}`),
 

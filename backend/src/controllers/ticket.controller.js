@@ -16,6 +16,53 @@ const ticketInclude = {
   _count: { select: { messages: true } }
 };
 
+// Kullanıcının kendi talepleri için istatistikler
+exports.getMyTicketStats = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const [total, resolved, open, avgRating] = await Promise.all([
+      prisma.supportTicket.count({ where: { userId } }),
+      prisma.supportTicket.count({ where: { userId, status: { in: ['RESOLVED', 'CLOSED'] } } }),
+      prisma.supportTicket.count({ where: { userId, status: { in: ['OPEN', 'IN_PROGRESS', 'WAITING_CUSTOMER'] } } }),
+      prisma.supportTicket.aggregate({
+        where: { userId, rating: { not: null } },
+        _avg: { rating: true },
+        _count: { rating: true }
+      })
+    ]);
+    const averageRating = avgRating._count.rating > 0 ? Math.round(avgRating._avg.rating * 10) / 10 : null;
+    res.json({
+      success: true,
+      data: { total, resolved, open, averageRating }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Tüm talepler için istatistikler (Admin/Staff)
+exports.getAllTicketStats = async (req, res, next) => {
+  try {
+    const [total, resolved, open, avgRating] = await Promise.all([
+      prisma.supportTicket.count(),
+      prisma.supportTicket.count({ where: { status: { in: ['RESOLVED', 'CLOSED'] } } }),
+      prisma.supportTicket.count({ where: { status: { in: ['OPEN', 'IN_PROGRESS', 'WAITING_CUSTOMER'] } } }),
+      prisma.supportTicket.aggregate({
+        where: { rating: { not: null } },
+        _avg: { rating: true },
+        _count: { rating: true }
+      })
+    ]);
+    const averageRating = avgRating._count.rating > 0 ? Math.round(avgRating._avg.rating * 10) / 10 : null;
+    res.json({
+      success: true,
+      data: { total, resolved, open, averageRating }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Kullanıcının kendi taleplerini listele
 exports.getMyTickets = async (req, res, next) => {
   try {

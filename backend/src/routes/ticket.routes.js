@@ -13,8 +13,14 @@ const {
 // Tüm route'lar authentication gerektirir
 router.use(authenticate);
 
+// GET /api/tickets/my/stats - Kullanıcının kendi talepleri istatistikleri
+router.get('/my/stats', ticketController.getMyTicketStats);
+
 // GET /api/tickets/my - Kullanıcının kendi talepleri
 router.get('/my', ticketController.getMyTickets);
+
+// GET /api/tickets/stats - Tüm talepler istatistikleri (Admin/Staff)
+router.get('/stats', authorize('ADMIN', 'STAFF'), ticketController.getAllTicketStats);
 
 // GET /api/tickets - Tüm talepler (Admin/Staff)
 router.get('/', authorize('ADMIN', 'STAFF'), ticketController.getAllTickets);
