@@ -35,10 +35,8 @@ async function main() {
     `);
     console.log('✓ wheel_spins tablosu oluşturuldu');
 
-    await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS "wheel_spins_userId_idx" ON "wheel_spins"("userId");
-      CREATE INDEX IF NOT EXISTS "wheel_spins_spunAt_idx" ON "wheel_spins"("spunAt");
-    `);
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "wheel_spins_userId_idx" ON "wheel_spins"("userId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "wheel_spins_spunAt_idx" ON "wheel_spins"("spunAt")');
     console.log('✓ İndeksler oluşturuldu');
 
     const [row] = await prisma.$queryRawUnsafe('SELECT COUNT(*)::int as c FROM "wheel_game_settings"');
