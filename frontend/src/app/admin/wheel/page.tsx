@@ -36,6 +36,9 @@ export default function AdminWheelPage() {
     description: 'Günde 1 kez çevir, Premium deneme süresi kazan!',
     segments: [] as WheelSegment[]
   });
+  const [previewRotation, setPreviewRotation] = useState(0);
+  const [previewSpinning, setPreviewSpinning] = useState(false);
+  const [previewPrize, setPreviewPrize] = useState<WheelSegment | null>(null);
 
   useEffect(() => {
     loadSettings();
@@ -103,6 +106,22 @@ export default function AdminWheelPage() {
     }));
   };
 
+  const handlePreviewSpin = () => {
+    if (formData.segments.length === 0 || previewSpinning) return;
+    setPreviewPrize(null);
+    setPreviewSpinning(true);
+    const idx = Math.floor(Math.random() * formData.segments.length);
+    const segmentAngle = 360 / formData.segments.length;
+    const targetAngle = 360 - idx * segmentAngle - segmentAngle / 2;
+    const spins = 4;
+    const totalRotation = previewRotation + spins * 360 + targetAngle;
+    setPreviewRotation(totalRotation);
+    setTimeout(() => {
+      setPreviewPrize(formData.segments[idx]);
+      setPreviewSpinning(false);
+    }, 4000);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -161,10 +180,11 @@ export default function AdminWheelPage() {
             <CardTitle>Çark Önizlemesi</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex justify-center p-6 bg-gray-50 rounded-lg">
+            <div className="flex flex-col items-center p-6 bg-gray-50 rounded-lg gap-4">
               {formData.segments.length === 0 ? (
                 <p className="text-gray-500 py-12">Dilim ekleyerek önizlemeyi görün</p>
               ) : (
+                <>
                 <div className="relative" style={{ width: 240, height: 240 }}>
                   <div
                     className="relative w-full h-full rounded-full border-4 border-gray-300 overflow-hidden"
@@ -174,7 +194,9 @@ export default function AdminWheelPage() {
                           const angle = 360 / formData.segments.length;
                           return `${seg.color} ${i * angle}deg ${(i + 1) * angle}deg`;
                         })
-                        .join(', ')})`
+                        .join(', ')})`,
+                      transform: `rotate(${previewRotation}deg)`,
+                      transition: previewSpinning ? 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none'
                     }}
                   >
                     {formData.segments.map((seg, i) => {
@@ -209,6 +231,20 @@ export default function AdminWheelPage() {
                     className="absolute -top-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[10px] border-r-[10px] border-t-[20px] border-l-transparent border-r-transparent border-t-red-500 z-20"
                   />
                 </div>
+                {previewPrize ? (
+                  <p className="text-center font-medium text-primary-600">
+                    🎉 {previewPrize.label}
+                  </p>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handlePreviewSpin}
+                  disabled={previewSpinning || formData.segments.length === 0}
+                >
+                  {previewSpinning ? 'Çevriliyor...' : 'Çevir'}
+                </Button>
+                </>
               )}
             </div>
           </CardContent>
