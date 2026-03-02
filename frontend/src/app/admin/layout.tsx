@@ -18,6 +18,7 @@ const allAdminMenuItems = [
   { name: 'Global Kategoriler', href: '/admin/categories', icon: '📁' },
   { name: 'Global Ürünler', href: '/admin/products', icon: '🍽️' },
   { name: 'Destek Talepleri', href: '/admin/tickets', icon: '🎫' },
+  { name: 'Çark Oyunu', href: '/admin/wheel', icon: '🎡' },
   { name: 'Sistem Ayarları', href: '/admin/settings', icon: '⚙️' },
 ];
 

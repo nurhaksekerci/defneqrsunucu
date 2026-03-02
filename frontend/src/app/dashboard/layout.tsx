@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { WheelTrigger } from '@/components/wheel/WheelTrigger';
 import { authService } from '@/lib/auth';
 
 // Admin menu items
@@ -105,6 +106,7 @@ export default function DashboardLayout({
         <main className="flex-1 overflow-auto p-4 sm:p-6">
           {children}
         </main>
+        <WheelTrigger />
       </div>
     </div>
   );

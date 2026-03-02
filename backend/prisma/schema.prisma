@@ -75,6 +75,7 @@ model User {
   assignedTickets  SupportTicket[]  @relation("AssignedTickets")
   resolvedTickets SupportTicket[]  @relation("ResolvedTickets")
   ticketMessages   TicketMessage[]  @relation("TicketMessages")
+  wheelSpins       WheelSpin[]
 
   @@index([role])
   @@index([isDeleted])
@@ -306,6 +307,31 @@ model Payment {
   @@index([createdAt])
   @@index([restaurantId, status, isDeleted])
   @@map("payments")
+}
+
+// Çark Oyunu Ayarları (Admin özelleştirilebilir)
+model WheelGameSettings {
+  id          String   @id @default(uuid())
+  isEnabled   Boolean  @default(true)
+  title       String   @default("Şansını Dene!")
+  description String?  @db.Text
+  segments    Json     // [{ label, type, value, color }] type: subscription_days|discount_percent|message
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@map("wheel_game_settings")
+}
+
+// Çark çevirme kaydı (günde 1 kez kontrolü için)
+model WheelSpin {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prizeType  String   // subscription_days, discount_percent, message
+  prizeValue Json     // { days?: number, percent?: number, message?: string }
+  spunAt     DateTime @default(now())
+  @@index([userId])
+  @@index([spunAt])
+  @@map("wheel_spins")
 }
 
 // Sistem Ayarları Tablosu
