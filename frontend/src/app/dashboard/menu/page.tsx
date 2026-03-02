@@ -92,10 +92,14 @@ function SortableCategory({
   return (
     <div ref={setNodeRef} style={style}>
       <Card className="mb-4 overflow-hidden">
-        <CardHeader
-          className="bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => onToggleExpand(category.id)}
+          onKeyDown={(e) => e.key === 'Enter' && onToggleExpand(category.id)}
+          className="cursor-pointer select-none"
         >
+        <CardHeader className="bg-gray-50 hover:bg-gray-100 transition-colors">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div
@@ -121,6 +125,7 @@ function SortableCategory({
             </svg>
           </CardTitle>
         </CardHeader>
+        </div>
         {isExpanded && (
         <CardContent>
           {products.length === 0 ? (
