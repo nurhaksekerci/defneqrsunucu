@@ -157,6 +157,64 @@ export default function AdminWheelPage() {
         </Card>
 
         <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Çark Önizlemesi</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-center p-6 bg-gray-50 rounded-lg">
+              {formData.segments.length === 0 ? (
+                <p className="text-gray-500 py-12">Dilim ekleyerek önizlemeyi görün</p>
+              ) : (
+                <div className="relative" style={{ width: 240, height: 240 }}>
+                  <div
+                    className="relative w-full h-full rounded-full border-4 border-gray-300 overflow-hidden"
+                    style={{
+                      background: `conic-gradient(${formData.segments
+                        .map((seg, i) => {
+                          const angle = 360 / formData.segments.length;
+                          return `${seg.color} ${i * angle}deg ${(i + 1) * angle}deg`;
+                        })
+                        .join(', ')})`
+                    }}
+                  >
+                    {formData.segments.map((seg, i) => {
+                      const angle = 360 / formData.segments.length;
+                      return (
+                        <div
+                          key={i}
+                          className="absolute inset-0 flex items-center justify-center"
+                          style={{
+                            transform: `rotate(${i * angle + angle / 2}deg)`,
+                            transformOrigin: '50% 50%'
+                          }}
+                        >
+                          <span
+                            className="text-xs font-bold text-white text-center block"
+                            style={{
+                              transform: `rotate(${-i * angle - angle / 2}deg)`,
+                              width: 55,
+                              textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                            }}
+                          >
+                            {seg.label || '—'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div
+                    className="absolute top-1/2 left-1/2 w-3 h-3 rounded-full bg-gray-800 border-2 border-white -translate-x-1/2 -translate-y-1/2 z-10"
+                  />
+                  <div
+                    className="absolute -top-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[10px] border-r-[10px] border-t-[20px] border-l-transparent border-r-transparent border-t-red-500 z-20"
+                  />
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Çark Dilimleri</CardTitle>
             <Button type="button" variant="secondary" size="sm" onClick={addSegment}>
@@ -193,7 +251,7 @@ export default function AdminWheelPage() {
                         onChange={(e) => updateSegment(i, 'value', parseInt(e.target.value, 10) || 0)}
                         placeholder={seg.type === 'subscription_days' ? 'Gün' : '%'}
                         min={1}
-                        max={seg.type === 'subscription_days' ? 30 : 100}
+                        max={seg.type === 'subscription_days' ? 365 : 100}
                         className="w-20 rounded border px-2 py-1"
                       />
                     )}
