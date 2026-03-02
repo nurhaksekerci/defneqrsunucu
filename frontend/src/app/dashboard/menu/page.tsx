@@ -53,11 +53,15 @@ interface CategoryWithProducts extends Category {
 function SortableCategory({
   category,
   products,
+  isExpanded,
+  onToggleExpand,
   onProductDragEnd,
   onToggleActive,
 }: {
   category: Category;
   products: Product[];
+  isExpanded: boolean;
+  onToggleExpand: (categoryId: string) => void;
   onProductDragEnd: (categoryId: string, event: DragEndEvent) => void;
   onToggleActive: (productId: string, currentStatus: boolean) => void;
 }) {
@@ -87,12 +91,16 @@ function SortableCategory({
 
   return (
     <div ref={setNodeRef} style={style}>
-      <Card className="mb-4">
-        <CardHeader className="bg-gray-50">
+      <Card className="mb-4 overflow-hidden">
+        <CardHeader
+          className="bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+          onClick={() => onToggleExpand(category.id)}
+        >
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div
                 className="cursor-move p-2 hover:bg-gray-200 rounded transition-colors touch-none"
+                onClick={(e) => e.stopPropagation()}
                 {...attributes}
                 {...listeners}
               >
@@ -103,8 +111,17 @@ function SortableCategory({
               <span className="text-lg font-semibold text-gray-900">{category.name}</span>
               <span className="text-sm text-gray-500">({products.length} ürün)</span>
             </div>
+            <svg
+              className={`w-5 h-5 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </CardTitle>
         </CardHeader>
+        {isExpanded && (
         <CardContent>
           {products.length === 0 ? (
             <p className="text-gray-500 text-center py-4">Bu kategoride ürün bulunmuyor</p>
@@ -131,6 +148,7 @@ function SortableCategory({
             </DndContext>
           )}
         </CardContent>
+        )}
       </Card>
     </div>
   );
@@ -211,7 +229,17 @@ export default function MenuPage() {
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>('');
   const [categoriesWithProducts, setCategoriesWithProducts] = useState<CategoryWithProducts[]>([]);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
+
+  const toggleCategoryExpand = (categoryId: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) next.delete(categoryId);
+      else next.add(categoryId);
+      return next;
+    });
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -280,6 +308,7 @@ export default function MenuPage() {
         }));
 
       setCategoriesWithProducts(categoriesWithProds);
+      setExpandedCategories(new Set(categoriesWithProds.map((c: Category) => c.id)));
     } catch (error) {
       console.error('Failed to load menu data:', error);
       alert('Menü verileri yüklenemedi');
@@ -403,10 +432,29 @@ export default function MenuPage() {
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-blue-800 text-sm">
-          💡 <strong>İpucu:</strong> Kategorileri ve ürünleri sürükleyerek sıralayabilirsiniz. 
+          💡 <strong>İpucu:</strong> Kategorilere tıklayarak açıp kapatabilirsiniz. Kategorileri ve ürünleri sürükleyerek sıralayabilirsiniz. 
           Bu sıralama QR menüde de yansıyacaktır.
         </p>
       </div>
+
+      {categoriesWithProducts.length > 0 && (
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setExpandedCategories(new Set(categoriesWithProducts.map((c) => c.id)))}
+          >
+            Tümünü Aç
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setExpandedCategories(new Set())}
+          >
+            Tümünü Kapat
+          </Button>
+        </div>
+      )}
 
       {categoriesWithProducts.length === 0 ? (
         <Card>
@@ -429,6 +477,8 @@ export default function MenuPage() {
                 key={category.id}
                 category={category}
                 products={category.products}
+                isExpanded={expandedCategories.has(category.id)}
+                onToggleExpand={toggleCategoryExpand}
                 onProductDragEnd={handleProductDragEnd}
                 onToggleActive={toggleProductActive}
               />
