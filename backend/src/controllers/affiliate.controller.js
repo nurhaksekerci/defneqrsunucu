@@ -544,9 +544,11 @@ exports.getPendingReferralRewards = async (req, res, next) => {
           select: {
             fullName: true,
             email: true,
+            id: true,
             restaurants: {
               where: { isDeleted: false },
               take: 1,
+              orderBy: { createdAt: 'desc' },
               select: { slug: true, name: true }
             }
           }
@@ -573,6 +575,13 @@ exports.getPendingReferralRewards = async (req, res, next) => {
       })
     });
   } catch (error) {
+    console.error('❌ getPendingReferralRewards error:', error?.message || error);
+    if (error?.code === 'P2021' || error?.message?.includes('column') || error?.message?.includes('does not exist')) {
+      return res.status(503).json({
+        success: false,
+        message: 'Veritabanı migration gerekli. Lütfen "npx prisma migrate deploy" çalıştırın.'
+      });
+    }
     next(error);
   }
 };
