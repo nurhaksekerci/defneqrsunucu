@@ -184,7 +184,8 @@ exports.getMyReferralLink = async (req, res, next) => {
 exports.getMyReferrals = async (req, res, next) => {
   try {
     const affiliate = await prisma.affiliatePartner.findUnique({
-      where: { userId: req.user.id }
+      where: { userId: req.user.id },
+      include: { user: { select: { role: true } } }
     });
 
     if (!affiliate) {
@@ -193,6 +194,11 @@ exports.getMyReferrals = async (req, res, next) => {
         message: 'Affiliate partner kaydınız bulunamadı'
       });
     }
+
+    const settings = await prisma.affiliateSettings.findFirst();
+    const daysFree = settings?.daysPerReferralFree ?? settings?.daysPerReferral ?? 7;
+    const daysPaid = settings?.daysPerReferralPaid ?? settings?.daysPerReferral ?? 14;
+    const commissionRate = settings?.commissionRate ?? 10;
 
     const { page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -208,7 +214,15 @@ exports.getMyReferrals = async (req, res, next) => {
             select: {
               fullName: true,
               email: true,
-              createdAt: true
+              createdAt: true,
+              id: true,
+              subscriptions: {
+                take: 1,
+                orderBy: { createdAt: 'desc' },
+                select: {
+                  plan: { select: { name: true, type: true } }
+                }
+              }
             }
           }
         }
@@ -216,9 +230,61 @@ exports.getMyReferrals = async (req, res, next) => {
       prisma.referral.count({ where: { affiliateId: affiliate.id } })
     ]);
 
+    const referredUserIds = referrals.map((r) => r.referredUserId);
+    const commissionsMap = referredUserIds.length
+      ? await prisma.affiliateCommission
+          .findMany({
+            where: {
+              affiliateId: affiliate.id,
+              referredUserId: { in: referredUserIds }
+            }
+          })
+          .then((list) => Object.fromEntries(list.map((c) => [c.referredUserId, c])))
+      : {};
+
+    const isRestaurantOwner = affiliate.user?.role === 'RESTAURANT_OWNER';
+
+    const data = referrals.map((r) => {
+      const plan = r.referredUser?.subscriptions?.[0]?.plan;
+      const planName = plan?.name ?? '-';
+      const planType = plan?.type ?? null;
+      const isPaidPlan = planType && planType !== 'FREE';
+
+      let reward = '-';
+      if (isRestaurantOwner) {
+        if (!r.hasSubscribed) {
+          reward = `Henüz abone değil (${daysFree} gün kazanacaksınız)`;
+        } else if (r.pendingDaysApproval) {
+          reward = `${daysFree} gün (admin onayı bekliyor)`;
+        } else if (r.daysAwarded != null) {
+          reward = `${r.daysAwarded} gün`;
+        } else {
+          reward = isPaidPlan ? `${daysPaid} gün` : `${daysFree} gün (onay bekliyor)`;
+        }
+      } else {
+        const comm = commissionsMap[r.referredUserId];
+        if (comm) {
+          reward = `₺${comm.amount.toFixed(2)} komisyon`;
+        } else if (r.hasSubscribed && isPaidPlan) {
+          reward = `%${commissionRate} komisyon (bekleniyor)`;
+        } else if (!r.hasSubscribed) {
+          reward = 'Henüz abone değil';
+        } else {
+          reward = '-';
+        }
+      }
+
+      return {
+        ...r,
+        planName,
+        planType: planType ?? 'NONE',
+        reward
+      };
+    });
+
     res.json({
       success: true,
-      data: referrals,
+      data,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),

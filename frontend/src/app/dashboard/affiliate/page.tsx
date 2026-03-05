@@ -39,6 +39,9 @@ interface Referral {
   hasSubscribed: boolean;
   firstSubscription: string | null;
   createdAt: string;
+  planName: string;
+  planType: string;
+  reward: string;
 }
 
 interface Commission {
@@ -553,6 +556,8 @@ export default function AffiliateDashboardPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kullanıcı</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kazanacağınız Ödül</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kayıt Tarihi</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th>
                   </tr>
@@ -565,6 +570,12 @@ export default function AffiliateDashboardPage() {
                           <div className="font-medium text-gray-900">{referral.referredUser.fullName}</div>
                           <div className="text-sm text-gray-500">{referral.referredUser.email}</div>
                         </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {referral.planName}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-green-700">
+                        {referral.reward}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
                         {new Date(referral.createdAt).toLocaleDateString('tr-TR')}
