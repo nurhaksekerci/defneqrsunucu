@@ -30,6 +30,7 @@ export const authService = {
     username?: string;
     password: string;
     fullName: string;
+    ref?: string;
   }): Promise<AuthResponse> {
     const response = await api.post('/auth/register', data);
     if (response.data.success && response.data.data.accessToken) {

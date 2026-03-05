@@ -82,8 +82,8 @@ exports.register = async (req, res, next) => {
     // Record metrics
     recordUserRegistration('email');
 
-    // Referral tracking (cookie'den)
-    const referralCode = req.cookies?.referral_code;
+    // Referral tracking (cookie veya body'den - ref link ile kayıt)
+    const referralCode = req.body?.ref || req.cookies?.referral_code;
     if (referralCode) {
       await processReferral(referralCode, user.id, req.ip, req.headers['user-agent']);
     }

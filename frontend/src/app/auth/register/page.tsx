@@ -103,7 +103,8 @@ function RegisterForm() {
         fullName: formData.fullName,
         email: formData.email,
         username: formData.username || undefined,
-        password: formData.password
+        password: formData.password,
+        ref: referralCode || undefined
       });
 
       if (response.success) {

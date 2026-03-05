@@ -44,6 +44,11 @@ exports.registerValidation = [
     .notEmpty().withMessage('Şifre gereklidir')
     .isLength({ min: 8 }).withMessage('Şifre en az 8 karakter olmalıdır'),
   
+  body('ref')
+    .optional()
+    .trim()
+    .isLength({ min: 4, max: 20 }).withMessage('Referral kodu geçersiz'),
+  
   handleValidationErrors
 ];
 

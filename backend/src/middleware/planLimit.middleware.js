@@ -1,4 +1,5 @@
 const prisma = require('../config/database');
+const { createCommission } = require('./referral.middleware');
 
 /**
  * Get user's active subscription and plan
@@ -198,6 +199,13 @@ async function assignFreePlanIfNeeded(userId) {
       plan: true
     }
   });
+
+  // Affiliate referral: FREE plan = admin onayı bekler
+  try {
+    await createCommission(userId, subscription.id, 0);
+  } catch (err) {
+    console.error('❌ createCommission (FREE plan) failed:', err);
+  }
 
   return subscription;
 }
