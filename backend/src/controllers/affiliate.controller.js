@@ -617,6 +617,50 @@ exports.approveReferralReward = async (req, res, next) => {
   }
 };
 
+// Referral ödülünü reddet (Admin - açıklama zorunlu)
+exports.rejectReferralReward = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    const trimmedReason = typeof reason === 'string' ? reason.trim() : '';
+    if (!trimmedReason) {
+      return res.status(400).json({
+        success: false,
+        message: 'Red açıklaması zorunludur'
+      });
+    }
+
+    const referral = await prisma.referral.findUnique({
+      where: { id }
+    });
+
+    if (!referral || !referral.pendingDaysApproval) {
+      return res.status(404).json({
+        success: false,
+        message: 'Onay bekleyen referral bulunamadı'
+      });
+    }
+
+    await prisma.referral.update({
+      where: { id },
+      data: {
+        pendingDaysApproval: false,
+        daysAwarded: null,
+        rejectionReason: trimmedReason
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Referral ödülü reddedildi',
+      data: { referralId: id }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Tüm bekleyen referral ödüllerini toplu onayla (Admin)
 exports.approveAllPendingReferralRewards = async (req, res, next) => {
   try {

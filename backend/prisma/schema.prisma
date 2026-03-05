@@ -678,6 +678,7 @@ model Referral {
   // Ücretsiz plan: admin onayı bekliyor; ücretli plan: otomatik ödül
   pendingDaysApproval Boolean        @default(false)
   daysAwarded       Int?            // Verilen gün sayısı (onaylandığında)
+  rejectionReason   String?         // Admin red açıklaması (reddedildiğinde zorunlu)
   
   createdAt         DateTime         @default(now())
   

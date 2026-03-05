@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const affiliateController = require('../controllers/affiliate.controller');
 const { authenticate, authorize } = require('../middleware/auth.middleware');
+const { handleValidationErrors } = require('../middleware/validation.middleware');
 const { body } = require('express-validator');
 
 // Affiliate başvuru validation
@@ -36,6 +37,14 @@ router.get('/all', authorize('ADMIN'), affiliateController.getAllAffiliates);
 router.get('/pending-rewards', authorize('ADMIN'), affiliateController.getPendingReferralRewards);
 router.post('/approve-all-rewards', authorize('ADMIN'), affiliateController.approveAllPendingReferralRewards);
 router.post('/referrals/:id/approve-reward', authorize('ADMIN'), affiliateController.approveReferralReward);
+const rejectRewardValidation = [
+  body('reason')
+    .trim()
+    .notEmpty().withMessage('Red açıklaması zorunludur')
+    .isLength({ min: 5, max: 500 }).withMessage('Açıklama 5-500 karakter olmalıdır'),
+  handleValidationErrors
+];
+router.post('/referrals/:id/reject-reward', authorize('ADMIN'), rejectRewardValidation, affiliateController.rejectReferralReward);
 router.put('/:id/status', authorize('ADMIN'), affiliateController.updateAffiliateStatus);
 router.get('/stats', authorize('ADMIN'), affiliateController.getAffiliateStats);
 

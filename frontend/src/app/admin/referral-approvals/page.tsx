@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import api from '@/lib/api';
 import Link from 'next/link';
 
@@ -21,6 +22,9 @@ export default function ReferralApprovalsPage() {
   const [pendingRewards, setPendingRewards] = useState<PendingReward[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isApproving, setIsApproving] = useState(false);
+  const [rejectModalId, setRejectModalId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectError, setRejectError] = useState('');
 
   const loadPendingRewards = async () => {
     try {
@@ -48,6 +52,34 @@ export default function ReferralApprovalsPage() {
     } finally {
       setIsApproving(false);
     }
+  };
+
+  const handleRejectReward = async () => {
+    const trimmed = rejectReason.trim();
+    if (trimmed.length < 5) {
+      setRejectError('Red açıklaması en az 5 karakter olmalıdır');
+      return;
+    }
+    if (!rejectModalId) return;
+    try {
+      setIsApproving(true);
+      setRejectError('');
+      await api.post(`/affiliates/referrals/${rejectModalId}/reject-reward`, { reason: trimmed });
+      setRejectModalId(null);
+      setRejectReason('');
+      loadPendingRewards();
+      alert('Referral ödülü reddedildi');
+    } catch (error: any) {
+      setRejectError(error.response?.data?.message || 'Red işlemi başarısız');
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const openRejectModal = (id: string) => {
+    setRejectModalId(id);
+    setRejectReason('');
+    setRejectError('');
   };
 
   const handleApproveAll = async () => {
@@ -148,19 +180,83 @@ export default function ReferralApprovalsPage() {
                       </a>
                     )}
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleApproveReward(r.id)}
-                    disabled={isApproving}
-                  >
-                    Onayla
-                  </Button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => openRejectModal(r.id)}
+                      disabled={isApproving}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                    >
+                      Reddet
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => handleApproveReward(r.id)}
+                      disabled={isApproving}
+                    >
+                      Onayla
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
+      <Modal
+        isOpen={!!rejectModalId}
+        onClose={() => {
+          setRejectModalId(null);
+          setRejectReason('');
+          setRejectError('');
+        }}
+        title="Referral Ödülünü Reddet"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Red açıklaması zorunludur (en az 5 karakter). Bu açıklama kayıt altına alınacaktır.
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Red Açıklaması <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => {
+                setRejectReason(e.target.value);
+                setRejectError('');
+              }}
+              placeholder="Örn: Restoran bilgileri eksik veya şüpheli görünüyor..."
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+            {rejectError && (
+              <p className="mt-1 text-sm text-red-600">{rejectError}</p>
+            )}
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setRejectModalId(null);
+                setRejectReason('');
+                setRejectError('');
+              }}
+            >
+              İptal
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleRejectReward}
+              disabled={isApproving || rejectReason.trim().length < 5}
+            >
+              {isApproving ? 'İşleniyor...' : 'Reddet'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <div className="mt-6">
         <Link
