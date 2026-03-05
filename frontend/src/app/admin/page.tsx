@@ -4,11 +4,10 @@ import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import api from '@/lib/api';
 
-interface SystemStats {
-  totalRestaurants: number;
-  totalUsers: number;
-  totalCategories: number;
-  totalProducts: number;
+interface DashboardStats {
+  restaurants: { total: number; active: number; premium: number; free: number };
+  users: { total: number; active: number; passive: number; admin: number };
+  global: { categories: number; products: number; activeProducts: number; productsWithoutImage: number };
 }
 
 interface SystemHealth {
@@ -61,11 +60,10 @@ interface SystemHealth {
 }
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<SystemStats>({
-    totalRestaurants: 0,
-    totalUsers: 0,
-    totalCategories: 0,
-    totalProducts: 0
+  const [stats, setStats] = useState<DashboardStats>({
+    restaurants: { total: 0, active: 0, premium: 0, free: 0 },
+    users: { total: 0, active: 0, passive: 0, admin: 0 },
+    global: { categories: 0, products: 0, activeProducts: 0, productsWithoutImage: 0 }
   });
   const [recentRestaurants, setRecentRestaurants] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
@@ -88,24 +86,8 @@ export default function AdminDashboard() {
 
   const loadStats = async () => {
     try {
-      const [restaurantsRes, categoriesRes, productsRes, usersRes] = await Promise.all([
-        api.get('/restaurants?limit=100'),
-        api.get('/categories?isGlobal=true'),
-        api.get('/products?isGlobal=true'),
-        api.get('/users/stats').catch(() => ({ data: { data: { totalUsers: 0 } } }))
-      ]);
-
-      const restaurants = restaurantsRes.data.data || [];
-      const pagination = restaurantsRes.data.pagination;
-      const categories = categoriesRes.data.data || [];
-      const products = productsRes.data.data || [];
-
-      setStats({
-        totalRestaurants: pagination?.totalCount ?? restaurants.length,
-        totalUsers: usersRes.data?.data?.totalUsers ?? 0,
-        totalCategories: categories.length,
-        totalProducts: products.length
-      });
+      const res = await api.get('/admin/stats');
+      setStats(res.data.data);
     } catch (error) {
       console.error('Failed to load stats:', error);
     } finally {
@@ -181,6 +163,117 @@ export default function AdminDashboard() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
         <p className="text-gray-600">Sistem geneli istatistikler ve yönetim</p>
+      </div>
+
+      {/* 1. Satır: Restoranlar */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-gray-600">Toplam Restoranlar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-gray-900">{stats.restaurants.total}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-gray-600">Aktif Restoranlar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-green-600">{stats.restaurants.active}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-gray-600">Premium Restoranlar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-primary-600">{stats.restaurants.premium}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-gray-600">Ücretsiz Restoranlar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-gray-600">{stats.restaurants.free}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 2. Satır: Kullanıcılar */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-gray-600">Toplam Kullanıcılar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-gray-900">{stats.users.total}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-gray-600">Aktif Kullanıcılar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-green-600">{stats.users.active}</p>
+            <p className="text-sm text-gray-500 mt-1">Restoranı olan</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-gray-600">Pasif Kullanıcılar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-amber-600">{stats.users.passive}</p>
+            <p className="text-sm text-gray-500 mt-1">Restoranı olmayan</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-gray-600">Admin Kullanıcılar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-blue-600">{stats.users.admin}</p>
+            <p className="text-sm text-gray-500 mt-1">Admin + Staff</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 3. Satır: Global */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-gray-600">Global Kategoriler</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-gray-900">{stats.global.categories}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-gray-600">Global Ürünler</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-purple-600">{stats.global.products}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-gray-600">Global Aktif Ürünler</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-green-600">{stats.global.activeProducts}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-gray-600">Global Fotoğrafsız Ürünler</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-amber-600">{stats.global.productsWithoutImage}</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* System Health Section */}
@@ -394,56 +487,6 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Toplam Restoranlar
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-gray-900">{stats.totalRestaurants}</p>
-            <p className="text-sm text-gray-500 mt-1">Aktif restoran</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Toplam Kullanıcılar
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-blue-600">{stats.totalUsers}</p>
-            <p className="text-sm text-gray-500 mt-1">Kayıtlı kullanıcı</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Global Kategoriler
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-green-600">{stats.totalCategories}</p>
-            <p className="text-sm text-gray-500 mt-1">Sistem geneli</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Global Ürünler
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-purple-600">{stats.totalProducts}</p>
-            <p className="text-sm text-gray-500 mt-1">Sistem geneli</p>
-          </CardContent>
-        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

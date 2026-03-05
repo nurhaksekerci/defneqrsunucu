@@ -16,6 +16,93 @@ function parseUserAgent(ua) {
 }
 
 /**
+ * Admin dashboard istatistikleri (3 satır: restoranlar, kullanıcılar, global)
+ */
+exports.getDashboardStats = async (req, res, next) => {
+  try {
+    const now = new Date();
+    const premiumPlan = await prisma.plan.findFirst({ where: { type: 'PREMIUM', isActive: true } });
+
+    const [
+      totalRestaurants,
+      premiumRestaurantOwnerIds,
+      totalUsers,
+      activeUsersCount,
+      adminUsersCount,
+      totalCategories,
+      totalProducts,
+      activeProductsCount,
+      productsWithoutImageCount
+    ] = await Promise.all([
+      prisma.restaurant.count({ where: { isDeleted: false } }),
+      prisma.subscription.findMany({
+        where: {
+          status: 'ACTIVE',
+          endDate: { gte: now },
+          planId: premiumPlan?.id
+        },
+        select: { userId: true }
+      }).then((subs) => [...new Set(subs.map((s) => s.userId))]),
+      prisma.user.count({ where: { isDeleted: false } }),
+      prisma.user.count({
+        where: {
+          isDeleted: false,
+          restaurants: { some: { isDeleted: false } }
+        }
+      }),
+      prisma.user.count({
+        where: { isDeleted: false, role: { in: ['ADMIN', 'STAFF'] } }
+      }),
+      prisma.category.count({ where: { isGlobal: true, isDeleted: false } }),
+      prisma.product.count({ where: { isGlobal: true, isDeleted: false } }),
+      prisma.product.count({ where: { isGlobal: true, isActive: true, isDeleted: false } }),
+      prisma.product.count({
+        where: {
+          isGlobal: true,
+          isDeleted: false,
+          OR: [{ image: null }, { image: '' }]
+        }
+      })
+    ]);
+
+    const premiumRestaurants = premiumRestaurantOwnerIds.length
+      ? await prisma.restaurant.count({
+          where: {
+            isDeleted: false,
+            ownerId: { in: premiumRestaurantOwnerIds }
+          }
+        })
+      : 0;
+
+    res.json({
+      success: true,
+      data: {
+        restaurants: {
+          total: totalRestaurants,
+          active: totalRestaurants,
+          premium: premiumRestaurants,
+          free: totalRestaurants - premiumRestaurants
+        },
+        users: {
+          total: totalUsers,
+          active: activeUsersCount,
+          passive: totalUsers - activeUsersCount,
+          admin: adminUsersCount
+        },
+        global: {
+          categories: totalCategories,
+          products: totalProducts,
+          activeProducts: activeProductsCount,
+          productsWithoutImage: productsWithoutImageCount
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Admin dashboard - son restoranlar ve sistem aktivitesi
  */
 exports.getDashboardData = async (req, res, next) => {
