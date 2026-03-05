@@ -540,7 +540,17 @@ exports.getPendingReferralRewards = async (req, res, next) => {
             user: { select: { fullName: true, email: true } }
           }
         },
-        referredUser: { select: { fullName: true, email: true } }
+        referredUser: {
+          select: {
+            fullName: true,
+            email: true,
+            restaurants: {
+              where: { isDeleted: false },
+              take: 1,
+              select: { slug: true, name: true }
+            }
+          }
+        }
       },
       orderBy: { firstSubscription: 'asc' }
     });
@@ -548,12 +558,19 @@ exports.getPendingReferralRewards = async (req, res, next) => {
     const settings = await prisma.affiliateSettings.findFirst();
     const daysToAward = settings?.daysPerReferralFree ?? 7;
 
+    const siteUrl = process.env.FRONTEND_URL || 'https://defneqr.com';
     res.json({
       success: true,
-      data: referrals.map((r) => ({
-        ...r,
-        daysToAward
-      }))
+      data: referrals.map((r) => {
+        const restaurant = r.referredUser?.restaurants?.[0];
+        return {
+          ...r,
+          daysToAward,
+          restaurantSlug: restaurant?.slug ?? null,
+          restaurantName: restaurant?.name ?? null,
+          restaurantUrl: restaurant ? `${siteUrl}/${restaurant.slug}/menu` : null
+        };
+      })
     });
   } catch (error) {
     next(error);

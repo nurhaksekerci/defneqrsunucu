@@ -12,6 +12,9 @@ interface PendingReward {
   affiliate: { user: { fullName: string; email: string } };
   firstSubscription: string;
   daysToAward: number;
+  restaurantSlug: string | null;
+  restaurantName: string | null;
+  restaurantUrl: string | null;
 }
 
 export default function ReferralApprovalsPage() {
@@ -134,6 +137,16 @@ export default function ReferralApprovalsPage() {
                     <p className="text-xs text-gray-400 mt-0.5">
                       İlk abonelik: {new Date(r.firstSubscription).toLocaleDateString('tr-TR')}
                     </p>
+                    {r.restaurantUrl && (
+                      <a
+                        href={r.restaurantUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium mt-1.5"
+                      >
+                        🏪 {(r.restaurantName || r.restaurantSlug || 'Restoran')} menüsü →
+                      </a>
+                    )}
                   </div>
                   <Button
                     size="sm"

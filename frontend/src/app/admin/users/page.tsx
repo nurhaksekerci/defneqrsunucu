@@ -75,6 +75,17 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleRestore = async (id: string) => {
+    if (!confirm('Bu kullanıcıyı aktif etmek istediğinizden emin misiniz?')) return;
+    try {
+      await api.put(`/users/${id}/restore`);
+      loadUsers();
+    } catch (error: any) {
+      console.error('Failed to restore user:', error);
+      alert(error.response?.data?.message || 'Kullanıcı aktif edilemedi. Lütfen tekrar deneyin.');
+    }
+  };
+
   const handleHardDelete = async (id: string) => {
     if (!confirm('KALICI SİLME: Bu kullanıcı ve tüm restoranları, siparişleri, abonelikleri vb. kalıcı olarak silinecek. Bu işlem GERİ ALINAMAZ. Devam etmek istiyor musunuz?')) return;
     try {
@@ -286,7 +297,14 @@ export default function AdminUsersPage() {
                           {new Date(user.createdAt).toLocaleDateString('tr-TR')}
                         </td>
                         <td className="py-3 px-4 text-right">
-                          {!user.isDeleted && (
+                          {user.isDeleted ? (
+                            <button
+                              onClick={() => handleRestore(user.id)}
+                              className="px-4 py-1.5 text-sm text-green-600 hover:text-green-700 font-medium mr-2"
+                            >
+                              Aktif Et
+                            </button>
+                          ) : (
                             <button
                               onClick={() => handleSoftDelete(user.id)}
                               className="px-4 py-1.5 text-sm text-amber-600 hover:text-amber-700 font-medium mr-2"
@@ -312,6 +330,9 @@ export default function AdminUsersPage() {
       </Card>
 
       <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
+        <p className="text-sm text-green-800">
+          <strong>Aktif Et:</strong> Pasif kullanıcıyı tekrar aktif hale getirir, giriş yapabilir.
+        </p>
         <p className="text-sm text-amber-800">
           <strong>Pasif Yap:</strong> Kullanıcı pasif olarak işaretlenir, giriş yapamaz. Geri alınabilir.
         </p>

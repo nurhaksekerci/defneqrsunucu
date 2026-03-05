@@ -47,6 +47,13 @@ router.put('/:id/role', authorize('ADMIN'), updateUserRoleValidation, userContro
 router.delete('/:id/hard', uuidParamValidation('id'), authorize('ADMIN'), userController.hardDeleteUser);
 
 /**
+ * @route   PUT /api/users/:id/restore
+ * @desc    Pasif kullanıcıyı aktif et
+ * @access  Admin
+ */
+router.put('/:id/restore', authorize('ADMIN'), uuidParamValidation('id'), userController.restoreUser);
+
+/**
  * @route   DELETE /api/users/:id
  * @desc    Kullanıcı sil (soft delete)
  * @access  Admin

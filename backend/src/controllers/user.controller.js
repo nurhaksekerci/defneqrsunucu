@@ -190,6 +190,45 @@ exports.updateUserRole = async (req, res, next) => {
 };
 
 /**
+ * Kullanıcıyı aktif et - Soft delete geri al (Admin only)
+ */
+exports.restoreUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Kullanıcı bulunamadı'
+      });
+    }
+
+    if (!user.isDeleted) {
+      return res.status(400).json({
+        success: false,
+        message: 'Kullanıcı zaten aktif'
+      });
+    }
+
+    await prisma.user.update({
+      where: { id },
+      data: {
+        isDeleted: false,
+        deletedAt: null
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Kullanıcı aktif edildi'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Kullanıcı sil - Soft delete (Admin only)
  */
 exports.deleteUser = async (req, res, next) => {
