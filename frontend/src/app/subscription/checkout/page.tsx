@@ -30,6 +30,7 @@ function CheckoutContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [promoDiscount, setPromoDiscount] = useState<any>(null);
+  const [referralDiscount, setReferralDiscount] = useState<{ hasDiscount: boolean; discountPercent: number } | null>(null);
   const [isValidatingPromo, setIsValidatingPromo] = useState(false);
   
   const [paymentData, setPaymentData] = useState({
@@ -56,8 +57,12 @@ function CheckoutContent() {
   const loadPlan = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get(`/plans/${planId}`);
-      setPlan(response.data.data);
+      const [planRes, referralRes] = await Promise.all([
+        api.get(`/plans/${planId}`),
+        api.get('/affiliates/me/referral-discount').catch(() => ({ data: { data: { hasDiscount: false } } }))
+      ]);
+      setPlan(planRes.data.data);
+      setReferralDiscount(referralRes.data.data);
     } catch (error) {
       console.error('Failed to load plan:', error);
       alert('Plan yüklenemedi');
@@ -77,7 +82,7 @@ function CheckoutContent() {
       // İndirim hesapla
       const applyResponse = await api.post('/promo-codes/apply', {
         code: promoCode,
-        subscriptionAmount: calculateTotal(),
+        subscriptionAmount: getPriceAfterReferralDiscount(),
         planId
       });
 
@@ -99,19 +104,31 @@ function CheckoutContent() {
     
     // Kurumsal plan için ek işletme ücreti
     if (plan.type === 'CUSTOM' && restaurantCount > 1) {
-      // extraRestaurantPrice backend'den gelmeli, şimdilik sabit
-      const extraPrice = 50; // Bu değer plan'dan gelmeli
+      const extraPrice = 50;
       total += (restaurantCount - 1) * extraPrice;
     }
 
     return total;
   };
 
+  const getPriceAfterReferralDiscount = () => {
+    const total = calculateTotal();
+    if (referralDiscount?.hasDiscount && referralDiscount.discountPercent > 0) {
+      return total * (1 - referralDiscount.discountPercent / 100);
+    }
+    return total;
+  };
+
+  const getReferralDiscountAmount = () => {
+    if (!referralDiscount?.hasDiscount || referralDiscount.discountPercent <= 0) return 0;
+    return calculateTotal() - getPriceAfterReferralDiscount();
+  };
+
   const getFinalAmount = () => {
     if (promoDiscount) {
       return promoDiscount.finalAmount;
     }
-    return calculateTotal();
+    return getPriceAfterReferralDiscount();
   };
 
   // 0 veya 0.00 (floating point/string) - kart bilgisi gerekmez
@@ -135,10 +152,14 @@ function CheckoutContent() {
         customRestaurantCount: plan.type === 'CUSTOM' ? restaurantCount : null
       };
 
+      const referralDiscAmount = getReferralDiscountAmount();
+      const promoDiscAmount = promoDiscount?.discountAmount ?? 0;
+      if (referralDiscAmount > 0 || promoDiscAmount > 0) {
+        subscriptionData.originalAmount = calculateTotal();
+        subscriptionData.discountAmount = referralDiscAmount + promoDiscAmount;
+      }
       if (promoDiscount?.promoCodeId) {
         subscriptionData.promoCodeId = promoDiscount.promoCodeId;
-        subscriptionData.originalAmount = calculateTotal();
-        subscriptionData.discountAmount = promoDiscount.discountAmount;
       }
 
       // Kullanıcı kendi planını satın alır (/subscribe endpoint'i)
@@ -197,6 +218,12 @@ function CheckoutContent() {
                     </div>
                   )}
 
+                  {referralDiscount?.hasDiscount && referralDiscount.discountPercent > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Affiliate İndirimi (%{referralDiscount.discountPercent}):</span>
+                      <span className="font-semibold">-₺{getReferralDiscountAmount().toFixed(2)}</span>
+                    </div>
+                  )}
                   {promoDiscount && (
                     <div className="flex justify-between text-green-600">
                       <span>Promosyon İndirimi:</span>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -16,6 +17,7 @@ interface AffiliateSettings {
   daysPerReferral?: number;
   daysPerReferralFree?: number;
   daysPerReferralPaid?: number;
+  referralDiscountPercent?: number;
 }
 
 interface PendingReward {
@@ -35,6 +37,7 @@ export default function AffiliateSettingsPage() {
     minimumPayout: 100,
     daysPerReferralFree: 7,
     daysPerReferralPaid: 14,
+    referralDiscountPercent: 0,
     isEnabled: true,
     requireApproval: true,
     cookieDuration: 30
@@ -58,6 +61,7 @@ export default function AffiliateSettingsPage() {
         minimumPayout: data.minimumPayout,
         daysPerReferralFree: data.daysPerReferralFree ?? data.daysPerReferral ?? 7,
         daysPerReferralPaid: data.daysPerReferralPaid ?? data.daysPerReferral ?? 14,
+        referralDiscountPercent: data.referralDiscountPercent ?? 0,
         isEnabled: data.isEnabled,
         requireApproval: data.requireApproval,
         cookieDuration: data.cookieDuration
@@ -230,6 +234,32 @@ export default function AffiliateSettingsPage() {
                 </div>
               </div>
 
+              {/* Davet Edilen Kullanıcı İndirimi */}
+              <div className="col-span-2 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <h3 className="text-sm font-semibold text-amber-900 mb-3">
+                  🎁 Davet Edilen Kullanıcı İndirimi
+                </h3>
+                <p className="text-xs text-amber-800 mb-3">
+                  Affiliate linki ile kayıt olan kullanıcılar plan satın alırken bu oranda indirim alır. Hem davet eden gün kazanır hem gelen indirimli alır!
+                </p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    İndirim Oranı (%) *
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    value={formData.referralDiscountPercent}
+                    onChange={(e) => setFormData({ ...formData, referralDiscountPercent: parseFloat(e.target.value) || 0 })}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    0 = kapalı. Örn: 10 = %10 indirim (₺100 plan → ₺90)
+                  </p>
+                </div>
+              </div>
+
               {/* Commission Rate - ÖDENEN AFFİLİATE'LER İÇİN */}
               <div className="col-span-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h3 className="text-sm font-semibold text-blue-900 mb-3">
@@ -303,7 +333,8 @@ export default function AffiliateSettingsPage() {
                   <ul className="text-xs text-purple-800 space-y-1">
                     <li>• <strong>Ücretsiz plan:</strong> Referral ücretsiz plana geçerse <strong>{formData.daysPerReferralFree} gün</strong> kazanılır (admin onayı gerekir)</li>
                     <li>• <strong>Ücretli plan:</strong> Referral ücretli plana geçerse <strong>{formData.daysPerReferralPaid} gün</strong> otomatik kazanılır</li>
-                    <li>• <strong>Ödenen Affiliate'ler:</strong> Ücretli abonelikten <strong>%{formData.commissionRate}</strong> para komisyonu</li>
+                    <li>• <strong>Davet edilen indirim:</strong> Affiliate link ile gelen kullanıcılar satın alırken <strong>%{formData.referralDiscountPercent} indirim</strong> alır</li>
+                    <li>• <strong>Ödenen Affiliate&apos;ler:</strong> Ücretli abonelikten <strong>%{formData.commissionRate}</strong> para komisyonu</li>
                   </ul>
                 </div>
               </div>
@@ -322,11 +353,16 @@ export default function AffiliateSettingsPage() {
       {/* Bekleyen Onaylar */}
       {pendingRewards.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle>⏳ Onay Bekleyen Referral Ödülleri ({pendingRewards.length})</CardTitle>
-            <p className="text-sm text-gray-500 mt-1">
-              Ücretsiz plana geçen kullanıcılar için affiliate ödülü onayı
-            </p>
+          <CardHeader className="flex flex-row items-start justify-between gap-4">
+            <div>
+              <CardTitle>⏳ Onay Bekleyen Referral Ödülleri ({pendingRewards.length})</CardTitle>
+              <p className="text-sm text-gray-500 mt-1">
+                Ücretsiz plana geçen kullanıcılar için affiliate ödülü onayı
+              </p>
+            </div>
+            <Link href="/admin/referral-approvals">
+              <Button variant="secondary" size="sm">Onay sayfasına git →</Button>
+            </Link>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 mb-4">
@@ -384,8 +420,8 @@ export default function AffiliateSettingsPage() {
               <p>Link üzerinden kayıt olan kullanıcılar {formData.cookieDuration} gün içinde affiliate ile eşleştirilir</p>
             </div>
             <div>
-              <h4 className="font-semibold mb-2">4. Ödül / Komisyon</h4>
-              <p>Ücretsiz plan: Admin onayı sonrası {formData.daysPerReferralFree} gün. Ücretli plan: Otomatik {formData.daysPerReferralPaid} gün. Para komisyonu: %{formData.commissionRate}</p>
+              <h4 className="font-semibold mb-2">4. Ödül / Komisyon / İndirim</h4>
+              <p>Ücretsiz plan: Admin onayı sonrası {formData.daysPerReferralFree} gün. Ücretli plan: Otomatik {formData.daysPerReferralPaid} gün. Davet edilen kullanıcılar satın alırken %{formData.referralDiscountPercent} indirim alır. Para komisyonu: %{formData.commissionRate}</p>
             </div>
             <div>
               <h4 className="font-semibold mb-2">5. Ödeme</h4>

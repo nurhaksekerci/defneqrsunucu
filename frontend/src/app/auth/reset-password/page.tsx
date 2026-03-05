@@ -35,7 +35,7 @@ function ResetPasswordForm() {
     if (/[a-z]/.test(password)) strength++;
     if (/[A-Z]/.test(password)) strength++;
     if (/\d/.test(password)) strength++;
-    if (/[@$!%*?&]/.test(password)) strength++;
+    if (/[^a-zA-Z0-9]/.test(password)) strength++;
 
     if (strength <= 2) return { level: 'weak', color: 'bg-red-500', text: 'Zayıf' };
     if (strength <= 4) return { level: 'medium', color: 'bg-yellow-500', text: 'Orta' };
@@ -51,6 +51,14 @@ function ResetPasswordForm() {
       newErrors.newPassword = 'Yeni şifre gerekli';
     } else if (formData.newPassword.length < 8) {
       newErrors.newPassword = 'Şifre en az 8 karakter olmalı';
+    } else if (!/[a-z]/.test(formData.newPassword)) {
+      newErrors.newPassword = 'Şifre en az bir küçük harf içermelidir';
+    } else if (!/[A-Z]/.test(formData.newPassword)) {
+      newErrors.newPassword = 'Şifre en az bir büyük harf içermelidir';
+    } else if (!/\d/.test(formData.newPassword)) {
+      newErrors.newPassword = 'Şifre en az bir rakam içermelidir';
+    } else if (!/[^a-zA-Z0-9]/.test(formData.newPassword)) {
+      newErrors.newPassword = 'Şifre en az bir özel karakter (. - _ @ $ ! % * ? & vb.) içermelidir';
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
@@ -191,7 +199,7 @@ function ResetPasswordForm() {
                   <span className="text-sm font-medium text-gray-700">{passwordStrength.text}</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Şifre gereksinimleri: En az 8 karakter, 1 büyük harf, 1 küçük harf, 1 rakam ve 1 özel karakter (@$!%*?&)
+                  Şifre gereksinimleri: En az 8 karakter, 1 büyük harf, 1 küçük harf, 1 rakam ve 1 özel karakter (. - _ @ $ ! % * ? & vb.)
                 </p>
               </div>
             )}

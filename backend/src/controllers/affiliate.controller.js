@@ -61,6 +61,35 @@ exports.applyForAffiliate = async (req, res, next) => {
   }
 };
 
+// Davet edilen kullanıcı indirimi (checkout için - affiliate link ile gelen kullanıcılar)
+exports.getReferralDiscount = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const settings = await prisma.affiliateSettings.findFirst();
+    if (!settings || !settings.isEnabled || !settings.referralDiscountPercent || settings.referralDiscountPercent <= 0) {
+      return res.json({ success: true, data: { hasDiscount: false } });
+    }
+
+    const referral = await prisma.referral.findFirst({
+      where: { referredUserId: userId }
+    });
+
+    if (!referral) {
+      return res.json({ success: true, data: { hasDiscount: false } });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        hasDiscount: true,
+        discountPercent: settings.referralDiscountPercent
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Kendi affiliate bilgilerini getir
 exports.getMyAffiliateInfo = async (req, res, next) => {
   try {
@@ -393,7 +422,8 @@ exports.updateAffiliateSettings = async (req, res, next) => {
       cookieDuration,
       daysPerReferral,
       daysPerReferralFree,
-      daysPerReferralPaid
+      daysPerReferralPaid,
+      referralDiscountPercent
     } = req.body;
 
     const data = {};
@@ -405,6 +435,7 @@ exports.updateAffiliateSettings = async (req, res, next) => {
     if (daysPerReferral !== undefined) data.daysPerReferral = daysPerReferral;
     if (daysPerReferralFree !== undefined) data.daysPerReferralFree = daysPerReferralFree;
     if (daysPerReferralPaid !== undefined) data.daysPerReferralPaid = daysPerReferralPaid;
+    if (referralDiscountPercent !== undefined) data.referralDiscountPercent = referralDiscountPercent;
 
     let settings = await prisma.affiliateSettings.findFirst();
 

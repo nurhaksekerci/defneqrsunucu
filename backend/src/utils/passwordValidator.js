@@ -8,9 +8,9 @@
  * - En az 1 büyük harf
  * - En az 1 küçük harf
  * - En az 1 rakam
- * - En az 1 özel karakter (@$!%*?&)
+ * - En az 1 özel karakter (. - _ @ $ ! % * ? & vb.)
  */
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+const specialCharRegex = /[^a-zA-Z0-9]/;
 
 /**
  * Validate password complexity
@@ -53,10 +53,10 @@ exports.validatePassword = (password) => {
     };
   }
 
-  if (!/[@$!%*?&]/.test(password)) {
+  if (!specialCharRegex.test(password)) {
     return {
       valid: false,
-      message: 'Şifre en az bir özel karakter (@$!%*?&) içermelidir'
+      message: 'Şifre en az bir özel karakter (. - _ @ $ ! % * ? & vb.) içermelidir'
     };
   }
 
@@ -79,7 +79,7 @@ exports.getPasswordStrength = (password) => {
   if (/[a-z]/.test(password)) strength++;
   if (/[A-Z]/.test(password)) strength++;
   if (/\d/.test(password)) strength++;
-  if (/[@$!%*?&]/.test(password)) strength++;
+  if (specialCharRegex.test(password)) strength++;
   if (password.length >= 16) strength++;
 
   if (strength <= 2) return 'weak';

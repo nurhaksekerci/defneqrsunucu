@@ -863,6 +863,9 @@ model AffiliateSettings {
   // Cookie süresi (gün)
   cookieDuration        Int      @default(30)
   
+  // Davet edilen kullanıcı indirimi (% - affiliate link ile gelen kullanıcılar satın alırken)
+  referralDiscountPercent Float  @default(0)
+  
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   

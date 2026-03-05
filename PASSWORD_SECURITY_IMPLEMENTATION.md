@@ -7,7 +7,7 @@
 - ✅ En az 1 büyük harf (A-Z)
 - ✅ En az 1 küçük harf (a-z)
 - ✅ En az 1 rakam (0-9)
-- ✅ En az 1 özel karakter (@$!%*?&)
+- ✅ En az 1 özel karakter (. - _ @ $ ! % * ? & vb.)
 
 ### 2. Password Strength Indicator
 - ✅ Real-time password strength göstergesi

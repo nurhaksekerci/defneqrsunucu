@@ -73,6 +73,13 @@ exports.canSpin = async (req, res, next) => {
       return res.json({ success: true, data: { canSpin: false, reason: 'premium_user' } });
     }
 
+    const restaurantCount = await prisma.restaurant.count({
+      where: { ownerId: userId, isDeleted: false }
+    });
+    if (restaurantCount === 0) {
+      return res.json({ success: true, data: { canSpin: false, reason: 'no_restaurant' } });
+    }
+
     const todayStart = getTurkeyTodayStart();
     const lastSpin = await prisma.wheelSpin.findFirst({
       where: { userId },
@@ -122,6 +129,13 @@ exports.spin = async (req, res, next) => {
     const plan = await getUserPlan(userId);
     if (!plan || plan.type !== 'FREE') {
       return res.status(403).json({ success: false, message: 'Sadece ücretsiz plan kullanıcıları çevirebilir' });
+    }
+
+    const restaurantCount = await prisma.restaurant.count({
+      where: { ownerId: userId, isDeleted: false }
+    });
+    if (restaurantCount === 0) {
+      return res.status(403).json({ success: false, message: 'Çark oyunu için en az bir restoran oluşturmalısınız' });
     }
 
     const todayStart = getTurkeyTodayStart();
