@@ -40,6 +40,13 @@ router.get('/:id', uuidParamValidation('id'), userController.getUserById);
 router.put('/:id/role', authorize('ADMIN'), updateUserRoleValidation, userController.updateUserRole);
 
 /**
+ * @route   DELETE /api/users/:id/hard
+ * @desc    Kullanıcı kalıcı sil (hard delete - tüm ilişkili kayıtlar silinir)
+ * @access  Admin
+ */
+router.delete('/:id/hard', uuidParamValidation('id'), authorize('ADMIN'), userController.hardDeleteUser);
+
+/**
  * @route   DELETE /api/users/:id
  * @desc    Kullanıcı sil (soft delete)
  * @access  Admin

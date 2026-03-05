@@ -2,16 +2,21 @@ const prisma = require('../config/database');
 const { parsePaginationParams, createPaginatedResponse } = require('../utils/pagination');
 
 /**
- * Tüm kullanıcıları listele (Admin only)
+ * Tüm kullanıcıları listele (Admin only - aktif ve pasif)
  */
 exports.getAllUsers = async (req, res, next) => {
   try {
     const { page, limit, skip } = parsePaginationParams(req.query);
-    const { search, role } = req.query;
+    const { search, role, status } = req.query;
 
-    const where = {
-      isDeleted: false
-    };
+    const where = {};
+
+    // status: all | active | passive (deleted)
+    if (status === 'active') {
+      where.isDeleted = false;
+    } else if (status === 'passive') {
+      where.isDeleted = true;
+    }
 
     // Search filter
     if (search) {
@@ -40,6 +45,8 @@ exports.getAllUsers = async (req, res, next) => {
         fullName: true,
         role: true,
         googleId: true,
+        isDeleted: true,
+        deletedAt: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -183,13 +190,12 @@ exports.updateUserRole = async (req, res, next) => {
 };
 
 /**
- * Kullanıcı sil (Soft delete - Admin only)
+ * Kullanıcı sil - Soft delete (Admin only)
  */
 exports.deleteUser = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // Kendi hesabını silmeye çalışıyor mu?
     if (id === req.user.id) {
       return res.status(400).json({
         success: false,
@@ -197,7 +203,6 @@ exports.deleteUser = async (req, res, next) => {
       });
     }
 
-    // Soft delete
     await prisma.user.update({
       where: { id },
       data: {
@@ -208,7 +213,92 @@ exports.deleteUser = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: 'Kullanıcı silindi'
+      message: 'Kullanıcı silindi (pasif)'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Kullanıcı kalıcı sil (Hard delete - Admin only)
+ * Kullanıcıya ait tüm kayıtlar (restoranlar, siparişler vb.) silinir
+ */
+exports.hardDeleteUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (id === req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Kendi hesabınızı silemezsiniz'
+      });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Kullanıcı bulunamadı'
+      });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const restaurants = await tx.restaurant.findMany({
+        where: { ownerId: id },
+        select: { id: true }
+      });
+      const restaurantIds = restaurants.map((r) => r.id);
+
+      for (const rid of restaurantIds) {
+        const orders = await tx.order.findMany({ where: { restaurantId: rid }, select: { id: true } });
+        const orderIds = orders.map((o) => o.id);
+
+        for (const oid of orderIds) {
+          await tx.orderItem.deleteMany({ where: { orderId: oid } });
+          await tx.payment.updateMany({ where: { orderId: oid }, data: { cashierId: null } });
+          await tx.payment.deleteMany({ where: { orderId: oid } });
+        }
+        await tx.order.deleteMany({ where: { restaurantId: rid } });
+        await tx.stock.deleteMany({ where: { restaurantId: rid } });
+        await tx.product.deleteMany({ where: { restaurantId: rid } });
+        await tx.category.deleteMany({ where: { restaurantId: rid } });
+        await tx.table.deleteMany({ where: { restaurantId: rid } });
+        await tx.menuScan.deleteMany({ where: { restaurantId: rid } });
+        await tx.supportTicket.deleteMany({ where: { restaurantId: rid } });
+      }
+      await tx.restaurant.deleteMany({ where: { ownerId: id } });
+
+      await tx.order.updateMany({ where: { waiterId: id }, data: { waiterId: null } });
+      await tx.payment.updateMany({ where: { cashierId: id }, data: { cashierId: null } });
+      await tx.promoCodeUsage.deleteMany({ where: { userId: id } });
+      await tx.subscription.deleteMany({ where: { userId: id } });
+      await tx.passwordReset.deleteMany({ where: { userId: id } });
+      await tx.refreshToken.deleteMany({ where: { userId: id } });
+      await tx.wheelSpin.deleteMany({ where: { userId: id } });
+
+      const affiliate = await tx.affiliatePartner.findUnique({ where: { userId: id } });
+      if (affiliate) {
+        await tx.affiliateCommission.deleteMany({ where: { affiliateId: affiliate.id } });
+        await tx.affiliatePayout.deleteMany({ where: { affiliateId: affiliate.id } });
+        await tx.referral.deleteMany({ where: { affiliateId: affiliate.id } });
+        await tx.referral.deleteMany({ where: { referredUserId: id } });
+        await tx.affiliatePartner.delete({ where: { id: affiliate.id } });
+      } else {
+        await tx.referral.deleteMany({ where: { referredUserId: id } });
+      }
+
+      await tx.supportTicket.updateMany({ where: { assignedToId: id }, data: { assignedToId: null } });
+      await tx.supportTicket.updateMany({ where: { resolvedById: id }, data: { resolvedById: null } });
+      await tx.supportTicket.deleteMany({ where: { userId: id } });
+      await tx.ticketMessage.deleteMany({ where: { authorId: id } });
+
+      await tx.user.delete({ where: { id } });
+    });
+
+    res.json({
+      success: true,
+      message: 'Kullanıcı ve tüm ilişkili kayıtlar kalıcı olarak silindi'
     });
   } catch (error) {
     next(error);

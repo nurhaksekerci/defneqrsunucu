@@ -11,6 +11,8 @@ interface User {
   username?: string;
   googleId?: string;
   role: 'ADMIN' | 'STAFF' | 'RESTAURANT_OWNER' | 'CASHIER' | 'WAITER' | 'BARISTA' | 'COOK';
+  isDeleted?: boolean;
+  deletedAt?: string | null;
   createdAt: string;
   subscriptions?: Array<{
     id: string;
@@ -32,16 +34,18 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [statusFilter]);
 
   const loadUsers = async () => {
     try {
-      // Backend'de users endpoint'i yoksa boş array döndür
-      const response = await api.get('/users').catch(() => ({ data: { data: [] } }));
+      const params = new URLSearchParams();
+      if (statusFilter !== 'all') params.set('status', statusFilter);
+      const response = await api.get(`/users?${params.toString()}`).catch(() => ({ data: { data: [] } }));
       setUsers(response.data.data || []);
     } catch (error) {
       console.error('Failed to load users:', error);
@@ -60,16 +64,24 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
-      return;
-    }
-
+  const handleSoftDelete = async (id: string) => {
+    if (!confirm('Bu kullanıcıyı pasif yapmak istediğinizden emin misiniz? (Geri alınabilir)')) return;
     try {
       await api.delete(`/users/${id}`);
       loadUsers();
     } catch (error) {
       console.error('Failed to delete user:', error);
+      alert('Kullanıcı silinemedi. Lütfen tekrar deneyin.');
+    }
+  };
+
+  const handleHardDelete = async (id: string) => {
+    if (!confirm('KALICI SİLME: Bu kullanıcı ve tüm restoranları, siparişleri, abonelikleri vb. kalıcı olarak silinecek. Bu işlem GERİ ALINAMAZ. Devam etmek istiyor musunuz?')) return;
+    try {
+      await api.delete(`/users/${id}/hard`);
+      loadUsers();
+    } catch (error) {
+      console.error('Failed to hard delete user:', error);
       alert('Kullanıcı silinemedi. Lütfen tekrar deneyin.');
     }
   };
@@ -100,7 +112,8 @@ export default function AdminUsersPage() {
     return colors[role];
   };
 
-  const filteredUsers = users.filter(user => {
+  const userArray = Array.isArray(users) ? users : [];
+  const filteredUsers = userArray.filter(user => {
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     const matchesSearch = 
       user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -123,8 +136,8 @@ export default function AdminUsersPage() {
         <p className="text-gray-600">Sistemdeki tüm kullanıcıları görüntüleyin</p>
       </div>
 
-      <div className="mb-6 flex gap-4">
-        <div className="flex-1">
+      <div className="mb-6 flex flex-wrap gap-4">
+        <div className="flex-1 min-w-[200px]">
           <input
             type="text"
             placeholder="Kullanıcı ara..."
@@ -133,7 +146,18 @@ export default function AdminUsersPage() {
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
           />
         </div>
-        <div className="w-64">
+        <div className="w-40">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+          >
+            <option value="all">Tümü</option>
+            <option value="active">Aktif</option>
+            <option value="passive">Pasif</option>
+          </select>
+        </div>
+        <div className="w-48">
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
@@ -167,6 +191,7 @@ export default function AdminUsersPage() {
                   <tr className="border-b border-gray-200">
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Ad Soyad</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Email</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Durum</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Rol</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Abonelik</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Başlangıç Tarihi</th>
@@ -183,8 +208,8 @@ export default function AdminUsersPage() {
                           <div className="font-medium text-gray-900">{user.fullName}</div>
                           <div className="text-sm text-gray-600">{user.username || '-'}</div>
                         </td>
-                        <td className="py-3 px-4 text-gray-900">
-                          <div className="flex items-center gap-2">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2 text-gray-900">
                             {user.email}
                             {user.googleId && (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800" title="Google ile kayıt oldu">
@@ -212,10 +237,22 @@ export default function AdminUsersPage() {
                           </div>
                         </td>
                         <td className="py-3 px-4">
+                          {user.isDeleted ? (
+                            <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
+                              Pasif
+                            </span>
+                          ) : (
+                            <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Aktif
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
                           <select
                             value={user.role}
                             onChange={(e) => handleRoleChange(user.id, e.target.value as User['role'])}
-                            className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 bg-white text-gray-900 hover:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 cursor-pointer min-w-[140px]"
+                            disabled={user.isDeleted}
+                            className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 bg-white text-gray-900 hover:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 cursor-pointer min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <option value="ADMIN">Admin</option>
                             <option value="STAFF">Staff</option>
@@ -249,11 +286,19 @@ export default function AdminUsersPage() {
                           {new Date(user.createdAt).toLocaleDateString('tr-TR')}
                         </td>
                         <td className="py-3 px-4 text-right">
+                          {!user.isDeleted && (
+                            <button
+                              onClick={() => handleSoftDelete(user.id)}
+                              className="px-4 py-1.5 text-sm text-amber-600 hover:text-amber-700 font-medium mr-2"
+                            >
+                              Pasif Yap
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleDelete(user.id)}
-                            className="px-3 py-1.5 text-sm text-red-600 hover:text-red-700 font-medium"
+                            onClick={() => handleHardDelete(user.id)}
+                            className="px-4 py-1.5 text-sm text-red-600 hover:text-red-700 font-medium"
                           >
-                            Sil
+                            Kalıcı Sil
                           </button>
                         </td>
                       </tr>
@@ -266,9 +311,12 @@ export default function AdminUsersPage() {
         </CardContent>
       </Card>
 
-      <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <p className="text-sm text-yellow-800">
-          <strong>⚠️ Uyarı:</strong> Kullanıcı silme işlemi geri alınamaz. Lütfen dikkatli olun.
+      <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
+        <p className="text-sm text-amber-800">
+          <strong>Pasif Yap:</strong> Kullanıcı pasif olarak işaretlenir, giriş yapamaz. Geri alınabilir.
+        </p>
+        <p className="text-sm text-red-800">
+          <strong>Kalıcı Sil:</strong> Kullanıcı ve tüm restoranları, siparişleri, abonelikleri vb. kalıcı olarak silinir. Bu işlem GERİ ALINAMAZ.
         </p>
       </div>
     </div>
