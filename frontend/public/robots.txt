@@ -1,5 +1,5 @@
 # robots.txt for Defne Qr (defneqr.com)
-# Updated: 2026-02-19
+# Updated: 2026-02-28 | Google SEO optimized
 
 # Allow all search engines
 User-agent: *
@@ -10,42 +10,29 @@ Allow: /qr-menu
 Allow: /dijital-menu
 Allow: /fiyatlar
 Allow: /ozellikler
+Allow: /hakkimizda
+Allow: /iletisim
+Allow: /sss
+Allow: /blog
 Allow: /blog/
 
-# Disallow admin and auth pages
+# Public restaurant QR menus (/*/menu pattern)
+Allow: /*/menu
+
+# Disallow admin, dashboard and auth pages
 Disallow: /admin/
-Disallow: /admin/*
 Disallow: /dashboard/
-Disallow: /dashboard/*
 Disallow: /auth/
-Disallow: /auth/*
 Disallow: /api/
 
-# Disallow private user data
-Disallow: /[slug]/menu/*?
+# Disallow edit/create paths (private user data)
 Disallow: /*/edit
 Disallow: /*/create
-
-# Allow QR menu public pages
-Allow: /[a-z0-9-]*/menu$
 
 # Sitemap location
 Sitemap: https://defneqr.com/sitemap.xml
 
-# Crawl delay (optional, for polite crawling)
-Crawl-delay: 1
-
-# Specific bot rules
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Yandex
-Allow: /
-
-# Block bad bots
+# Block/slow SEO crawler bots (optional)
 User-agent: AhrefsBot
 Crawl-delay: 10
 
