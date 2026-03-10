@@ -20,9 +20,21 @@ interface Restaurant {
   logo?: string;
 }
 
+interface Plan {
+  id: string;
+  name: string;
+  type: string;
+  price?: number;
+  maxRestaurants: number;
+  maxCategories: number;
+  maxProducts: number;
+}
+
 interface SubscriptionData {
   hasSubscription?: boolean;
-  plan?: { name: string; type: string };
+  plan?: Plan;
+  usage?: { restaurants: number; categories: number; products: number };
+  limits?: { restaurants: number; categories: number; products: number };
   subscription?: { daysRemaining: number };
 }
 
@@ -33,7 +45,6 @@ const quickActions = [
   { href: '/dashboard/products', icon: '🍽️', label: 'Ürünler', desc: 'Ürün ekle ve düzenle' },
   { href: '/dashboard/menu-settings', icon: '🎨', label: 'Menü Özelleştirme', desc: 'Renk ve görünüm' },
   { href: '/dashboard/reports', icon: '📊', label: 'QR Tarama İstatistikleri', desc: 'Menü tarama verileri' },
-  { href: '/dashboard/subscription', icon: '💎', label: 'Plan & Abonelik', desc: 'Planınızı yönetin' },
   { href: '/dashboard/support', icon: '🎫', label: 'Destek', desc: 'Yardım alın' },
 ];
 
@@ -43,13 +54,24 @@ export default function DashboardPage() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadUser();
     loadRestaurants();
     loadSubscription();
+    loadPlans();
   }, []);
+
+  const loadPlans = async () => {
+    try {
+      const res = await api.get('/plans');
+      setPlans(res.data.data || []);
+    } catch {
+      setPlans([]);
+    }
+  };
 
   const loadUser = async () => {
     try {
@@ -257,10 +279,45 @@ export default function DashboardPage() {
                   defneqr.com
                 </a>
               </div>
-              {subscription?.hasSubscription && subscription?.subscription?.daysRemaining !== undefined && (
-                <p className="text-xs text-gray-500 pt-2 border-t border-primary-100">
-                  Abonelik: {subscription.subscription.daysRemaining} gün kaldı
+            </CardContent>
+          </Card>
+
+          {/* Plan & Abonelik */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-base">Plan & Abonelik</CardTitle>
+              <p className="text-sm text-gray-600 mt-1">
+                Mevcut planınız: <strong>{subscription?.plan?.name || 'Yükleniyor...'}</strong>
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {subscription?.usage && subscription?.limits && (
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <div className="text-xl font-bold text-primary-600">{subscription.usage.restaurants}/{subscription.limits.restaurants}</div>
+                    <div className="text-xs text-gray-600">İşletme</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <div className="text-xl font-bold text-primary-600">{subscription.usage.categories}/{subscription.limits.categories}</div>
+                    <div className="text-xs text-gray-600">Kategori</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <div className="text-xl font-bold text-primary-600">{subscription.usage.products}/{subscription.limits.products}</div>
+                    <div className="text-xs text-gray-600">Ürün</div>
+                  </div>
+                </div>
+              )}
+              {subscription?.subscription?.daysRemaining !== undefined && (
+                <p className="text-sm text-gray-600">
+                  Kalan süre: <strong>{subscription.subscription.daysRemaining}</strong> gün
                 </p>
+              )}
+              {subscription?.plan?.type === 'FREE' && plans.find(p => p.type === 'PREMIUM') && (
+                <Link href={`/subscription/checkout?planId=${plans.find(p => p.type === 'PREMIUM')!.id}`}>
+                  <Button size="sm" className="w-full sm:w-auto">
+                    Premium&apos;a Yükselt
+                  </Button>
+                </Link>
               )}
             </CardContent>
           </Card>
