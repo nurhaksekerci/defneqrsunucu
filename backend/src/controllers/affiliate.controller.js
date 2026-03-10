@@ -453,6 +453,34 @@ exports.updateAffiliateStatus = async (req, res, next) => {
   }
 };
 
+// Affiliate şartlarını getir (Kullanıcılar için - sadece okuma)
+exports.getAffiliateTerms = async (req, res, next) => {
+  try {
+    let settings = await prisma.affiliateSettings.findFirst();
+
+    if (!settings) {
+      settings = await prisma.affiliateSettings.create({
+        data: {}
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        commissionRate: settings.commissionRate,
+        minimumPayout: settings.minimumPayout,
+        cookieDuration: settings.cookieDuration,
+        daysPerReferralFree: settings.daysPerReferralFree ?? settings.daysPerReferral ?? 7,
+        daysPerReferralPaid: settings.daysPerReferralPaid ?? settings.daysPerReferral ?? 14,
+        referralDiscountPercent: settings.referralDiscountPercent ?? 0,
+        requireApproval: settings.requireApproval
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Affiliate ayarlarını getir (Admin)
 exports.getAffiliateSettings = async (req, res, next) => {
   try {

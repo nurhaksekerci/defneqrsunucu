@@ -63,9 +63,20 @@ interface UserInfo {
   role: UserRole;
 }
 
+interface AffiliateTerms {
+  commissionRate: number;
+  minimumPayout: number;
+  cookieDuration: number;
+  daysPerReferralFree: number;
+  daysPerReferralPaid: number;
+  referralDiscountPercent: number;
+  requireApproval: boolean;
+}
+
 export default function AffiliateDashboardPage() {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [affiliateInfo, setAffiliateInfo] = useState<AffiliateInfo | null>(null);
+  const [terms, setTerms] = useState<AffiliateTerms | null>(null);
   const [referralLink, setReferralLink] = useState('');
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [commissions, setCommissions] = useState<Commission[]>([]);
@@ -85,11 +96,17 @@ export default function AffiliateDashboardPage() {
   const loadUserAndAffiliate = async () => {
     try {
       setIsLoading(true);
-      // Kullanıcı bilgisini al
       const userRes = await api.get('/auth/me');
-      setUser(userRes.data.user);
+      setUser(userRes.data.data);
 
       await loadAffiliateInfo();
+
+      try {
+        const termsRes = await api.get('/affiliates/terms');
+        if (termsRes?.data?.data) setTerms(termsRes.data.data);
+      } catch {
+        // Terms optional
+      }
     } catch (error) {
       console.error('Failed to load user:', error);
     } finally {
@@ -167,6 +184,53 @@ export default function AffiliateDashboardPage() {
     alert('✅ Kopyalandı!');
   };
 
+  const AffiliateTermsCard = () => {
+    if (!terms) return null;
+    const t = terms;
+    return (
+      <Card className="border-gray-200">
+        <CardHeader>
+          <CardTitle className="text-base">📜 Affiliate Programı Şartları</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4 text-sm text-gray-700">
+            {user?.role === 'RESTAURANT_OWNER' ? (
+              <>
+                <p><strong>Restoran Sahipleri</strong> için referral programı:</p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li>Referral linkiniz üzerinden kayıt olan her kullanıcı sizin ile eşleştirilir ({t.cookieDuration} gün cookie süresi)</li>
+                  <li>Ücretsiz plana geçen referral için <strong>{t.daysPerReferralFree} gün</strong> abonelik süreniz uzar {t.requireApproval ? '(admin onayı gerekir)' : '(otomatik)'}</li>
+                  <li>Ücretli plana geçen referral için <strong>{t.daysPerReferralPaid} gün</strong> abonelik süreniz otomatik uzar</li>
+                  {t.referralDiscountPercent > 0 && (
+                    <li>Davet ettiğiniz kullanıcılar plan satın alırken <strong>%{t.referralDiscountPercent} indirim</strong> alır</li>
+                  )}
+                </ul>
+              </>
+            ) : (
+              <>
+                <p><strong>Affiliate Partner</strong> programı şartları:</p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li>Referral linkiniz üzerinden kayıt olan her kullanıcı sizin ile eşleştirilir ({t.cookieDuration} gün cookie süresi)</li>
+                  <li>Her ücretli abonelikten <strong>%{t.commissionRate} komisyon</strong> kazanırsınız</li>
+                  <li>Ödeme için minimum tutar: <strong>₺{t.minimumPayout.toFixed(2)}</strong></li>
+                  {t.referralDiscountPercent > 0 && (
+                    <li>Davet ettiğiniz kullanıcılar plan satın alırken <strong>%{t.referralDiscountPercent} indirim</strong> alır</li>
+                  )}
+                  {t.requireApproval && (
+                    <li>Yeni affiliate başvuruları admin onayı gerektirir</li>
+                  )}
+                </ul>
+              </>
+            )}
+            <p className="text-xs text-gray-500 pt-2 border-t border-gray-100">
+              Defne Qr affiliate programı şartları yönetim tarafından güncellenebilir. Güncel bilgi için destek ile iletişime geçin.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-96">
@@ -229,6 +293,8 @@ export default function AffiliateDashboardPage() {
               </div>
             </CardContent>
           </Card>
+
+          <AffiliateTermsCard />
         </div>
       );
     }
@@ -277,6 +343,8 @@ export default function AffiliateDashboardPage() {
             </div>
           </CardContent>
         </Card>
+
+        <AffiliateTermsCard />
 
         {/* Apply Modal */}
         <Modal
@@ -368,6 +436,8 @@ export default function AffiliateDashboardPage() {
             </div>
           </CardContent>
         </Card>
+
+        <AffiliateTermsCard />
       </div>
     );
   }
@@ -656,6 +726,8 @@ export default function AffiliateDashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      <AffiliateTermsCard />
 
       {/* Bank Info Edit Modal */}
       <Modal

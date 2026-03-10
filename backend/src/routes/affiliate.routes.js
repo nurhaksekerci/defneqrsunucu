@@ -24,6 +24,7 @@ const applyAffiliateValidation = [
 // User routes (authenticated)
 router.use(authenticate);
 
+router.get('/terms', affiliateController.getAffiliateTerms);
 router.post('/apply', applyAffiliateValidation, affiliateController.applyForAffiliate);
 router.get('/me/referral-discount', affiliateController.getReferralDiscount);
 router.get('/me', affiliateController.getMyAffiliateInfo);
