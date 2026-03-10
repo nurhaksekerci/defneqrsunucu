@@ -340,7 +340,7 @@ export default function MenuPage() {
 
   useEffect(() => {
     if (categoryIdFromUrl && categoriesWithProducts.length > 0) {
-      setExpandedCategories((prev) => new Set([...prev, categoryIdFromUrl]));
+      setExpandedCategories((prev) => new Set(Array.from(prev).concat(categoryIdFromUrl)));
       setActiveTab('menu');
     }
   }, [categoryIdFromUrl, categoriesWithProducts]);
