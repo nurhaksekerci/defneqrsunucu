@@ -81,7 +81,24 @@ PGPASSWORD=yourpass     # PostgreSQL password (optional)
 
 ---
 
-### 2. `add-promo-to-premium.js`
+### 2. `add-user-avatar-column.js`
+
+Users tablosuna `avatar` sütununu ekler. Prisma migration uygulanmamışsa veya "No pending migrations" hatası alıyorsanız bu script'i çalıştırın.
+
+**Docker ile çalıştırma:**
+```bash
+docker compose exec backend node scripts/add-user-avatar-column.js
+```
+
+**Yerel ortamda:**
+```bash
+cd backend
+node scripts/add-user-avatar-column.js
+```
+
+---
+
+### 3. `add-promo-to-premium.js`
 
 Mevcut premium abonelikleri olan hesaplara **IYIKIDOGDUNDEFNE** promosyon kodu kullanımı ekler. Sadece henüz promosyon kaydı olmayan abonelikler işlenir.
 
@@ -98,7 +115,7 @@ node scripts/add-promo-to-premium.js
 
 ---
 
-### 3. `db-health-check.sh`
+### 4. `db-health-check.sh`
 
 Comprehensive database health monitoring script.
 

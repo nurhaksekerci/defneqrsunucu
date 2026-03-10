@@ -127,6 +127,13 @@ docker exec -it defneqr-backend npx prisma migrate deploy
 docker exec -it defneqr-backend npx prisma db seed
 ```
 
+**Avatar sütunu (profil fotoğrafı):** Migration uygulanmazsa veya "No pending migrations" alırsanız:
+```bash
+docker compose exec backend node scripts/add-user-avatar-column.js
+# veya proje kökünden:
+./scripts/docker-add-avatar.sh
+```
+
 #### 5. Erişim
 
 - **Frontend:** http://localhost:3000

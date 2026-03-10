@@ -1,9 +1,9 @@
 # Docker ortamında Prisma migration işlemleri
-# Kullanım: .\scripts\docker-migrate.ps1 [deploy|status|seed|backup]
+# Kullanım: .\scripts\docker-migrate.ps1 [deploy|status|seed|backup|avatar]
 
 param(
     [Parameter(Position=0)]
-    [ValidateSet("deploy", "status", "seed", "backup")]
+    [ValidateSet("deploy", "status", "seed", "backup", "avatar")]
     [string]$Command = "deploy"
 )
 
@@ -28,5 +28,10 @@ switch ($Command) {
         Write-Host "💾 Yedek alınıyor: $backupFile" -ForegroundColor Cyan
         docker compose exec -T postgres pg_dump -U defneqr defneqr | Set-Content -Path $backupFile -Encoding UTF8
         Write-Host "✅ Yedek alındı: $backupFile" -ForegroundColor Green
+    }
+    "avatar" {
+        Write-Host "🔄 Avatar sütunu ekleniyor..." -ForegroundColor Cyan
+        docker compose exec backend node scripts/add-user-avatar-column.js
+        Write-Host "✅ Avatar sütunu eklendi" -ForegroundColor Green
     }
 }
