@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import api from '@/lib/api';
 import { getImageUrl } from '@/lib/imageHelper';
@@ -148,86 +148,78 @@ export default function RestaurantsPage() {
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-4">
           {restaurants.map((restaurant) => (
             <Card
               key={restaurant.id}
-              className="group border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden"
+              className="group w-full border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-300 overflow-hidden"
             >
-              <div className="flex flex-col h-full">
-                {/* Card header with logo */}
-                <div className="p-6 pb-4">
-                  <div className="flex items-start gap-4">
-                    {restaurant.logo ? (
-                      <img
-                        src={getImageUrl(restaurant.logo)!}
-                        alt={restaurant.name}
-                        className="w-16 h-16 rounded-xl object-cover ring-2 ring-white shadow-md flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary-100 to-primary-50 flex items-center justify-center text-2xl flex-shrink-0">
-                        🏪
+              <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+                {/* Sol: Logo + Bilgiler */}
+                <div className="flex items-center gap-5 flex-1 min-w-0">
+                  {restaurant.logo ? (
+                    <img
+                      src={getImageUrl(restaurant.logo)!}
+                      alt={restaurant.name}
+                      className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-cover ring-2 ring-gray-100 shadow flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center text-3xl flex-shrink-0 border border-gray-100">
+                      🏪
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-gray-900 truncate">{restaurant.name}</h3>
+                    <p className="text-sm text-gray-500 font-mono">/{restaurant.slug}</p>
+                    {(restaurant.description || restaurant.address || restaurant.phone) && (
+                      <div className="mt-2 space-y-1">
+                        {restaurant.description && (
+                          <p className="text-sm text-gray-600 line-clamp-1">{restaurant.description}</p>
+                        )}
+                        {restaurant.address && (
+                          <p className="text-sm text-gray-500 flex items-center gap-1.5">
+                            <span>📍</span>
+                            <span className="truncate">{restaurant.address}</span>
+                          </p>
+                        )}
+                        {restaurant.phone && (
+                          <p className="text-sm text-gray-500 flex items-center gap-1.5">
+                            <span>📞</span>
+                            <a href={`tel:${restaurant.phone}`} className="hover:text-primary-600 transition-colors">
+                              {restaurant.phone}
+                            </a>
+                          </p>
+                        )}
                       </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg mb-0 truncate">{restaurant.name}</CardTitle>
-                      <p className="text-xs text-gray-500 font-mono mt-0.5">/{restaurant.slug}</p>
-                    </div>
                   </div>
                 </div>
 
-                <CardContent className="flex-1 flex flex-col pt-0">
-                  <div className="space-y-2 mb-4 flex-1">
-                    {restaurant.description && (
-                      <p className="text-sm text-gray-600 line-clamp-2">{restaurant.description}</p>
-                    )}
-                    {restaurant.address && (
-                      <p className="text-sm text-gray-600 flex items-start gap-2">
-                        <span className="text-gray-400 shrink-0">📍</span>
-                        <span className="line-clamp-2">{restaurant.address}</span>
-                      </p>
-                    )}
-                    {restaurant.phone && (
-                      <p className="text-sm text-gray-600 flex items-center gap-2">
-                        <span className="text-gray-400">📞</span>
-                        <a href={`tel:${restaurant.phone}`} className="hover:text-primary-600 transition-colors">
-                          {restaurant.phone}
-                        </a>
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="space-y-3 pt-4 border-t border-gray-100">
-                    <Link
-                      href={`/${restaurant.slug}/menu`}
-                      target="_blank"
-                      className="block"
+                {/* Sağ: Aksiyonlar */}
+                <div className="flex flex-col sm:flex-row gap-3 sm:shrink-0 border-t sm:border-t-0 sm:border-l border-gray-100 pt-4 sm:pt-0 sm:pl-6">
+                  <Link href={`/${restaurant.slug}/menu`} target="_blank" className="order-first sm:order-none">
+                    <Button size="sm" className="w-full sm:w-auto min-w-[140px]">
+                      Menüyü Görüntüle →
+                    </Button>
+                  </Link>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => router.push(`/dashboard/restaurant/${restaurant.id}/edit`)}
                     >
-                      <Button size="sm" className="w-full group-hover:bg-primary-700 transition-colors">
-                        Menüyü Görüntüle →
-                      </Button>
-                    </Link>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="flex-1"
-                        onClick={() => router.push(`/dashboard/restaurant/${restaurant.id}/edit`)}
-                      >
-                        Düzenle
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-600 hover:bg-red-50 hover:text-red-700 flex-1"
-                        onClick={() => handleDelete(restaurant.id)}
-                      >
-                        Sil
-                      </Button>
-                    </div>
+                      Düzenle
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                      onClick={() => handleDelete(restaurant.id)}
+                    >
+                      Sil
+                    </Button>
                   </div>
-                </CardContent>
+                </div>
               </div>
             </Card>
           ))}
