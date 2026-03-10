@@ -1,29 +1,37 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { authService, User } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
+import { getImageUrl } from '@/lib/imageHelper';
 
 export const Navbar: React.FC = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        if (authService.isAuthenticated()) {
-          const userData = await authService.getCurrentUser();
-          setUser(userData);
-        }
-      } catch (error) {
-        console.error('Failed to load user:', error);
+  const loadUser = async () => {
+    try {
+      if (authService.isAuthenticated()) {
+        const userData = await authService.getCurrentUser();
+        setUser(userData);
       }
-    };
+    } catch (error) {
+      console.error('Failed to load user:', error);
+    }
+  };
 
+  useEffect(() => {
     loadUser();
+  }, [pathname]);
+
+  useEffect(() => {
+    const handleProfileUpdate = () => loadUser();
+    window.addEventListener('profile-updated', handleProfileUpdate);
+    return () => window.removeEventListener('profile-updated', handleProfileUpdate);
   }, []);
 
   const handleLogout = async () => {
@@ -72,33 +80,50 @@ export const Navbar: React.FC = () => {
                 <div className="relative">
                   <button
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="flex items-center space-x-2 text-gray-700 hover:text-gray-900"
+                    className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-full"
                   >
-                    <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium">
-                      {user.fullName.charAt(0).toUpperCase()}
-                    </div>
+                    {user.avatar ? (
+                      <img
+                        src={getImageUrl(user.avatar)!}
+                        alt={user.fullName}
+                        className="w-9 h-9 rounded-full object-cover ring-2 ring-white shadow"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                        {user.fullName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                   </button>
 
                   {isMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50">
-                      <div className="px-4 py-2 border-b border-gray-100 md:hidden">
+                    <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-lg py-2 z-50 border border-gray-100">
+                      <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-medium text-gray-900">{user.fullName}</p>
                         <p className="text-xs text-gray-500">{getRoleName(user.role)}</p>
                       </div>
                       <Link
+                        href="/dashboard/profile"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Profil
+                      </Link>
+                      <Link
                         href="/dashboard"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsMenuOpen(false)}
                       >
                         Dashboard
                       </Link>
                       <Link
                         href="/dashboard/change-password"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsMenuOpen(false)}
                       >
                         Şifre Değiştir
                       </Link>
                       <button
-                        onClick={handleLogout}
+                        onClick={() => { setIsMenuOpen(false); handleLogout(); }}
                         className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                       >
                         Çıkış Yap

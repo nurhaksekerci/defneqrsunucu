@@ -198,6 +198,7 @@ exports.getCurrentUser = async (req, res, next) => {
         email: true,
         username: true,
         fullName: true,
+        avatar: true,
         role: true,
         createdAt: true,
         restaurants: {
@@ -220,6 +221,55 @@ exports.getCurrentUser = async (req, res, next) => {
 
     res.json({
       success: true,
+      data: user
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Profil güncelleme (fullName, avatar)
+exports.updateProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { fullName, avatar } = req.body;
+
+    const updateData = {};
+    if (typeof fullName === 'string' && fullName.trim()) {
+      updateData.fullName = fullName.trim();
+    }
+    if (avatar !== undefined) {
+      updateData.avatar = avatar === null || avatar === '' ? null : String(avatar);
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Güncellenecek alan belirtilmedi'
+      });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        fullName: true,
+        avatar: true,
+        role: true,
+        createdAt: true,
+        restaurants: {
+          where: { isDeleted: false },
+          select: { id: true, name: true, slug: true }
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Profil güncellendi',
       data: user
     });
   } catch (error) {

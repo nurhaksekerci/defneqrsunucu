@@ -5,6 +5,7 @@ export interface User {
   email: string;
   username?: string;
   fullName: string;
+  avatar?: string | null;
   role: 'ADMIN' | 'STAFF' | 'RESTAURANT_OWNER' | 'CASHIER' | 'WAITER' | 'BARISTA' | 'COOK';
   restaurants?: {
     id: string;

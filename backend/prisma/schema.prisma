@@ -50,6 +50,7 @@ model User {
   email         String         @unique
   password      String?        // OAuth kullanıcıları için null olabilir
   fullName      String
+  avatar        String?        // Profil fotoğrafı URL
   role          UserRole       @default(RESTAURANT_OWNER)
   
   // OAuth

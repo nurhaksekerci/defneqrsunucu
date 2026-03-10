@@ -32,6 +32,9 @@ router.get('/me', authenticate, authController.getCurrentUser);
 // GET /api/auth/sessions (get active sessions)
 router.get('/sessions', authenticate, authController.getActiveSessions);
 
+// PUT /api/auth/profile
+router.put('/profile', authenticate, authController.updateProfile);
+
 // PUT /api/auth/change-password
 router.put('/change-password', authenticate, changePasswordValidation, authController.changePassword);
 
