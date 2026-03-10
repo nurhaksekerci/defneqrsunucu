@@ -40,9 +40,7 @@ interface SubscriptionData {
 
 const quickActions = [
   { href: '/dashboard/restaurants', icon: '🏪', label: 'Restoranlarım', desc: 'İşletmelerinizi yönetin' },
-  { href: '/dashboard/menu', icon: '📋', label: 'Menü Yönetimi', desc: 'QR menünüzü düzenleyin' },
-  { href: '/dashboard/categories', icon: '📁', label: 'Kategoriler', desc: 'Menü kategorileri' },
-  { href: '/dashboard/products', icon: '🍽️', label: 'Ürünler', desc: 'Ürün ekle ve düzenle' },
+  { href: '/dashboard/menu', icon: '📋', label: 'Menü Yönetimi', desc: 'Kategori, ürün ve menü düzenleme' },
   { href: '/dashboard/menu-settings', icon: '🎨', label: 'Menü Özelleştirme', desc: 'Renk ve görünüm' },
   { href: '/dashboard/reports', icon: '📊', label: 'QR Tarama İstatistikleri', desc: 'Menü tarama verileri' },
   { href: '/dashboard/support', icon: '🎫', label: 'Destek', desc: 'Yardım alın' },
