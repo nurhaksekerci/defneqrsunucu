@@ -32,7 +32,6 @@ const ownerMenuItems = [
   { name: 'QR Tarama İstatistikleri', href: '/dashboard/reports', icon: '📊' },
   { name: 'Affiliate', href: '/dashboard/affiliate', icon: '🤝' },
   { name: 'Destek', href: '/dashboard/support', icon: '🎫' },
-  { name: 'Şifre Değiştir', href: '/dashboard/change-password', icon: '🔐' },
 ];
 
 export default function DashboardLayout({
