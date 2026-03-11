@@ -11,6 +11,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'DefneRandevu — Randevu Yönetim Sistemi',
   description: 'Kuaför, berber, klinik ve daha fazlası için randevu yönetimi',
+  icons: {
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
+  },
 };
 
 export default function RootLayout({

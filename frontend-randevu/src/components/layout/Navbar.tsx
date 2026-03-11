@@ -50,7 +50,7 @@ export const Navbar: React.FC = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center">
-              <span className="text-xl font-bold text-primary-600">DefneRandevu</span>
+              <img src="/logo.png" alt="DefneRandevu" className="h-9 w-auto" />
             </Link>
             {user && (
               <>
