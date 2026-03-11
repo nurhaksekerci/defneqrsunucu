@@ -1072,6 +1072,7 @@ model Appointment {
 
   reminders     AppointmentReminder[]
   packageUsages PackageUsage[]
+  financeEntries FinanceEntry[]
 
   @@index([businessId])
   @@index([staffId])
