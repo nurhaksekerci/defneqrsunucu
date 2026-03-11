@@ -82,11 +82,21 @@ exports.getBusinessBySlug = async (req, res, next) => {
   }
 };
 
-// Yeni işletme oluştur
+// Yeni işletme oluştur (hesap başına 1 işletme)
 exports.createBusiness = async (req, res, next) => {
   try {
     const { name, description, address, phone } = req.body;
     const userId = req.user.id;
+
+    const existingCount = await prisma.appointmentBusiness.count({
+      where: { ownerId: userId, isDeleted: false }
+    });
+    if (existingCount >= 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Her hesap için yalnızca bir işletme eklenebilir.'
+      });
+    }
 
     const slug = await generateUniqueBusinessSlug(name, prisma);
 

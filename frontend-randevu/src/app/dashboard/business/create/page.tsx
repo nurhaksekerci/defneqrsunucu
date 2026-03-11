@@ -49,7 +49,12 @@ export default function CreateBusinessPage() {
         router.push('/dashboard');
       }
     } catch (err: unknown) {
-      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      const res = err as { response?: { data?: { message?: string }; status?: number } };
+      const message = res?.response?.data?.message;
+      if (res?.response?.status === 400 && message?.includes('yalnızca bir işletme')) {
+        router.push('/dashboard');
+        return;
+      }
       alert(message || 'İşletme oluşturulamadı. Lütfen tekrar deneyin.');
     } finally {
       setIsSaving(false);

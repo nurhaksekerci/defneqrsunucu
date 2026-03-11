@@ -17,11 +17,11 @@ interface Business {
   _count?: { staff: number; services: number; customers: number };
 }
 
-const quickActions = [
+const getQuickActions = (selectedBusinessId: string | undefined) => [
   { href: '/dashboard', icon: '🏪', label: 'İşletmelerim', desc: 'İşletmelerinizi yönetin', color: 'from-amber-500 to-orange-500' },
-  { href: '/dashboard', icon: '👥', label: 'Personel', desc: 'Personel yönetimi', color: 'from-emerald-500 to-teal-500' },
-  { href: '/dashboard', icon: '✂️', label: 'Hizmetler', desc: 'Hizmet tanımları', color: 'from-violet-500 to-purple-500' },
-  { href: '/dashboard', icon: '📅', label: 'Takvim', desc: 'Randevu takvimi', color: 'from-blue-500 to-indigo-500' },
+  { href: selectedBusinessId ? `/dashboard/business/${selectedBusinessId}` : '/dashboard', icon: '👥', label: 'Personel', desc: 'Personel yönetimi', color: 'from-emerald-500 to-teal-500' },
+  { href: selectedBusinessId ? `/dashboard/business/${selectedBusinessId}` : '/dashboard', icon: '✂️', label: 'Hizmetler', desc: 'Hizmet tanımları', color: 'from-violet-500 to-purple-500' },
+  { href: selectedBusinessId ? `/dashboard/business/${selectedBusinessId}/calendar` : '/dashboard', icon: '📅', label: 'Takvim', desc: 'Randevu takvimi', color: 'from-blue-500 to-indigo-500' },
   { href: '/dashboard/support', icon: '🎫', label: 'Destek', desc: 'Yardım alın', color: 'from-slate-500 to-gray-600' },
 ];
 
@@ -120,7 +120,7 @@ export default function DashboardPage() {
       <section>
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Hızlı Erişim</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {quickActions.map((action) => (
+          {getQuickActions(selectedBusiness?.id).map((action) => (
             <Link
               key={action.href}
               href={action.href}

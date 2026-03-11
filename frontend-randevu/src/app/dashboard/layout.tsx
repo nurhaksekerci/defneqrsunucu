@@ -12,6 +12,7 @@ const baseMenuItems = [
   { name: 'İşletme Oluştur', href: '/dashboard/business/create', icon: '➕' },
   { name: 'Destek', href: '/dashboard/support', icon: '🎫' },
 ];
+const menuItemsWithoutCreate = baseMenuItems.filter((item) => item.href !== '/dashboard/business/create');
 
 const adminMenuExtra = [
   { name: 'Destek Talepleri (Admin)', href: '/admin/tickets', icon: '🎫' },
@@ -39,7 +40,13 @@ export default function DashboardLayout({
           router.push('/');
           return;
         }
-        setMenuItems((user.role === 'ADMIN' || user.role === 'STAFF') ? [...baseMenuItems, ...adminMenuExtra] : baseMenuItems);
+        const api = (await import('@/lib/api')).default;
+        const res = await api.get('/businesses/my').catch(() => ({ data: { data: [] } }));
+        const businesses = res?.data?.data || [];
+        const hasBusiness = businesses.length >= 1;
+        let items = hasBusiness ? menuItemsWithoutCreate : baseMenuItems;
+        if (user.role === 'ADMIN' || user.role === 'STAFF') items = [...items, ...adminMenuExtra];
+        setMenuItems(items);
         setIsLoading(false);
       } catch {
         router.push('/auth/login');

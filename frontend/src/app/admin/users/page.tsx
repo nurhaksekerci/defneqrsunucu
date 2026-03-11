@@ -10,7 +10,8 @@ interface User {
   email: string;
   username?: string;
   googleId?: string;
-  role: 'ADMIN' | 'STAFF' | 'RESTAURANT_OWNER' | 'CASHIER' | 'WAITER' | 'BARISTA' | 'COOK';
+  role: 'ADMIN' | 'STAFF' | 'RESTAURANT_OWNER' | 'CASHIER' | 'WAITER' | 'BARISTA' | 'COOK' | 'BUSINESS_OWNER' | 'APPOINTMENT_STAFF';
+  project?: 'defneqr' | 'defnerandevu' | 'both';
   isDeleted?: boolean;
   deletedAt?: string | null;
   createdAt: string;
@@ -35,16 +36,18 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [projectFilter, setProjectFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     loadUsers();
-  }, [statusFilter]);
+  }, [statusFilter, projectFilter]);
 
   const loadUsers = async () => {
     try {
       const params = new URLSearchParams();
       if (statusFilter !== 'all') params.set('status', statusFilter);
+      if (projectFilter !== 'all') params.set('project', projectFilter);
       const response = await api.get(`/users?${params.toString()}`).catch(() => ({ data: { data: [] } }));
       setUsers(response.data.data || []);
     } catch (error) {
@@ -98,29 +101,33 @@ export default function AdminUsersPage() {
   };
 
   const getRoleName = (role: User['role']) => {
-    const roleNames = {
+    const roleNames: Record<string, string> = {
       ADMIN: 'Admin',
       STAFF: 'Staff',
       RESTAURANT_OWNER: 'Restoran Sahibi',
+      BUSINESS_OWNER: 'İşletme Sahibi',
+      APPOINTMENT_STAFF: 'Randevu Personeli',
       CASHIER: 'Kasiyer',
       WAITER: 'Garson',
       BARISTA: 'Barista',
       COOK: 'Aşçı'
     };
-    return roleNames[role];
+    return roleNames[role] || role;
   };
 
   const getRoleBadgeColor = (role: User['role']) => {
-    const colors = {
+    const colors: Record<string, string> = {
       ADMIN: 'bg-red-100 text-red-800',
       STAFF: 'bg-purple-100 text-purple-800',
       RESTAURANT_OWNER: 'bg-blue-100 text-blue-800',
+      BUSINESS_OWNER: 'bg-violet-100 text-violet-800',
+      APPOINTMENT_STAFF: 'bg-indigo-100 text-indigo-800',
       CASHIER: 'bg-green-100 text-green-800',
       WAITER: 'bg-yellow-100 text-yellow-800',
       BARISTA: 'bg-pink-100 text-pink-800',
       COOK: 'bg-orange-100 text-orange-800'
     };
-    return colors[role];
+    return colors[role] || 'bg-gray-100 text-gray-800';
   };
 
   const userArray = Array.isArray(users) ? users : [];
@@ -168,6 +175,18 @@ export default function AdminUsersPage() {
             <option value="passive">Pasif</option>
           </select>
         </div>
+        <div className="w-40">
+          <select
+            value={projectFilter}
+            onChange={(e) => setProjectFilter(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+          >
+            <option value="all">Tüm Projeler</option>
+            <option value="defneqr">Defne Qr</option>
+            <option value="defnerandevu">DefneRandevu</option>
+            <option value="both">Her İkisi (Admin/Staff)</option>
+          </select>
+        </div>
         <div className="w-48">
           <select
             value={roleFilter}
@@ -178,6 +197,8 @@ export default function AdminUsersPage() {
             <option value="ADMIN">Admin</option>
             <option value="STAFF">Staff</option>
             <option value="RESTAURANT_OWNER">Restoran Sahibi</option>
+            <option value="BUSINESS_OWNER">İşletme Sahibi</option>
+            <option value="APPOINTMENT_STAFF">Randevu Personeli</option>
             <option value="CASHIER">Kasiyer</option>
             <option value="WAITER">Garson</option>
             <option value="BARISTA">Barista</option>
@@ -246,6 +267,15 @@ export default function AdminUsersPage() {
                               </span>
                             )}
                           </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                            user.project === 'defnerandevu' ? 'bg-violet-100 text-violet-800' :
+                            user.project === 'both' ? 'bg-amber-100 text-amber-800' :
+                            'bg-sky-100 text-sky-800'
+                          }`}>
+                            {user.project === 'defnerandevu' ? 'Randevu' : user.project === 'both' ? 'Her İkisi' : 'Defne Qr'}
+                          </span>
                         </td>
                         <td className="py-3 px-4">
                           {user.isDeleted ? (

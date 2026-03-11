@@ -7,7 +7,7 @@ const { parsePaginationParams, createPaginatedResponse } = require('../utils/pag
 exports.getAllUsers = async (req, res, next) => {
   try {
     const { page, limit, skip } = parsePaginationParams(req.query);
-    const { search, role, status } = req.query;
+    const { search, role, status, project } = req.query;
 
     const where = {};
 
@@ -30,6 +30,17 @@ exports.getAllUsers = async (req, res, next) => {
     // Role filter
     if (role) {
       where.role = role;
+    }
+
+    // Project filter: defneqr | defnerandevu | both
+    const DEFNEQR_ROLES = ['RESTAURANT_OWNER', 'CASHIER', 'WAITER', 'BARISTA', 'COOK'];
+    const DEFNERANDEVU_ROLES = ['BUSINESS_OWNER', 'APPOINTMENT_STAFF'];
+    if (project === 'defneqr') {
+      where.role = { in: DEFNEQR_ROLES };
+    } else if (project === 'defnerandevu') {
+      where.role = { in: DEFNERANDEVU_ROLES };
+    } else if (project === 'both') {
+      where.role = { in: ['ADMIN', 'STAFF'] };
     }
 
     // Get total count for pagination
@@ -92,7 +103,22 @@ exports.getAllUsers = async (req, res, next) => {
       take: limit
     });
 
-    res.json(createPaginatedResponse(users, totalCount, { page, limit }));
+    // Proje bilgisi ekle (rol bazlı)
+    const DEFNEQR_ROLES_MAP = ['RESTAURANT_OWNER', 'CASHIER', 'WAITER', 'BARISTA', 'COOK'];
+    const DEFNERANDEVU_ROLES_MAP = ['BUSINESS_OWNER', 'APPOINTMENT_STAFF'];
+    const usersWithProject = users.map((u) => {
+      let project = 'defneqr';
+      if (DEFNERANDEVU_ROLES_MAP.includes(u.role) && !DEFNEQR_ROLES_MAP.includes(u.role)) {
+        project = 'defnerandevu';
+      } else if (DEFNEQR_ROLES_MAP.includes(u.role)) {
+        project = 'defneqr';
+      } else if (['ADMIN', 'STAFF'].includes(u.role)) {
+        project = 'both';
+      }
+      return { ...u, project };
+    });
+
+    res.json(createPaginatedResponse(usersWithProject, totalCount, { page, limit }));
   } catch (error) {
     next(error);
   }
