@@ -43,11 +43,11 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   
   const googleStrategy = new GoogleStrategy(
     googleConfig,
-    async (accessToken, refreshToken, profile, done) => {
+    async (req, accessToken, refreshToken, params, profile, done) => {
         try {
           console.log('========================================');
           console.log('🎉 STEP 5: Google Token Exchange Başarılı!');
-          console.log('   Access Token received:', accessToken?.substring(0, 30) + '...');
+          console.log('   Access Token received:', typeof accessToken === 'string' ? accessToken?.substring(0, 30) + '...' : '[object]');
           console.log('   Profile ID:', profile.id);
           console.log('   Display Name:', profile.displayName);
           console.log('   Emails:', JSON.stringify(profile.emails));
