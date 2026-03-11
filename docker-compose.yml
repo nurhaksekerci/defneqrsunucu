@@ -33,6 +33,7 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
       FRONTEND_URL: ${FRONTEND_URL:-https://defneqr.com}
+      RANDEVU_FRONTEND_URL: ${RANDEVU_FRONTEND_URL:-https://randevu.defneqr.com}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.defneqr.com/api}
       UPLOAD_DIR: /app/public/uploads
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-5242880}

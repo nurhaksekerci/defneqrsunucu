@@ -6,14 +6,25 @@ const oauthController = require('../controllers/oauth.controller');
 /**
  * @route   GET /api/auth/google
  * @desc    Google OAuth başlangıç endpoint'i
+ * @query   return=randevu - DefneRandevu'dan geliyorsa callback randevu.defneqr.com'a yönlendirilir
  * @access  Public
  */
 router.get('/google', 
   (req, res, next) => {
+    // DefneRandevu'dan gelen OAuth istekleri için cookie set et (callback'ta kullanılacak)
+    if (req.query.return === 'randevu') {
+      res.cookie('oauth_return', 'randevu', {
+        maxAge: 10 * 60 * 1000, // 10 dakika
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/'
+      });
+    }
     console.log('========================================');
     console.log('🚀 STEP 1: Google OAuth Başlatılıyor');
     console.log('   Request from:', req.get('origin') || req.get('referer'));
-    console.log('   Redirect URI:', process.env.GOOGLE_CALLBACK_URL);
+    console.log('   Return:', req.query.return);
     console.log('========================================');
     next();
   },
@@ -49,23 +60,23 @@ router.get('/google/callback',
       console.log('========================================');
       console.log('📨 STEP 4: Passport Authentication Sonucu');
       
+      const oauthFrontend = req.cookies?.oauth_return === 'randevu'
+        ? (process.env.RANDEVU_FRONTEND_URL || process.env.RANDEVU_SITE_URL || 'https://randevu.defneqr.com')
+        : (process.env.FRONTEND_URL || 'https://defneqr.com');
+
       if (err) {
         console.error('❌ HATA VAR!');
         console.error('   Error message:', err.message);
         console.error('   Error code:', err.code);
-        console.error('   Error type:', err.name);
-        console.error('   Error stack:', err.stack?.split('\n').slice(0, 3).join('\n'));
-        console.log('   Redirect ediliyor: /auth/login?error=google_auth_failed');
         console.log('========================================');
-        return res.redirect(`${process.env.FRONTEND_URL}/auth/login?error=google_auth_failed&detail=${err.code}`);
+        return res.redirect(`${oauthFrontend}/auth/login?error=google_auth_failed&detail=${err.code || ''}`);
       }
       
       if (!user) {
         console.error('❌ User bulunamadı!');
         console.error('   Info:', info);
-        console.log('   Redirect ediliyor: /auth/login?error=google_auth_failed');
         console.log('========================================');
-        return res.redirect(`${process.env.FRONTEND_URL}/auth/login?error=google_auth_failed`);
+        return res.redirect(`${oauthFrontend}/auth/login?error=google_auth_failed`);
       }
       
       console.log('✅ BAŞARILI!');

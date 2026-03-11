@@ -32,7 +32,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback',
     scope: ['profile', 'email'],
-    passReqToCallback: false
+    passReqToCallback: true  // DefneRandevu için oauth_return cookie okunacak
   };
   
   console.log('📋 Final Google Strategy Config:');
@@ -92,10 +92,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           // Hiç kullanıcı yoksa, yeni kullanıcı oluştur
           if (!user) {
             const displayName = profile.displayName || email.split('@')[0];
+            const isRandevu = req?.cookies?.oauth_return === 'randevu';
+            const defaultRole = isRandevu ? 'BUSINESS_OWNER' : 'RESTAURANT_OWNER';
             console.log('🆕 STEP 8: Yeni kullanıcı oluşturuluyor...');
             console.log('   Email:', email);
             console.log('   Full Name:', displayName);
-            console.log('   GoogleId:', profile.id);
+            console.log('   Role:', defaultRole, '(isRandevu:', isRandevu + ')');
             
             user = await prisma.user.create({
               data: {
@@ -104,7 +106,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                 fullName: displayName,
                 username: null,
                 password: null,
-                role: 'RESTAURANT_OWNER'
+                role: defaultRole
               }
             });
             console.log('✅ Kullanıcı oluşturuldu! ID:', user.id);
