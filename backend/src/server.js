@@ -60,7 +60,8 @@ app.use(cors({
     'https://www.defnerandevu.com',
     'http://localhost:3001'
   ],
-  credentials: true
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Project']
 }));
 
 // HTTP request logging (Morgan + Winston)
