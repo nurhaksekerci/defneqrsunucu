@@ -1,12 +1,12 @@
--- CreateEnum (idempotent)
+-- CreateEnum (idempotent - 42710 = duplicate_object)
 DO $$ BEGIN
   CREATE TYPE "Project" AS ENUM ('defneqr', 'defnerandevu');
-EXCEPTION WHEN duplicate_object THEN null;
+EXCEPTION WHEN SQLSTATE '42710' THEN null;
 END $$;
 
 DO $$ BEGIN
   CREATE TYPE "AppointmentStatus" AS ENUM ('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW', 'POSTPONED');
-EXCEPTION WHEN duplicate_object THEN null;
+EXCEPTION WHEN SQLSTATE '42710' THEN null;
 END $$;
 
 -- AlterEnum (UserRole - add BUSINESS_OWNER, APPOINTMENT_STAFF)
