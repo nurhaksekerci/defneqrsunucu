@@ -52,8 +52,14 @@ case "$CMD" in
     docker compose exec backend node scripts/add-defnerandevu-schema.js
     echo "✅ DefneRandevu şema tamamlandı"
     ;;
+  resolve)
+    MIGRATION_NAME=${2:?Migration adı gerekli (örn: 20260228_add_referral_discount)}
+    echo "🔧 Migration '$MIGRATION_NAME' uygulanmış olarak işaretleniyor..."
+    docker compose exec backend npx prisma migrate resolve --applied "$MIGRATION_NAME"
+    echo "✅ Migration işaretlendi. Backend yeniden başlatılacak."
+    ;;
   *)
-    echo "Kullanım: $0 [deploy|deploy-standalone|status|seed|backup|avatar|defnerandevu]"
+    echo "Kullanım: $0 [deploy|deploy-standalone|status|seed|backup|avatar|defnerandevu|resolve]"
     echo ""
     echo "  deploy           - Migration'ları uygula (backend çalışıyor olmalı)"
     echo "  deploy-standalone - Migration'ları one-off container ile uygula (backend kapalıyken)"
@@ -62,6 +68,7 @@ case "$CMD" in
     echo "  backup           - Migration öncesi yedek al"
     echo "  avatar           - Users tablosuna avatar sütunu ekle (eski migration)"
     echo "  defnerandevu     - DefneRandevu şema değişiklikleri (Project, tablolar)"
+    echo "  resolve <name>   - Başarısız migration'ı uygulanmış olarak işaretle (sütun zaten varsa)"
     exit 1
     ;;
 esac

@@ -72,6 +72,16 @@ Backend başlarken otomatik olarak `prisma migrate deploy` çalıştırır — v
 ./scripts/run-migrations.sh local
 ```
 
+**Başarısız migration'ı düzeltme** (sütun zaten varsa, P3018/P3009):
+
+```bash
+./scripts/docker-migrate.sh resolve 20260228_add_referral_discount
+# veya doğrudan:
+docker compose exec backend npx prisma migrate resolve --applied 20260228_add_referral_discount
+```
+
+Sonra backend yeniden başlatılır veya `deploy` tekrar çalıştırılır.
+
 **DefneRandevu şema değişiklikleri** (Prisma migrate başarısız olursa):
 
 ```bash
