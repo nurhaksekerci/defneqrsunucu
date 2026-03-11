@@ -11,16 +11,15 @@ const oauthController = require('../controllers/oauth.controller');
  */
 router.get('/google', 
   (req, res, next) => {
-    // DefneRandevu'dan gelen OAuth istekleri için cookie set et (callback'ta kullanılacak)
-    if (req.query.return === 'randevu') {
-      res.cookie('oauth_return', 'randevu', {
-        maxAge: 10 * 60 * 1000, // 10 dakika
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/'
-      });
-    }
+    // OAuth başlatılırken hedef projeyi cookie'ye yaz (eski cookie'yi ezer)
+    const returnTo = req.query.return === 'randevu' ? 'randevu' : 'defneqr';
+    res.cookie('oauth_return', returnTo, {
+      maxAge: 10 * 60 * 1000, // 10 dakika
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/'
+    });
     console.log('========================================');
     console.log('🚀 STEP 1: Google OAuth Başlatılıyor');
     console.log('   Request from:', req.get('origin') || req.get('referer'));
