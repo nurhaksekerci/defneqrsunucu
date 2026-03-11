@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { WeekCalendarView } from './WeekCalendarView';
 import { StaffCalendarView } from './StaffCalendarView';
+import { AppointmentDetailModal } from './AppointmentDetailModal';
 
 interface Appointment {
   id: string;
@@ -91,6 +92,7 @@ export default function CalendarPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isAddingCustomer, setIsAddingCustomer] = useState(false);
   const [completeModal, setCompleteModal] = useState<{ appointment: Appointment; packages: { id: string; remainingSessions: number; totalSessions: number; service: { name: string } }[] } | null>(null);
+  const [detailModal, setDetailModal] = useState<Appointment | null>(null);
   const [calendarView, setCalendarView] = useState<CalendarView>('week');
   const [availableSlots, setAvailableSlots] = useState<{ start: string; end: string }[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -302,14 +304,15 @@ export default function CalendarPage() {
   };
 
   const handleDeleteAppointment = async (appointmentId: string) => {
-    if (!confirm('Bu randevuyu silmek istediğinize emin misiniz?')) return;
     try {
       await api.delete(`/businesses/${businessId}/appointments/${appointmentId}`);
+      setDetailModal(null);
       loadData();
     } catch {
       alert('Randevu silinemedi.');
     }
   };
+
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -399,8 +402,7 @@ export default function CalendarPage() {
           staff={staff}
           canAddAppointment={canAddAppointment}
           onAddClick={openAddModal}
-          onCompleteClick={handleCompleteClick}
-          onDeleteClick={handleDeleteAppointment}
+          onAppointmentClick={(a) => setDetailModal(a)}
           getAppointmentsForDay={getAppointmentsForDay}
           getTimeString={getTimeString}
           statusLabels={STATUS_LABELS}
@@ -419,8 +421,7 @@ export default function CalendarPage() {
             staff={staff}
             canAddAppointment={canAddAppointment}
             onAddClick={openAddModal}
-            onCompleteClick={handleCompleteClick}
-            onDeleteClick={handleDeleteAppointment}
+            onAppointmentClick={(a) => setDetailModal(a)}
             getAppointmentsForStaffAndDay={getAppointmentsForStaffAndDay}
             getTimeString={getTimeString}
             statusLabels={STATUS_LABELS}
@@ -436,8 +437,7 @@ export default function CalendarPage() {
           staff={staff}
           canAddAppointment={canAddAppointment}
           onAddClick={openAddModal}
-          onCompleteClick={handleCompleteClick}
-          onDeleteClick={handleDeleteAppointment}
+          onAppointmentClick={(a) => setDetailModal(a)}
           getAppointmentsForDay={getAppointmentsForDay}
           getTimeString={getTimeString}
           statusLabels={STATUS_LABELS}
@@ -630,6 +630,24 @@ export default function CalendarPage() {
           </Card>
           </div>
         </div>
+      )}
+
+      {detailModal && (
+        <AppointmentDetailModal
+          appointment={detailModal}
+          staff={staff}
+          services={services}
+          businessId={businessId}
+          statusLabels={STATUS_LABELS}
+          onClose={() => setDetailModal(null)}
+          onUpdate={loadData}
+          onDelete={handleDeleteAppointment}
+          onComplete={(a) => {
+            setDetailModal(null);
+            handleCompleteClick(a);
+          }}
+          getTimeString={getTimeString}
+        />
       )}
 
       {completeModal && (

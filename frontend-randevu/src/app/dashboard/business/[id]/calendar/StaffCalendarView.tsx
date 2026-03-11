@@ -22,8 +22,7 @@ interface StaffCalendarViewProps {
   staff: StaffLike[];
   canAddAppointment: boolean;
   onAddClick: (day: Date, staffId: string) => void;
-  onCompleteClick: (a: AppointmentLike) => void;
-  onDeleteClick: (id: string) => void;
+  onAppointmentClick: (a: AppointmentLike) => void;
   getAppointmentsForStaffAndDay: (staffId: string, date: Date) => AppointmentLike[];
   getTimeString: (dateStr: string) => string;
   statusLabels: Record<string, string>;
@@ -38,8 +37,7 @@ export function StaffCalendarView({
   staff,
   canAddAppointment,
   onAddClick,
-  onCompleteClick,
-  onDeleteClick,
+  onAppointmentClick,
   getAppointmentsForStaffAndDay,
   getTimeString,
   statusLabels,
@@ -122,27 +120,21 @@ export function StaffCalendarView({
                       return (
                         <div
                           key={a.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => onAppointmentClick(a)}
+                          onKeyDown={(e) => e.key === 'Enter' && onAppointmentClick(a)}
                           className={`absolute left-1 right-1 rounded overflow-hidden shadow-sm border cursor-pointer hover:shadow-md transition-shadow ${staffColors[staffIdx % staffColors.length]}`}
                           style={{ top: top + 2, height: height - 4, minHeight: 20 }}
-                          title={`${a.customer.fullName} - ${a.service.name} ${getTimeString(a.startAt)}`}
+                          title={`${a.customer.fullName} - ${a.service.name} ${getTimeString(a.startAt)} (tıklayarak detay)`}
                         >
                           <div className="p-1.5 h-full overflow-hidden text-xs">
                             <div className="font-semibold truncate">{a.customer.fullName}</div>
                             <div className="truncate opacity-90">{a.service.name}</div>
                             <div className="opacity-80">{getTimeString(a.startAt)}</div>
-                            <div className="flex gap-1 mt-0.5 flex-wrap items-center">
-                              <span className={`px-1 rounded text-[9px] ${a.status === 'COMPLETED' ? 'bg-green-200' : a.status === 'CANCELLED' ? 'bg-red-200' : 'bg-amber-200'}`}>
-                                {statusLabels[a.status] || a.status}
-                              </span>
-                              {a.status !== 'COMPLETED' && a.status !== 'CANCELLED' && (
-                                <button type="button" onClick={(e) => { e.stopPropagation(); onCompleteClick(a); }} className="text-[9px] font-medium hover:underline">
-                                  Tamamla
-                                </button>
-                              )}
-                              <button type="button" onClick={(e) => { e.stopPropagation(); onDeleteClick(a.id); }} className="text-[9px] text-red-600 hover:underline ml-auto">
-                                Sil
-                              </button>
-                            </div>
+                            <span className={`inline-block mt-0.5 px-1 rounded text-[9px] ${a.status === 'COMPLETED' ? 'bg-green-200' : a.status === 'CANCELLED' ? 'bg-red-200' : 'bg-amber-200'}`}>
+                              {statusLabels[a.status] || a.status}
+                            </span>
                           </div>
                         </div>
                       );

@@ -17,7 +17,7 @@ const ensureBusinessAccess = async (userId, businessId) => {
 exports.getAvailableSlots = async (req, res, next) => {
   try {
     const { id: businessId } = req.params;
-    const { staffId, serviceId, date } = req.query;
+    const { staffId, serviceId, date, excludeAppointmentId } = req.query;
     const business = await ensureBusinessAccess(req.user.id, businessId);
     if (!business) {
       return res.status(404).json({ success: false, message: 'İşletme bulunamadı' });
@@ -70,14 +70,18 @@ exports.getAvailableSlots = async (req, res, next) => {
     const durationMs = service.duration * 60 * 1000;
 
     // O gün personelin randevuları (iptal hariç) - çalışma saatleri ile örtüşenler
+    const appointmentsWhere = {
+      businessId,
+      staffId,
+      status: { notIn: ['CANCELLED'] },
+      startAt: { lt: dayEnd },
+      endAt: { gt: dayStart }
+    };
+    if (excludeAppointmentId) {
+      appointmentsWhere.id = { not: excludeAppointmentId };
+    }
     const appointments = await prisma.appointment.findMany({
-      where: {
-        businessId,
-        staffId,
-        status: { notIn: ['CANCELLED'] },
-        startAt: { lt: dayEnd },
-        endAt: { gt: dayStart }
-      },
+      where: appointmentsWhere,
       select: { startAt: true, endAt: true }
     });
 
