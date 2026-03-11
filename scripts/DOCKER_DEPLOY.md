@@ -9,6 +9,14 @@ cd /opt/defneqr   # veya proje dizininiz
 git pull origin main
 ```
 
+**Önemli:** Migration dosyaları (`backend/prisma/migrations/**/migration.sql`) GitHub'a commit edilmeli. Yeni migration ekledikten sonra:
+
+```bash
+git add backend/prisma/migrations/
+git commit -m "Add migrations"
+git push
+```
+
 ### 2. Ortam Değişkenleri (.env)
 
 `.env` dosyasında şunlar tanımlı olmalı:
@@ -40,16 +48,28 @@ Backend başlarken otomatik olarak `prisma migrate deploy` çalıştırır — v
 
 ### 5. Migration'ı Manuel Çalıştırma
 
+**Migration'lar GitHub'a commit edilmeli.** `.gitignore` içinde `*.sql` vardı; Prisma migration dosyaları için istisna eklendi: `!backend/prisma/migrations/**/migration.sql`
+
 **Backend çalışıyorsa:**
 
 ```bash
 ./scripts/docker-migrate.sh deploy
+# veya
+./scripts/run-migrations.sh
 ```
 
 **Backend çalışmıyorsa** (one-off container):
 
 ```bash
 ./scripts/docker-migrate.sh deploy-standalone
+# veya
+./scripts/run-migrations.sh standalone
+```
+
+**Lokal (Docker olmadan, DATABASE_URL ile):**
+
+```bash
+./scripts/run-migrations.sh local
 ```
 
 **DefneRandevu şema değişiklikleri** (Prisma migrate başarısız olursa):

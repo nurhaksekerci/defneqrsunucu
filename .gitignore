@@ -50,10 +50,12 @@ backend/logs/
 nginx/ssl/*.pem
 nginx/ssl/*.key
 
-# Database backups
+# Database backups (Prisma migration dosyaları hariç)
 *.sql
 *.dump
 backups/
+# Prisma migration dosyaları commit edilmeli
+!backend/prisma/migrations/**/migration.sql
 
 # Production files
 .env.production

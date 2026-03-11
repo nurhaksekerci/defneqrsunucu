@@ -14,7 +14,11 @@ exports.getAppointments = async (req, res, next) => {
   try {
     const { id: businessId } = req.params;
     const { start, end } = req.query;
-    const business = await ensureBusinessAccess(req.user.id, businessId);
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Oturum gerekli' });
+    }
+    const business = await ensureBusinessAccess(userId, businessId);
     if (!business) {
       return res.status(404).json({ success: false, message: 'İşletme bulunamadı' });
     }
@@ -36,6 +40,13 @@ exports.getAppointments = async (req, res, next) => {
     });
     res.json({ success: true, data: appointments });
   } catch (error) {
+    const logger = require('../utils/logger');
+    logger.error('getAppointments hatası', {
+      error: error.message,
+      code: error.code,
+      businessId: req.params?.id,
+      stack: error.stack
+    });
     next(error);
   }
 };

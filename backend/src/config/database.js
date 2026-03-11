@@ -4,9 +4,13 @@ const prisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
 });
 
-// Setup query monitoring middleware
-const { setupQueryMonitoring } = require('../middleware/queryMonitoring.middleware');
-setupQueryMonitoring(prisma);
+// Setup query monitoring middleware (optional - don't crash if deprecated $use fails)
+try {
+  const { setupQueryMonitoring } = require('../middleware/queryMonitoring.middleware');
+  setupQueryMonitoring(prisma);
+} catch (err) {
+  console.warn('Query monitoring skipped:', err.message);
+}
 
 // Graceful shutdown
 process.on('beforeExit', async () => {
