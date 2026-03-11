@@ -1,21 +1,26 @@
--- CreateEnum
-CREATE TYPE "Project" AS ENUM ('defneqr', 'defnerandevu');
+-- CreateEnum (idempotent)
+DO $$ BEGIN
+  CREATE TYPE "Project" AS ENUM ('defneqr', 'defnerandevu');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
--- CreateEnum
-CREATE TYPE "AppointmentStatus" AS ENUM ('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW', 'POSTPONED');
+DO $$ BEGIN
+  CREATE TYPE "AppointmentStatus" AS ENUM ('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW', 'POSTPONED');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 -- AlterEnum (UserRole - add BUSINESS_OWNER, APPOINTMENT_STAFF)
-ALTER TYPE "UserRole" ADD VALUE 'BUSINESS_OWNER';
-ALTER TYPE "UserRole" ADD VALUE 'APPOINTMENT_STAFF';
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'BUSINESS_OWNER';
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'APPOINTMENT_STAFF';
 
 -- AlterTable (support_tickets - add project)
-ALTER TABLE "support_tickets" ADD COLUMN "project" "Project" NOT NULL DEFAULT 'defneqr';
+ALTER TABLE "support_tickets" ADD COLUMN IF NOT EXISTS "project" "Project" NOT NULL DEFAULT 'defneqr';
 
--- CreateIndex
-CREATE INDEX "support_tickets_project_idx" ON "support_tickets"("project");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "support_tickets_project_idx" ON "support_tickets"("project");
 
--- CreateTable (DefneRandevu)
-CREATE TABLE "appointment_businesses" (
+-- CreateTable (DefneRandevu) - idempotent
+CREATE TABLE IF NOT EXISTS "appointment_businesses" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
@@ -32,13 +37,12 @@ CREATE TABLE "appointment_businesses" (
     CONSTRAINT "appointment_businesses_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "appointment_businesses_slug_key" ON "appointment_businesses"("slug");
+CREATE UNIQUE INDEX IF NOT EXISTS "appointment_businesses_slug_key" ON "appointment_businesses"("slug");
+CREATE INDEX IF NOT EXISTS "appointment_businesses_ownerId_idx" ON "appointment_businesses"("ownerId");
+CREATE INDEX IF NOT EXISTS "appointment_businesses_slug_idx" ON "appointment_businesses"("slug");
+CREATE INDEX IF NOT EXISTS "appointment_businesses_isDeleted_idx" ON "appointment_businesses"("isDeleted");
 
-CREATE INDEX "appointment_businesses_ownerId_idx" ON "appointment_businesses"("ownerId");
-CREATE INDEX "appointment_businesses_slug_idx" ON "appointment_businesses"("slug");
-CREATE INDEX "appointment_businesses_isDeleted_idx" ON "appointment_businesses"("isDeleted");
-
-CREATE TABLE "appointment_staff" (
+CREATE TABLE IF NOT EXISTS "appointment_staff" (
     "id" TEXT NOT NULL,
     "businessId" TEXT NOT NULL,
     "fullName" TEXT NOT NULL,
@@ -55,10 +59,10 @@ CREATE TABLE "appointment_staff" (
     CONSTRAINT "appointment_staff_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "appointment_staff_businessId_idx" ON "appointment_staff"("businessId");
-CREATE INDEX "appointment_staff_isDeleted_idx" ON "appointment_staff"("isDeleted");
+CREATE INDEX IF NOT EXISTS "appointment_staff_businessId_idx" ON "appointment_staff"("businessId");
+CREATE INDEX IF NOT EXISTS "appointment_staff_isDeleted_idx" ON "appointment_staff"("isDeleted");
 
-CREATE TABLE "appointment_services" (
+CREATE TABLE IF NOT EXISTS "appointment_services" (
     "id" TEXT NOT NULL,
     "businessId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -73,10 +77,10 @@ CREATE TABLE "appointment_services" (
     CONSTRAINT "appointment_services_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "appointment_services_businessId_idx" ON "appointment_services"("businessId");
-CREATE INDEX "appointment_services_isDeleted_idx" ON "appointment_services"("isDeleted");
+CREATE INDEX IF NOT EXISTS "appointment_services_businessId_idx" ON "appointment_services"("businessId");
+CREATE INDEX IF NOT EXISTS "appointment_services_isDeleted_idx" ON "appointment_services"("isDeleted");
 
-CREATE TABLE "appointment_staff_services" (
+CREATE TABLE IF NOT EXISTS "appointment_staff_services" (
     "id" TEXT NOT NULL,
     "staffId" TEXT NOT NULL,
     "serviceId" TEXT NOT NULL,
@@ -86,11 +90,11 @@ CREATE TABLE "appointment_staff_services" (
     CONSTRAINT "appointment_staff_services_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "appointment_staff_services_staffId_serviceId_key" ON "appointment_staff_services"("staffId", "serviceId");
-CREATE INDEX "appointment_staff_services_staffId_idx" ON "appointment_staff_services"("staffId");
-CREATE INDEX "appointment_staff_services_serviceId_idx" ON "appointment_staff_services"("serviceId");
+CREATE UNIQUE INDEX IF NOT EXISTS "appointment_staff_services_staffId_serviceId_key" ON "appointment_staff_services"("staffId", "serviceId");
+CREATE INDEX IF NOT EXISTS "appointment_staff_services_staffId_idx" ON "appointment_staff_services"("staffId");
+CREATE INDEX IF NOT EXISTS "appointment_staff_services_serviceId_idx" ON "appointment_staff_services"("serviceId");
 
-CREATE TABLE "appointment_working_hours" (
+CREATE TABLE IF NOT EXISTS "appointment_working_hours" (
     "id" TEXT NOT NULL,
     "businessId" TEXT NOT NULL,
     "staffId" TEXT,
@@ -102,11 +106,11 @@ CREATE TABLE "appointment_working_hours" (
     CONSTRAINT "appointment_working_hours_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "appointment_working_hours_businessId_idx" ON "appointment_working_hours"("businessId");
-CREATE INDEX "appointment_working_hours_staffId_idx" ON "appointment_working_hours"("staffId");
-CREATE INDEX "appointment_working_hours_businessId_staffId_dayOfWeek_idx" ON "appointment_working_hours"("businessId", "staffId", "dayOfWeek");
+CREATE INDEX IF NOT EXISTS "appointment_working_hours_businessId_idx" ON "appointment_working_hours"("businessId");
+CREATE INDEX IF NOT EXISTS "appointment_working_hours_staffId_idx" ON "appointment_working_hours"("staffId");
+CREATE INDEX IF NOT EXISTS "appointment_working_hours_businessId_staffId_dayOfWeek_idx" ON "appointment_working_hours"("businessId", "staffId", "dayOfWeek");
 
-CREATE TABLE "appointment_customers" (
+CREATE TABLE IF NOT EXISTS "appointment_customers" (
     "id" TEXT NOT NULL,
     "businessId" TEXT NOT NULL,
     "fullName" TEXT NOT NULL,
@@ -120,11 +124,11 @@ CREATE TABLE "appointment_customers" (
     CONSTRAINT "appointment_customers_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "appointment_customers_businessId_idx" ON "appointment_customers"("businessId");
-CREATE INDEX "appointment_customers_phone_idx" ON "appointment_customers"("phone");
-CREATE INDEX "appointment_customers_isDeleted_idx" ON "appointment_customers"("isDeleted");
+CREATE INDEX IF NOT EXISTS "appointment_customers_businessId_idx" ON "appointment_customers"("businessId");
+CREATE INDEX IF NOT EXISTS "appointment_customers_phone_idx" ON "appointment_customers"("phone");
+CREATE INDEX IF NOT EXISTS "appointment_customers_isDeleted_idx" ON "appointment_customers"("isDeleted");
 
-CREATE TABLE "appointments" (
+CREATE TABLE IF NOT EXISTS "appointments" (
     "id" TEXT NOT NULL,
     "businessId" TEXT NOT NULL,
     "staffId" TEXT NOT NULL,
@@ -140,14 +144,14 @@ CREATE TABLE "appointments" (
     CONSTRAINT "appointments_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "appointments_businessId_idx" ON "appointments"("businessId");
-CREATE INDEX "appointments_staffId_idx" ON "appointments"("staffId");
-CREATE INDEX "appointments_customerId_idx" ON "appointments"("customerId");
-CREATE INDEX "appointments_startAt_idx" ON "appointments"("startAt");
-CREATE INDEX "appointments_status_idx" ON "appointments"("status");
-CREATE INDEX "appointments_businessId_startAt_idx" ON "appointments"("businessId", "startAt");
+CREATE INDEX IF NOT EXISTS "appointments_businessId_idx" ON "appointments"("businessId");
+CREATE INDEX IF NOT EXISTS "appointments_staffId_idx" ON "appointments"("staffId");
+CREATE INDEX IF NOT EXISTS "appointments_customerId_idx" ON "appointments"("customerId");
+CREATE INDEX IF NOT EXISTS "appointments_startAt_idx" ON "appointments"("startAt");
+CREATE INDEX IF NOT EXISTS "appointments_status_idx" ON "appointments"("status");
+CREATE INDEX IF NOT EXISTS "appointments_businessId_startAt_idx" ON "appointments"("businessId", "startAt");
 
-CREATE TABLE "appointment_sms_logs" (
+CREATE TABLE IF NOT EXISTS "appointment_sms_logs" (
     "id" TEXT NOT NULL,
     "businessId" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
@@ -160,44 +164,72 @@ CREATE TABLE "appointment_sms_logs" (
     CONSTRAINT "appointment_sms_logs_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "appointment_sms_logs_businessId_idx" ON "appointment_sms_logs"("businessId");
-CREATE INDEX "appointment_sms_logs_sentAt_idx" ON "appointment_sms_logs"("sentAt");
+CREATE INDEX IF NOT EXISTS "appointment_sms_logs_businessId_idx" ON "appointment_sms_logs"("businessId");
+CREATE INDEX IF NOT EXISTS "appointment_sms_logs_sentAt_idx" ON "appointment_sms_logs"("sentAt");
 
--- AddForeignKey
-ALTER TABLE "appointment_businesses" ADD CONSTRAINT "appointment_businesses_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "appointment_staff" ADD CONSTRAINT "appointment_staff_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "appointment_businesses"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "appointment_services" ADD CONSTRAINT "appointment_services_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "appointment_businesses"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "appointment_staff_services" ADD CONSTRAINT "appointment_staff_services_staffId_fkey" FOREIGN KEY ("staffId") REFERENCES "appointment_staff"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "appointment_staff_services" ADD CONSTRAINT "appointment_staff_services_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "appointment_services"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "appointment_working_hours" ADD CONSTRAINT "appointment_working_hours_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "appointment_businesses"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "appointment_working_hours" ADD CONSTRAINT "appointment_working_hours_staffId_fkey" FOREIGN KEY ("staffId") REFERENCES "appointment_staff"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "appointment_customers" ADD CONSTRAINT "appointment_customers_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "appointment_businesses"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "appointments" ADD CONSTRAINT "appointments_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "appointment_businesses"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "appointments" ADD CONSTRAINT "appointments_staffId_fkey" FOREIGN KEY ("staffId") REFERENCES "appointment_staff"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "appointments" ADD CONSTRAINT "appointments_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "appointment_services"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "appointments" ADD CONSTRAINT "appointments_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "appointment_customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "appointment_sms_logs" ADD CONSTRAINT "appointment_sms_logs_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "appointment_businesses"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'appointment_businesses_ownerId_fkey') THEN
+    ALTER TABLE "appointment_businesses" ADD CONSTRAINT "appointment_businesses_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'appointment_staff_businessId_fkey') THEN
+    ALTER TABLE "appointment_staff" ADD CONSTRAINT "appointment_staff_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "appointment_businesses"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'appointment_services_businessId_fkey') THEN
+    ALTER TABLE "appointment_services" ADD CONSTRAINT "appointment_services_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "appointment_businesses"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'appointment_staff_services_staffId_fkey') THEN
+    ALTER TABLE "appointment_staff_services" ADD CONSTRAINT "appointment_staff_services_staffId_fkey" FOREIGN KEY ("staffId") REFERENCES "appointment_staff"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'appointment_staff_services_serviceId_fkey') THEN
+    ALTER TABLE "appointment_staff_services" ADD CONSTRAINT "appointment_staff_services_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "appointment_services"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'appointment_working_hours_businessId_fkey') THEN
+    ALTER TABLE "appointment_working_hours" ADD CONSTRAINT "appointment_working_hours_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "appointment_businesses"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'appointment_working_hours_staffId_fkey') THEN
+    ALTER TABLE "appointment_working_hours" ADD CONSTRAINT "appointment_working_hours_staffId_fkey" FOREIGN KEY ("staffId") REFERENCES "appointment_staff"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'appointment_customers_businessId_fkey') THEN
+    ALTER TABLE "appointment_customers" ADD CONSTRAINT "appointment_customers_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "appointment_businesses"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'appointments_businessId_fkey') THEN
+    ALTER TABLE "appointments" ADD CONSTRAINT "appointments_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "appointment_businesses"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'appointments_staffId_fkey') THEN
+    ALTER TABLE "appointments" ADD CONSTRAINT "appointments_staffId_fkey" FOREIGN KEY ("staffId") REFERENCES "appointment_staff"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'appointments_serviceId_fkey') THEN
+    ALTER TABLE "appointments" ADD CONSTRAINT "appointments_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "appointment_services"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'appointments_customerId_fkey') THEN
+    ALTER TABLE "appointments" ADD CONSTRAINT "appointments_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "appointment_customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'appointment_sms_logs_businessId_fkey') THEN
+    ALTER TABLE "appointment_sms_logs" ADD CONSTRAINT "appointment_sms_logs_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "appointment_businesses"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
