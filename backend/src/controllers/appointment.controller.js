@@ -10,6 +10,105 @@ const ensureBusinessAccess = async (userId, businessId) => {
   return business;
 };
 
+/**
+ * Müsait saat dilimlerini döndürür (personel + hizmet + tarih seçildiğinde)
+ * Çalışma saatleri ve mevcut randevulara göre dolu slotlar hariç tutulur
+ */
+exports.getAvailableSlots = async (req, res, next) => {
+  try {
+    const { id: businessId } = req.params;
+    const { staffId, serviceId, date } = req.query;
+    const business = await ensureBusinessAccess(req.user.id, businessId);
+    if (!business) {
+      return res.status(404).json({ success: false, message: 'İşletme bulunamadı' });
+    }
+    if (!staffId || !serviceId || !date) {
+      return res.status(400).json({ success: false, message: 'staffId, serviceId ve date zorunludur' });
+    }
+    const [service, staff] = await Promise.all([
+      prisma.appointmentService.findFirst({ where: { id: serviceId, businessId, isDeleted: false } }),
+      prisma.appointmentStaff.findFirst({ where: { id: staffId, businessId, isDeleted: false } })
+    ]);
+    if (!service) return res.status(400).json({ success: false, message: 'Hizmet bulunamadı' });
+    if (!staff) return res.status(400).json({ success: false, message: 'Personel bulunamadı' });
+
+    const targetDate = new Date(date);
+    targetDate.setHours(0, 0, 0, 0);
+    const dayOfWeek = targetDate.getDay(); // 0=Pazar, 1=Pazartesi, ...
+
+    // Çalışma saatleri: önce personel bazlı, yoksa işletme bazlı, yoksa varsayılan 09:00-18:00
+    let startTime = '09:00';
+    let endTime = '18:00';
+    let isClosed = false;
+
+    const staffHours = await prisma.appointmentWorkingHours.findFirst({
+      where: { businessId, staffId, dayOfWeek }
+    });
+    const businessHours = await prisma.appointmentWorkingHours.findFirst({
+      where: { businessId, staffId: null, dayOfWeek }
+    });
+    const wh = staffHours || businessHours;
+    if (wh) {
+      isClosed = wh.isClosed;
+      if (!isClosed) {
+        startTime = wh.startTime;
+        endTime = wh.endTime;
+      }
+    }
+
+    if (isClosed) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const [startH, startM] = startTime.split(':').map(Number);
+    const [endH, endM] = endTime.split(':').map(Number);
+    const dayStart = new Date(targetDate);
+    dayStart.setHours(startH, startM, 0, 0);
+    const dayEnd = new Date(targetDate);
+    dayEnd.setHours(endH, endM, 0, 0);
+
+    const durationMs = service.duration * 60 * 1000;
+
+    // O gün personelin randevuları (iptal hariç) - çalışma saatleri ile örtüşenler
+    const appointments = await prisma.appointment.findMany({
+      where: {
+        businessId,
+        staffId,
+        status: { notIn: ['CANCELLED'] },
+        startAt: { lt: dayEnd },
+        endAt: { gt: dayStart }
+      },
+      select: { startAt: true, endAt: true }
+    });
+
+    const slots = [];
+    const slotInterval = 15; // 15 dakika aralıklarla slot üret
+    let current = new Date(dayStart);
+
+    while (current.getTime() + durationMs <= dayEnd.getTime()) {
+      const slotStart = new Date(current);
+      const slotEnd = new Date(current.getTime() + durationMs);
+
+      const overlaps = appointments.some((a) => {
+        const appStart = new Date(a.startAt);
+        const appEnd = new Date(a.endAt);
+        return slotStart < appEnd && slotEnd > appStart;
+      });
+
+      if (!overlaps) {
+        const timeStr = slotStart.toTimeString().slice(0, 5);
+        slots.push({ start: timeStr, end: slotEnd.toTimeString().slice(0, 5) });
+      }
+
+      current.setMinutes(current.getMinutes() + slotInterval);
+    }
+
+    res.json({ success: true, data: slots });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.getAppointments = async (req, res, next) => {
   try {
     const { id: businessId } = req.params;

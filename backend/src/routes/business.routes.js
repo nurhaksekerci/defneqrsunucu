@@ -94,6 +94,7 @@ router.post('/:id/customers', uuidParamValidation('id'), appointmentCustomerCont
 
 // Randevular
 router.get('/:id/appointments', uuidParamValidation('id'), appointmentController.getAppointments);
+router.get('/:id/slots', uuidParamValidation('id'), appointmentController.getAvailableSlots);
 router.post('/:id/appointments', uuidParamValidation('id'), appointmentController.createAppointment);
 router.put('/:id/appointments/:appointmentId', uuidParamValidation('id'), uuidParamValidation('appointmentId'), appointmentController.updateAppointment);
 router.delete('/:id/appointments/:appointmentId', uuidParamValidation('id'), uuidParamValidation('appointmentId'), appointmentController.deleteAppointment);

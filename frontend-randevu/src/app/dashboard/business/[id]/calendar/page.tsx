@@ -90,6 +90,8 @@ export default function CalendarPage() {
   const [isAddingCustomer, setIsAddingCustomer] = useState(false);
   const [completeModal, setCompleteModal] = useState<{ appointment: Appointment; packages: { id: string; remainingSessions: number; totalSessions: number; service: { name: string } }[] } | null>(null);
   const [calendarView, setCalendarView] = useState<CalendarView>('staff');
+  const [availableSlots, setAvailableSlots] = useState<{ start: string; end: string }[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   const loadData = async () => {
     try {
@@ -123,6 +125,26 @@ export default function CalendarPage() {
   useEffect(() => {
     loadData();
   }, [businessId, currentDate]);
+
+  // Personel, hizmet ve tarih seçildiğinde müsait saatleri yükle
+  useEffect(() => {
+    if (!newAppointment.staffId || !newAppointment.serviceId || !newAppointment.date || !showAddModal) {
+      setAvailableSlots([]);
+      return;
+    }
+    setLoadingSlots(true);
+    api
+      .get(`/businesses/${businessId}/slots`, {
+        params: {
+          staffId: newAppointment.staffId,
+          serviceId: newAppointment.serviceId,
+          date: newAppointment.date,
+        },
+      })
+      .then((res) => setAvailableSlots(res.data.data || []))
+      .catch(() => setAvailableSlots([]))
+      .finally(() => setLoadingSlots(false));
+  }, [newAppointment.staffId, newAppointment.serviceId, newAppointment.date, showAddModal, businessId]);
 
   const startOfWeek = (d: Date) => {
     const res = new Date(d);
@@ -179,7 +201,7 @@ export default function CalendarPage() {
   const handleCreateAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAppointment.staffId || !newAppointment.serviceId || !newAppointment.customerId || !newAppointment.date || !newAppointment.time) {
-      alert('Personel, hizmet, müşteri, tarih ve saat zorunludur.');
+      alert('Personel, hizmet, müşteri, tarih ve müsait bir saat seçin.');
       return;
     }
     setIsSaving(true);
@@ -526,10 +548,10 @@ export default function CalendarPage() {
               <h2 className="text-xl font-bold text-gray-900 mb-4">Yeni Randevu</h2>
               <form onSubmit={handleCreateAppointment} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Personel</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Personel *</label>
                   <select
                     value={newAppointment.staffId}
-                    onChange={(e) => setNewAppointment({ ...newAppointment, staffId: e.target.value })}
+                    onChange={(e) => setNewAppointment({ ...newAppointment, staffId: e.target.value, time: '' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                     required
                   >
@@ -540,10 +562,10 @@ export default function CalendarPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hizmet</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Hizmet *</label>
                   <select
                     value={newAppointment.serviceId}
-                    onChange={(e) => setNewAppointment({ ...newAppointment, serviceId: e.target.value })}
+                    onChange={(e) => setNewAppointment({ ...newAppointment, serviceId: e.target.value, time: '' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                     required
                   >
@@ -601,27 +623,48 @@ export default function CalendarPage() {
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Tarih</label>
-                    <input
-                      type="date"
-                      value={newAppointment.date}
-                      onChange={(e) => setNewAppointment({ ...newAppointment, date: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Saat</label>
-                    <input
-                      type="time"
-                      value={newAppointment.time}
-                      onChange={(e) => setNewAppointment({ ...newAppointment, time: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      required
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tarih *</label>
+                  <input
+                    type="date"
+                    value={newAppointment.date}
+                    onChange={(e) => setNewAppointment({ ...newAppointment, date: e.target.value, time: '' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Saat *</label>
+                  {newAppointment.staffId && newAppointment.serviceId && newAppointment.date ? (
+                    <>
+                      {loadingSlots ? (
+                        <div className="py-4 text-center text-sm text-gray-500">Müsait saatler yükleniyor...</div>
+                      ) : availableSlots.length === 0 ? (
+                        <div className="py-4 px-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                          Bu tarihte müsait saat yok. Personel kapalı veya tüm slotlar dolu.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
+                          {availableSlots.map((slot) => (
+                            <button
+                              key={slot.start}
+                              type="button"
+                              onClick={() => setNewAppointment((prev) => ({ ...prev, time: slot.start }))}
+                              className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                                newAppointment.time === slot.start
+                                  ? 'bg-primary-600 text-white ring-2 ring-primary-300'
+                                  : 'bg-gray-100 text-gray-800 hover:bg-primary-50 hover:border-primary-200 border border-transparent'
+                              }`}
+                            >
+                              {slot.start}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-500 py-2">Önce personel, hizmet ve tarih seçin.</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Not</label>
@@ -663,7 +706,11 @@ export default function CalendarPage() {
                   </div>
                 </div>
                 <div className="flex gap-2 pt-4">
-                  <Button type="submit" isLoading={isSaving}>
+                  <Button
+                    type="submit"
+                    isLoading={isSaving}
+                    disabled={!newAppointment.time || loadingSlots}
+                  >
                     Randevu Oluştur
                   </Button>
                   <Button type="button" variant="secondary" onClick={() => setShowAddModal(false)}>
