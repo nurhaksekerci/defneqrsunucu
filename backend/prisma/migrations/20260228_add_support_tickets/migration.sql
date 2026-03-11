@@ -1,14 +1,21 @@
--- CreateEnum
-CREATE TYPE "TicketPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
+-- CreateEnum (idempotent)
+DO $$ BEGIN
+  CREATE TYPE "TicketPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
--- CreateEnum
-CREATE TYPE "TicketStatus" AS ENUM ('OPEN', 'IN_PROGRESS', 'WAITING_CUSTOMER', 'RESOLVED', 'CLOSED');
+DO $$ BEGIN
+  CREATE TYPE "TicketStatus" AS ENUM ('OPEN', 'IN_PROGRESS', 'WAITING_CUSTOMER', 'RESOLVED', 'CLOSED');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
--- CreateEnum
-CREATE TYPE "TicketCategory" AS ENUM ('TECHNICAL', 'BILLING', 'FEATURE_REQUEST', 'BUG_REPORT', 'GENERAL');
+DO $$ BEGIN
+  CREATE TYPE "TicketCategory" AS ENUM ('TECHNICAL', 'BILLING', 'FEATURE_REQUEST', 'BUG_REPORT', 'GENERAL');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
--- CreateTable
-CREATE TABLE "support_tickets" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "support_tickets" (
     "id" TEXT NOT NULL,
     "ticketNumber" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -29,8 +36,7 @@ CREATE TABLE "support_tickets" (
     CONSTRAINT "support_tickets_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "ticket_messages" (
+CREATE TABLE IF NOT EXISTS "ticket_messages" (
     "id" TEXT NOT NULL,
     "ticketId" TEXT NOT NULL,
     "authorId" TEXT NOT NULL,
@@ -42,53 +48,47 @@ CREATE TABLE "ticket_messages" (
     CONSTRAINT "ticket_messages_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE UNIQUE INDEX "support_tickets_ticketNumber_key" ON "support_tickets"("ticketNumber");
+-- CreateIndex (idempotent)
+CREATE UNIQUE INDEX IF NOT EXISTS "support_tickets_ticketNumber_key" ON "support_tickets"("ticketNumber");
+CREATE INDEX IF NOT EXISTS "support_tickets_userId_idx" ON "support_tickets"("userId");
+CREATE INDEX IF NOT EXISTS "support_tickets_restaurantId_idx" ON "support_tickets"("restaurantId");
+CREATE INDEX IF NOT EXISTS "support_tickets_status_idx" ON "support_tickets"("status");
+CREATE INDEX IF NOT EXISTS "support_tickets_priority_idx" ON "support_tickets"("priority");
+CREATE INDEX IF NOT EXISTS "support_tickets_category_idx" ON "support_tickets"("category");
+CREATE INDEX IF NOT EXISTS "support_tickets_assignedToId_idx" ON "support_tickets"("assignedToId");
+CREATE INDEX IF NOT EXISTS "support_tickets_createdAt_idx" ON "support_tickets"("createdAt");
+CREATE INDEX IF NOT EXISTS "ticket_messages_ticketId_idx" ON "ticket_messages"("ticketId");
+CREATE INDEX IF NOT EXISTS "ticket_messages_authorId_idx" ON "ticket_messages"("authorId");
+CREATE INDEX IF NOT EXISTS "ticket_messages_createdAt_idx" ON "ticket_messages"("createdAt");
 
--- CreateIndex
-CREATE INDEX "support_tickets_userId_idx" ON "support_tickets"("userId");
-
--- CreateIndex
-CREATE INDEX "support_tickets_restaurantId_idx" ON "support_tickets"("restaurantId");
-
--- CreateIndex
-CREATE INDEX "support_tickets_status_idx" ON "support_tickets"("status");
-
--- CreateIndex
-CREATE INDEX "support_tickets_priority_idx" ON "support_tickets"("priority");
-
--- CreateIndex
-CREATE INDEX "support_tickets_category_idx" ON "support_tickets"("category");
-
--- CreateIndex
-CREATE INDEX "support_tickets_assignedToId_idx" ON "support_tickets"("assignedToId");
-
--- CreateIndex
-CREATE INDEX "support_tickets_createdAt_idx" ON "support_tickets"("createdAt");
-
--- CreateIndex
-CREATE INDEX "ticket_messages_ticketId_idx" ON "ticket_messages"("ticketId");
-
--- CreateIndex
-CREATE INDEX "ticket_messages_authorId_idx" ON "ticket_messages"("authorId");
-
--- CreateIndex
-CREATE INDEX "ticket_messages_createdAt_idx" ON "ticket_messages"("createdAt");
-
--- AddForeignKey
-ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_restaurantId_fkey" FOREIGN KEY ("restaurantId") REFERENCES "restaurants"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_assignedToId_fkey" FOREIGN KEY ("assignedToId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_resolvedById_fkey" FOREIGN KEY ("resolvedById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ticket_messages" ADD CONSTRAINT "ticket_messages_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "support_tickets"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ticket_messages" ADD CONSTRAINT "ticket_messages_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'support_tickets_userId_fkey') THEN
+    ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'support_tickets_restaurantId_fkey') THEN
+    ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_restaurantId_fkey" FOREIGN KEY ("restaurantId") REFERENCES "restaurants"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'support_tickets_assignedToId_fkey') THEN
+    ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_assignedToId_fkey" FOREIGN KEY ("assignedToId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'support_tickets_resolvedById_fkey') THEN
+    ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_resolvedById_fkey" FOREIGN KEY ("resolvedById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ticket_messages_ticketId_fkey') THEN
+    ALTER TABLE "ticket_messages" ADD CONSTRAINT "ticket_messages_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "support_tickets"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ticket_messages_authorId_fkey') THEN
+    ALTER TABLE "ticket_messages" ADD CONSTRAINT "ticket_messages_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
