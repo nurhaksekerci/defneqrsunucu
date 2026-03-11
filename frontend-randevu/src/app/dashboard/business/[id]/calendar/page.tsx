@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { WeekCalendarView } from './WeekCalendarView';
+import { StaffCalendarView } from './StaffCalendarView';
 
 interface Appointment {
   id: string;
@@ -407,168 +408,41 @@ export default function CalendarPage() {
         />
       )}
       {calendarView === 'staff' && (
-        <div className="overflow-x-auto">
-          <div className="min-w-[800px] border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="w-40 min-w-[160px] px-4 py-3 text-left text-sm font-semibold text-gray-700 sticky left-0 bg-gray-50 z-10 border-r border-gray-200">
-                    Personel
-                  </th>
-                  {weekDays.map((day) => (
-                    <th
-                      key={day.toISOString()}
-                      className={`px-3 py-3 text-center min-w-[140px] ${
-                        day.getTime() === today.getTime() ? 'bg-primary-50 text-primary-800' : 'text-gray-700'
-                      }`}
-                    >
-                      <div className="font-semibold">{day.toLocaleDateString('tr-TR', { weekday: 'short' })}</div>
-                      <div className="text-xs font-normal opacity-80">{day.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {staff.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-12 text-center text-gray-500">
-                      Henüz personel yok. <Link href={`/dashboard/business/${businessId}`} className="text-primary-600 hover:underline">Personel ekleyin</Link>
-                    </td>
-                  </tr>
-                ) : (
-                  staff.map((s, idx) => (
-                    <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50/50">
-                      <td className="px-4 py-3 sticky left-0 bg-white border-r border-gray-200 z-10">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="w-3 h-3 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: s.color || ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#f43f5e', '#06b6d4'][idx % 6] }}
-                          />
-                          <span className="font-medium text-gray-900">{s.fullName}</span>
-                        </div>
-                      </td>
-                      {weekDays.map((day) => {
-                        const dayAppointments = getAppointmentsForStaffAndDay(s.id, day);
-                        return (
-                          <td
-                            key={day.toISOString()}
-                            className={`align-top p-2 min-h-[120px] ${
-                              day.getTime() === today.getTime() ? 'bg-primary-50/20' : 'bg-white'
-                            }`}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => openAddModal(day, s.id)}
-                              disabled={!canAddAppointment}
-                              className="w-full py-1.5 mb-2 text-xs text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors border border-dashed border-primary-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                            >
-                              + Ekle
-                            </button>
-                            <div className="space-y-1.5">
-                              {dayAppointments.map((a) => (
-                                <div
-                                  key={a.id}
-                                  className={`p-2 rounded-lg text-xs border shadow-sm ${STAFF_COLORS[idx % STAFF_COLORS.length]}`}
-                                >
-                                  <div className="font-semibold truncate">{a.customer.fullName}</div>
-                                  <div className="text-[10px] opacity-90 truncate">{a.service.name}</div>
-                                  <div className="text-[10px] mt-0.5">{getTimeString(a.startAt)}</div>
-                                  <div className="flex gap-1 mt-1 flex-wrap items-center">
-                                    <span className={`px-1 rounded text-[9px] ${a.status === 'COMPLETED' ? 'bg-green-200' : a.status === 'CANCELLED' ? 'bg-red-200' : 'bg-amber-200'}`}>
-                                      {STATUS_LABELS[a.status] || a.status}
-                                    </span>
-                                    {(a as { seriesId?: string }).seriesId && (
-                                      <span className="text-[9px]" title="Tekrarlayan">🔄</span>
-                                    )}
-                                    {a.status !== 'COMPLETED' && a.status !== 'CANCELLED' && (
-                                      <button type="button" onClick={() => handleCompleteClick(a)} className="text-[9px] font-medium hover:underline">
-                                        Tamamla
-                                      </button>
-                                    )}
-                                    <button type="button" onClick={() => handleDeleteAppointment(a.id)} className="text-[9px] text-red-600 hover:underline ml-auto">
-                                      Sil
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+        staff.length === 0 ? (
+          <div className="py-12 text-center text-gray-500 rounded-xl border border-gray-200 bg-gray-50">
+            Henüz personel yok. <Link href={`/dashboard/business/${businessId}`} className="text-primary-600 hover:underline">Personel ekleyin</Link>
           </div>
-        </div>
+        ) : (
+          <StaffCalendarView
+            weekDays={weekDays}
+            today={today}
+            staff={staff}
+            canAddAppointment={canAddAppointment}
+            onAddClick={openAddModal}
+            onCompleteClick={handleCompleteClick}
+            onDeleteClick={handleDeleteAppointment}
+            getAppointmentsForStaffAndDay={getAppointmentsForStaffAndDay}
+            getTimeString={getTimeString}
+            statusLabels={STATUS_LABELS}
+            staffColors={STAFF_COLORS}
+          />
+        )
       )}
       {calendarView === 'day' && (
-        <div className="overflow-x-auto">
-          <div className="grid grid-cols-7 min-w-[700px] gap-2">
-            {weekDays.map((day) => (
-              <div
-                key={day.toISOString()}
-                className={`rounded-lg border-2 p-3 min-h-[200px] ${
-                  day.getTime() === today.getTime() ? 'border-primary-500 bg-primary-50/30' : 'border-gray-200 bg-gray-50/50'
-                }`}
-              >
-                <div className="text-center font-semibold text-gray-900 mb-2">
-                  {day.toLocaleDateString('tr-TR', { weekday: 'short' })}
-                </div>
-                <div className="text-center text-sm text-gray-600 mb-3">
-                  {day.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => openAddModal(day)}
-                  disabled={!canAddAppointment}
-                  className="w-full py-2 mb-2 text-xs text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors border border-dashed border-primary-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                >
-                  + Randevu
-                </button>
-                <div className="space-y-2">
-                  {getAppointmentsForDay(day).map((a) => (
-                    <div
-                      key={a.id}
-                      className="p-2 rounded text-xs bg-white border border-gray-200 shadow-sm"
-                    >
-                      <div className="font-medium text-gray-900 truncate">{a.customer.fullName}</div>
-                      <div className="text-gray-600 truncate">{a.service.name}</div>
-                      <div className="text-gray-500">
-                        {getTimeString(a.startAt)} - {a.staff.fullName}
-                      </div>
-                      <div className="flex gap-1 mt-1 flex-wrap items-center">
-                        <span className={`px-1 rounded text-[10px] ${a.status === 'COMPLETED' ? 'bg-green-100' : a.status === 'CANCELLED' ? 'bg-red-100' : 'bg-amber-100'}`}>
-                          {STATUS_LABELS[a.status] || a.status}
-                        </span>
-                        {(a as { seriesId?: string }).seriesId && (
-                          <span className="text-[10px] text-violet-600" title="Tekrarlayan randevu">🔄</span>
-                        )}
-                        {a.status !== 'COMPLETED' && a.status !== 'CANCELLED' && (
-                          <button
-                            type="button"
-                            onClick={() => handleCompleteClick(a)}
-                            className="text-[10px] text-green-600 hover:text-green-700"
-                          >
-                            Tamamla
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteAppointment(a.id)}
-                          className="text-red-600 hover:text-red-700 ml-auto"
-                        >
-                          Sil
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <WeekCalendarView
+          weekDays={weekDays}
+          today={today}
+          appointments={appointments}
+          staff={staff}
+          canAddAppointment={canAddAppointment}
+          onAddClick={openAddModal}
+          onCompleteClick={handleCompleteClick}
+          onDeleteClick={handleDeleteAppointment}
+          getAppointmentsForDay={getAppointmentsForDay}
+          getTimeString={getTimeString}
+          statusLabels={STATUS_LABELS}
+          staffColors={STAFF_COLORS}
+        />
       )}
 
       {showAddModal && (
