@@ -22,10 +22,15 @@ function LoginForm() {
   useEffect(() => {
     loadSettings();
     
-    // URL'den error parametresini kontrol et
+    // URL'den error parametresini kontrol et (OAuth veya proje uyumsuzluğu)
     const errorParam = searchParams.get('error');
+    const messageParam = searchParams.get('message');
     if (errorParam) {
-      setError(decodeURIComponent(errorParam));
+      // project_mismatch için message parametresini kullan
+      const displayMessage = (errorParam === 'project_mismatch' && messageParam)
+        ? decodeURIComponent(messageParam)
+        : decodeURIComponent(errorParam);
+      setError(displayMessage);
     }
   }, [searchParams]);
 

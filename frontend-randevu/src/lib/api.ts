@@ -23,11 +23,22 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor - 401'de login'e yönlendir
+// Response interceptor - 401'de login'e yönlendir, 403 PROJECT_MISMATCH'de logout
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
+    if (typeof window === 'undefined') return Promise.reject(error);
+
+    // Yanlış projede oturum: DefneQr hesabı randevu.defneqr.com'da veya tersi
+    if (error.response?.status === 403 && error.response?.data?.code === 'PROJECT_MISMATCH') {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('token');
+      window.location.href = '/auth/login';
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status === 401) {
       const isAuthRoute = window.location.pathname.startsWith('/auth');
       if (!isAuthRoute && !error.config?.url?.includes('/auth/')) {
         localStorage.removeItem('accessToken');

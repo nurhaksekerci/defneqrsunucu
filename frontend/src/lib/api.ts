@@ -110,6 +110,15 @@ api.interceptors.response.use(
       }
     }
 
+    // Yanlış projede oturum: DefneRandevu hesabı defneqr.com'da veya tersi
+    if (error.response?.status === 403 && error.response?.data?.code === 'PROJECT_MISMATCH' && typeof window !== 'undefined') {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('token');
+      window.location.href = '/auth/login';
+      return Promise.reject(error);
+    }
+
     return Promise.reject(error);
   }
 );

@@ -14,12 +14,14 @@ function AuthCallbackContent() {
 
     if (error) {
       // Hata durumunda login sayfasına yönlendir
+      const messageParam = searchParams.get('message');
       const errorMessages: Record<string, string> = {
         'authentication_failed': 'Kimlik doğrulama başarısız oldu.',
-        'google_auth_failed': 'Google ile giriş başarısız oldu.'
+        'google_auth_failed': 'Google ile giriş başarısız oldu.',
+        'project_mismatch': messageParam || 'Bu hesap Defne Qr için değil. Lütfen randevu.defneqr.com üzerinden giriş yapın.'
       };
       
-      const errorMessage = errorMessages[error] || 'Bir hata oluştu.';
+      const errorMessage = errorMessages[error] || (messageParam ? decodeURIComponent(messageParam) : 'Bir hata oluştu.');
       router.push(`/auth/login?error=${encodeURIComponent(errorMessage)}`);
       return;
     }

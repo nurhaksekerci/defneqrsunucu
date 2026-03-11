@@ -105,10 +105,20 @@ exports.register = async (req, res, next) => {
   }
 };
 
+// Proje-rol uyumluluğu kontrolü
+const DEFNERANDEVU_ROLES = ['BUSINESS_OWNER', 'APPOINTMENT_STAFF', 'ADMIN', 'STAFF'];
+const DEFNEQR_ROLES = ['RESTAURANT_OWNER', 'CASHIER', 'WAITER', 'BARISTA', 'COOK', 'ADMIN', 'STAFF'];
+
+const isRoleAllowedForProject = (role, project) => {
+  if (project === 'defnerandevu') return DEFNERANDEVU_ROLES.includes(role);
+  return DEFNEQR_ROLES.includes(role);
+};
+
 // Giriş yapma
 exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    const project = req.project || 'defneqr';
 
     // Kullanıcıyı bul
     const user = await prisma.user.findUnique({
@@ -135,6 +145,19 @@ exports.login = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         message: 'Email veya şifre hatalı'
+      });
+    }
+
+    // Proje-rol uyumluluğu: randevu.defneqr.com sadece randevu müşterileri, defneqr.com sadece QR müşterileri
+    if (!isRoleAllowedForProject(user.role, project)) {
+      recordLoginAttempt('failed', 'email');
+      const isRandevu = project === 'defnerandevu';
+      return res.status(403).json({
+        success: false,
+        code: 'PROJECT_MISMATCH',
+        message: isRandevu
+          ? 'Bu hesap DefneRandevu için değil. Lütfen defneqr.com üzerinden giriş yapın.'
+          : 'Bu hesap Defne Qr için değil. Lütfen randevu.defneqr.com üzerinden giriş yapın.'
       });
     }
 
@@ -194,6 +217,8 @@ exports.logout = async (req, res, next) => {
 // Mevcut kullanıcı bilgisi
 exports.getCurrentUser = async (req, res, next) => {
   try {
+    const project = req.project || 'defneqr';
+
     const user = await prisma.user.findUnique({
       where: { id: req.user.id, isDeleted: false },
       select: {
@@ -219,6 +244,18 @@ exports.getCurrentUser = async (req, res, next) => {
       return res.status(404).json({
         success: false,
         message: 'Kullanıcı bulunamadı'
+      });
+    }
+
+    // Proje-rol uyumluluğu: yanlış sitede oturum açmış kullanıcıyı çıkış yaptır
+    if (!isRoleAllowedForProject(user.role, project)) {
+      const isRandevu = project === 'defnerandevu';
+      return res.status(403).json({
+        success: false,
+        code: 'PROJECT_MISMATCH',
+        message: isRandevu
+          ? 'Bu hesap DefneRandevu için değil. Lütfen defneqr.com üzerinden giriş yapın.'
+          : 'Bu hesap Defne Qr için değil. Lütfen randevu.defneqr.com üzerinden giriş yapın.'
       });
     }
 
@@ -470,6 +507,7 @@ exports.resetPassword = async (req, res, next) => {
 exports.refreshToken = async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
+    const project = req.project || 'defneqr';
 
     if (!refreshToken) {
       return res.status(401).json({
@@ -485,6 +523,22 @@ exports.refreshToken = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         message: 'Geçersiz veya süresi dolmuş refresh token'
+      });
+    }
+
+    // Proje-rol uyumluluğu: yanlış siteden token yenilemeyi engelle
+    const user = await prisma.user.findUnique({
+      where: { id: tokenRecord.userId, isDeleted: false },
+      select: { role: true }
+    });
+    if (user && !isRoleAllowedForProject(user.role, project)) {
+      const isRandevu = project === 'defnerandevu';
+      return res.status(403).json({
+        success: false,
+        code: 'PROJECT_MISMATCH',
+        message: isRandevu
+          ? 'Bu hesap DefneRandevu için değil. Lütfen defneqr.com üzerinden giriş yapın.'
+          : 'Bu hesap Defne Qr için değil. Lütfen randevu.defneqr.com üzerinden giriş yapın.'
       });
     }
 

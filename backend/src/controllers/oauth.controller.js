@@ -6,6 +6,8 @@ const { processReferral } = require('../middleware/referral.middleware');
 /**
  * Google OAuth başarılı callback
  */
+const DEFNEQR_ROLES = ['RESTAURANT_OWNER', 'CASHIER', 'WAITER', 'BARISTA', 'COOK', 'ADMIN', 'STAFF'];
+
 exports.googleCallback = async (req, res) => {
   try {
     console.log('========================================');
@@ -18,6 +20,11 @@ exports.googleCallback = async (req, res) => {
       console.error('❌ req.user boş!');
       console.log('========================================');
       return res.redirect(`${process.env.FRONTEND_URL}/auth/login?error=authentication_failed`);
+    }
+
+    // Google OAuth sadece DefneQr için - DefneRandevu hesapları reddedilir
+    if (!DEFNEQR_ROLES.includes(user.role)) {
+      return res.redirect(`${process.env.FRONTEND_URL}/auth/login?error=project_mismatch&message=${encodeURIComponent('Bu hesap Defne Qr için değil. Lütfen randevu.defneqr.com üzerinden giriş yapın.')}`);
     }
 
     console.log('   User:', user.email, '(ID:', user.id + ')');
