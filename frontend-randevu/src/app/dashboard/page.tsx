@@ -22,7 +22,7 @@ const quickActions = [
   { href: '/dashboard', icon: '👥', label: 'Personel', desc: 'Personel yönetimi', color: 'from-emerald-500 to-teal-500' },
   { href: '/dashboard', icon: '✂️', label: 'Hizmetler', desc: 'Hizmet tanımları', color: 'from-violet-500 to-purple-500' },
   { href: '/dashboard', icon: '📅', label: 'Takvim', desc: 'Randevu takvimi', color: 'from-blue-500 to-indigo-500' },
-  { href: 'https://defneqr.com/dashboard/support', icon: '🎫', label: 'Destek', desc: 'Yardım alın', color: 'from-slate-500 to-gray-600' },
+  { href: '/dashboard/support', icon: '🎫', label: 'Destek', desc: 'Yardım alın', color: 'from-slate-500 to-gray-600' },
 ];
 
 export default function DashboardPage() {

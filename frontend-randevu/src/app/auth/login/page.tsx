@@ -32,7 +32,11 @@ function LoginForm() {
     setLoading(true);
     try {
       const res = await authService.login(formData.email, formData.password);
-      if (res.success) router.push('/dashboard');
+      if (res.success) {
+        const role = res.data?.user?.role;
+        if (role === 'ADMIN' || role === 'STAFF') router.push('/admin/tickets');
+        else router.push('/dashboard');
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Giriş başarısız.');
     } finally {

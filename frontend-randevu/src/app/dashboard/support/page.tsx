@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/Card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ticketService, type SupportTicket, type TicketStats, STATUS_LABELS, CATEGORY_LABELS, PRIORITY_LABELS } from '@/lib/ticketService';
 
@@ -22,42 +22,22 @@ const PRIORITY_COLORS: Record<string, string> = {
   URGENT: 'bg-red-100 text-red-700',
 };
 
-export default function AdminTicketsPage() {
+export default function SupportPage() {
   const router = useRouter();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [stats, setStats] = useState<TicketStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('');
-  const [projectFilter, setProjectFilter] = useState('');
-  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, totalCount: 0 });
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const handleDelete = async (e: React.MouseEvent, ticketId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!confirm('Bu talebi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) return;
-    try {
-      setDeletingId(ticketId);
-      await ticketService.deleteTicket(ticketId);
-      setTickets((prev) => prev.filter((t) => t.id !== ticketId));
-      loadStats();
-    } catch (err) {
-      console.error('Talep silinemedi:', err);
-      alert('Talep silinirken bir hata oluştu.');
-    } finally {
-      setDeletingId(null);
-    }
-  };
 
   useEffect(() => {
     loadTickets();
     loadStats();
-  }, [statusFilter, search, projectFilter]);
+  }, [statusFilter]);
 
   const loadStats = async () => {
     try {
-      const res = await ticketService.getAllTicketStats();
+      const res = await ticketService.getMyTicketStats();
       setStats((res.data as { data?: TicketStats })?.data || null);
     } catch {
       setStats(null);
@@ -69,9 +49,7 @@ export default function AdminTicketsPage() {
       setIsLoading(true);
       const params: Record<string, string | number> = { page };
       if (statusFilter) params.status = statusFilter;
-      if (projectFilter) params.project = projectFilter;
-      if (search) params.search = search;
-      const res = await ticketService.getAllTickets(params);
+      const res = await ticketService.getMyTickets(params);
       setTickets(res.data.data || []);
       setPagination(res.data.pagination || { currentPage: 1, totalPages: 1, totalCount: 0 });
     } catch (error) {
@@ -102,9 +80,14 @@ export default function AdminTicketsPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Destek Talepleri</h1>
-        <p className="text-gray-600">Tüm destek taleplerini yönetin</p>
+      <div className="mb-8 flex justify-between items-start flex-wrap gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Destek Taleplerim</h1>
+          <p className="text-gray-600">Destek taleplerinizi görüntüleyin ve takip edin</p>
+        </div>
+        <Button onClick={() => router.push('/dashboard/support/create')}>
+          + Yeni Talep Oluştur
+        </Button>
       </div>
 
       {stats && (
@@ -139,23 +122,6 @@ export default function AdminTicketsPage() {
       )}
 
       <div className="mb-4 flex gap-2 flex-wrap">
-        <input
-          type="text"
-          placeholder="Talep no, konu veya email ara..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && loadTickets()}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm w-64"
-        />
-        <select
-          value={projectFilter}
-          onChange={(e) => setProjectFilter(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-        >
-          <option value="">Tüm Projeler</option>
-          <option value="defneqr">Defne Qr</option>
-          <option value="defnerandevu">DefneRandevu</option>
-        </select>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -168,61 +134,46 @@ export default function AdminTicketsPage() {
           <option value="RESOLVED">Çözüldü</option>
           <option value="CLOSED">Kapatıldı</option>
         </select>
-        <Button variant="secondary" size="sm" onClick={() => loadTickets()}>
-          Ara
-        </Button>
       </div>
 
       {tickets.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-gray-500">Henüz destek talebi bulunmuyor.</p>
+            <p className="text-gray-500 mb-4">Henüz destek talebiniz bulunmuyor.</p>
+            <Button onClick={() => router.push('/dashboard/support/create')}>
+              İlk Talebinizi Oluşturun
+            </Button>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
           {tickets.map((ticket) => (
-            <Card key={ticket.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="py-4">
+            <Link key={ticket.id} href={`/dashboard/support/${ticket.id}`}>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="py-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <Link href={`/admin/tickets/${ticket.id}`} className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="font-mono text-sm text-gray-500">{ticket.ticketNumber}</span>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${ticket.project === 'defnerandevu' ? 'bg-violet-100 text-violet-800' : 'bg-sky-100 text-sky-800'}`}>
-                        {ticket.project === 'defnerandevu' ? 'Randevu' : 'Defne Qr'}
-                      </span>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[ticket.status] || 'bg-gray-100'}`}>
                         {STATUS_LABELS[ticket.status]}
                       </span>
                       <span className={`px-2 py-0.5 rounded text-xs ${PRIORITY_COLORS[ticket.priority] || 'bg-gray-100'}`}>
                         {PRIORITY_LABELS[ticket.priority]}
                       </span>
-                      {ticket.rating != null && (
-                        <span className="px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-800">
-                          ★ {ticket.rating}/10
-                        </span>
-                      )}
                     </div>
                     <h3 className="font-semibold text-gray-900 truncate">{ticket.subject}</h3>
                     <p className="text-sm text-gray-500 mt-1">
-                      {ticket.user.fullName} ({ticket.user.email}) • {CATEGORY_LABELS[ticket.category]} • {ticket._count?.messages ?? 0} mesaj
+                      {CATEGORY_LABELS[ticket.category]} • {ticket._count?.messages ?? 0} mesaj
                     </p>
-                  </Link>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-sm text-gray-500">{formatDate(ticket.createdAt)}</span>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                      onClick={(e) => handleDelete(e, ticket.id)}
-                      disabled={deletingId === ticket.id}
-                    >
-                      {deletingId === ticket.id ? '...' : 'Sil'}
-                    </Button>
+                  </div>
+                  <div className="text-sm text-gray-500 shrink-0">
+                    {formatDate(ticket.createdAt)}
                   </div>
                 </div>
               </CardContent>
             </Card>
+            </Link>
           ))}
 
           {pagination.totalPages > 1 && (

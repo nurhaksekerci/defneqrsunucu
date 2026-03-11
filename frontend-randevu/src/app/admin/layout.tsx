@@ -1,31 +1,25 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { authService } from '@/lib/auth';
 
-const baseMenuItems = [
+const adminMenuItems = [
   { name: 'Dashboard', href: '/dashboard', icon: '📊' },
-  { name: 'İşletmelerim', href: '/dashboard', icon: '🏪' },
-  { name: 'İşletme Oluştur', href: '/dashboard/business/create', icon: '➕' },
-  { name: 'Destek', href: '/dashboard/support', icon: '🎫' },
+  { name: 'Destek Talepleri', href: '/admin/tickets', icon: '🎫' },
 ];
 
-const adminMenuExtra = [
-  { name: 'Destek Talepleri (Admin)', href: '/admin/tickets', icon: '🎫' },
-];
-
-export default function DashboardLayout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [menuItems, setMenuItems] = useState(baseMenuItems);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -35,11 +29,10 @@ export default function DashboardLayout({
           return;
         }
         const user = await authService.getCurrentUser();
-        if (user.role !== 'BUSINESS_OWNER' && user.role !== 'APPOINTMENT_STAFF' && user.role !== 'ADMIN' && user.role !== 'STAFF') {
-          router.push('/');
+        if (user.role !== 'ADMIN' && user.role !== 'STAFF') {
+          router.push('/dashboard');
           return;
         }
-        setMenuItems((user.role === 'ADMIN' || user.role === 'STAFF') ? [...baseMenuItems, ...adminMenuExtra] : baseMenuItems);
         setIsLoading(false);
       } catch {
         router.push('/auth/login');
@@ -69,8 +62,7 @@ export default function DashboardLayout({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-
-        <Sidebar menuItems={menuItems} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+        <Sidebar menuItems={adminMenuItems} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         <main className="flex-1 overflow-auto p-4 sm:p-6">{children}</main>
       </div>
     </div>
