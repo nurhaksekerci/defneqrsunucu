@@ -75,6 +75,7 @@ export default function CalendarPage() {
   });
   const [newCustomer, setNewCustomer] = useState({ fullName: '', phone: '', email: '' });
   const [isSaving, setIsSaving] = useState(false);
+  const [isAddingCustomer, setIsAddingCustomer] = useState(false);
   const [completeModal, setCompleteModal] = useState<{ appointment: Appointment; packages: { id: string; remainingSessions: number; totalSessions: number; service: { name: string } }[] } | null>(null);
 
   const loadData = async () => {
@@ -187,20 +188,24 @@ export default function CalendarPage() {
   };
 
   const handleCreateCustomer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
     if (!newCustomer.fullName.trim() || !newCustomer.phone.trim()) {
       alert('Ad soyad ve telefon zorunludur.');
       return;
     }
+    setIsAddingCustomer(true);
     try {
       const res = await api.post(`/businesses/${businessId}/customers`, newCustomer);
       const added = res.data.data;
       setCustomers((prev) => [...prev, added]);
       setNewAppointment((prev) => ({ ...prev, customerId: added.id }));
       setNewCustomer({ fullName: '', phone: '', email: '' });
-    } catch {
-      alert('Müşteri eklenemedi.');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      alert(msg || 'Müşteri eklenemedi.');
+    } finally {
+      setIsAddingCustomer(false);
     }
   };
 
@@ -427,9 +432,9 @@ export default function CalendarPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="mt-2 p-2 bg-gray-50 rounded-lg">
+                  <div className="mt-2 p-2 bg-gray-50 rounded-lg" onClick={(e) => e.stopPropagation()}>
                     <p className="text-xs text-gray-600 mb-2">Yeni müşteri ekle (otomatik seçilir):</p>
-                    <form onSubmit={handleCreateCustomer} className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex flex-wrap gap-2">
                       <Input
                         placeholder="Ad Soyad"
                         value={newCustomer.fullName}
@@ -442,10 +447,20 @@ export default function CalendarPage() {
                         onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
                         className="w-28"
                       />
-                      <Button type="submit" size="sm" variant="secondary">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        isLoading={isAddingCustomer}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleCreateCustomer(e as unknown as React.FormEvent);
+                        }}
+                      >
                         Ekle
                       </Button>
-                    </form>
+                    </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
