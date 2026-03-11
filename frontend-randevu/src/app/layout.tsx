@@ -1,5 +1,12 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+});
 
 export const metadata: Metadata = {
   title: 'DefneRandevu — Randevu Yönetim Sistemi',
@@ -12,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="tr">
-      <body className="min-h-screen bg-gray-50 text-gray-900">{children}</body>
+    <html lang="tr" style={{ colorScheme: 'light' }}>
+      <body className={`${inter.className} text-gray-900`}>{children}</body>
     </html>
   );
 }

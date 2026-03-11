@@ -26,46 +26,72 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-center mb-6">DefneRandevu — Kayıt</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">DefneRandevu</h1>
+          <p className="text-gray-600">Ücretsiz hesap oluşturun</p>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            placeholder="Ad Soyad"
-            value={formData.fullName}
-            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-            className="w-full px-4 py-2 border rounded-lg"
-            required
-          />
-          <input
-            type="email"
-            placeholder="E-posta"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="w-full px-4 py-2 border rounded-lg"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Şifre"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            className="w-full px-4 py-2 border rounded-lg"
-            required
-          />
-          {error && <p className="text-red-600 text-sm">{error}</p>}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Ad Soyad</label>
+            <input
+              type="text"
+              placeholder="Adınız Soyadınız"
+              value={formData.fullName}
+              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">E-posta</label>
+            <input
+              type="email"
+              placeholder="ornek@email.com"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              required
+              minLength={8}
+            />
+            <p className="mt-1 text-xs text-gray-500">En az 8 karakter</p>
+          </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+            className="w-full py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50"
           >
             {loading ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}
           </button>
         </form>
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Zaten hesabınız var mı? <Link href="/auth/login" className="text-indigo-600 hover:underline">Giriş yapın</Link>
-        </p>
+
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
+            Zaten hesabınız var mı?{' '}
+            <Link href="/auth/login" className="text-primary-600 hover:text-primary-700 font-medium">
+              Giriş Yap
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

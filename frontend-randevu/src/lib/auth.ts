@@ -5,6 +5,7 @@ export interface User {
   email: string;
   fullName: string;
   role: string;
+  avatar?: string | null;
 }
 
 export const authService = {
