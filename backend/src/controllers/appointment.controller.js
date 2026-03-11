@@ -49,11 +49,19 @@ exports.createAppointment = async (req, res, next) => {
     if (!staffId || !serviceId || !customerId || !startAt) {
       return res.status(400).json({ success: false, message: 'Personel, hizmet, müşteri ve başlangıç saati zorunludur' });
     }
-    const service = await prisma.appointmentService.findFirst({
-      where: { id: serviceId, businessId, isDeleted: false }
-    });
+    const [service, staff, customer] = await Promise.all([
+      prisma.appointmentService.findFirst({ where: { id: serviceId, businessId, isDeleted: false } }),
+      prisma.appointmentStaff.findFirst({ where: { id: staffId, businessId, isDeleted: false } }),
+      prisma.appointmentCustomer.findFirst({ where: { id: customerId, businessId, isDeleted: false } })
+    ]);
     if (!service) {
       return res.status(400).json({ success: false, message: 'Hizmet bulunamadı' });
+    }
+    if (!staff) {
+      return res.status(400).json({ success: false, message: 'Personel bulunamadı' });
+    }
+    if (!customer) {
+      return res.status(400).json({ success: false, message: 'Müşteri bulunamadı' });
     }
     const start = new Date(startAt);
     const end = new Date(start.getTime() + service.duration * 60 * 1000);

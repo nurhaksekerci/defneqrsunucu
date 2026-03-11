@@ -181,17 +181,30 @@ export default function CalendarPage() {
 
   const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!newCustomer.fullName.trim() || !newCustomer.phone.trim()) {
       alert('Ad soyad ve telefon zorunludur.');
       return;
     }
     try {
       const res = await api.post(`/businesses/${businessId}/customers`, newCustomer);
-      setCustomers((prev) => [...prev, res.data.data]);
+      const added = res.data.data;
+      setCustomers((prev) => [...prev, added]);
+      setNewAppointment((prev) => ({ ...prev, customerId: added.id }));
       setNewCustomer({ fullName: '', phone: '', email: '' });
     } catch {
       alert('Müşteri eklenemedi.');
     }
+  };
+
+  const openAddModal = (prefillDate?: Date) => {
+    const d = prefillDate || new Date();
+    setNewAppointment((prev) => ({
+      ...prev,
+      date: d.toISOString().slice(0, 10),
+      time: '09:00',
+    }));
+    setShowAddModal(true);
   };
 
   const handleDeleteAppointment = async (appointmentId: string) => {
@@ -206,6 +219,8 @@ export default function CalendarPage() {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const canAddAppointment = staff.length > 0 && services.length > 0;
 
   if (loading) {
     return (
@@ -239,15 +254,17 @@ export default function CalendarPage() {
           <Button variant="secondary" size="sm" onClick={handleNextWeek}>
             Sonraki →
           </Button>
-          <Button size="sm" onClick={() => {
-            setShowAddModal(true);
-            const today = new Date();
-            setNewAppointment((prev) => ({ ...prev, date: today.toISOString().slice(0, 10) }));
-          }}>
+          <Button size="sm" onClick={() => openAddModal()}>
             + Randevu Ekle
           </Button>
         </div>
       </div>
+
+      {!canAddAppointment && (
+        <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
+          Randevu ekleyebilmek için önce <Link href={`/dashboard/business/${businessId}`} className="font-medium underline hover:no-underline">personel ve hizmet</Link> eklemeniz gerekiyor.
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         <div className="grid grid-cols-7 min-w-[700px] gap-2">
@@ -264,6 +281,14 @@ export default function CalendarPage() {
               <div className="text-center text-sm text-gray-600 mb-3">
                 {day.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
               </div>
+              <button
+                type="button"
+                onClick={() => openAddModal(day)}
+                disabled={!canAddAppointment}
+                className="w-full py-2 mb-2 text-xs text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors border border-dashed border-primary-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              >
+                + Randevu
+              </button>
               <div className="space-y-2">
                 {getAppointmentsForDay(day).map((a) => (
                   <div
@@ -296,7 +321,11 @@ export default function CalendarPage() {
       </div>
 
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowAddModal(false)}
+        >
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md">
           <Card className="max-w-md w-full max-h-[90vh] overflow-y-auto">
             <CardContent className="p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Yeni Randevu</h2>
@@ -338,15 +367,17 @@ export default function CalendarPage() {
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
                       required
                     >
-                      <option value="">Seçin</option>
+                      <option value="">
+                        {customers.length === 0 ? 'Önce aşağıdan müşteri ekleyin' : 'Seçin'}
+                      </option>
                       {customers.map((c) => (
                         <option key={c.id} value={c.id}>{c.fullName} ({c.phone})</option>
                       ))}
                     </select>
                   </div>
                   <div className="mt-2 p-2 bg-gray-50 rounded-lg">
-                    <p className="text-xs text-gray-600 mb-2">Yeni müşteri ekle:</p>
-                    <form onSubmit={handleCreateCustomer} className="flex flex-wrap gap-2">
+                    <p className="text-xs text-gray-600 mb-2">Yeni müşteri ekle (otomatik seçilir):</p>
+                    <form onSubmit={handleCreateCustomer} className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
                       <Input
                         placeholder="Ad Soyad"
                         value={newCustomer.fullName}
@@ -407,6 +438,7 @@ export default function CalendarPage() {
               </form>
             </CardContent>
           </Card>
+          </div>
         </div>
       )}
     </div>
