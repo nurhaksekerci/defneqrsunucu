@@ -71,6 +71,8 @@ exports.getMyTickets = async (req, res, next) => {
     const userId = req.user.id;
 
     const where = { userId };
+    if (req.project === 'defnerandevu') where.project = 'defnerandevu';
+    else where.project = 'defneqr';
 
     if (status) where.status = status;
     if (category) where.category = category;
@@ -98,6 +100,7 @@ exports.getAllTickets = async (req, res, next) => {
     const { status, category, priority, search } = req.query;
 
     const where = {};
+    if (req.query.project) where.project = req.query.project;
 
     if (status) where.status = status;
     if (category) where.category = category;
@@ -181,11 +184,14 @@ exports.createTicket = async (req, res, next) => {
 
     const ticketNumber = await generateTicketNumber();
 
+    const project = req.project === 'defnerandevu' ? 'defnerandevu' : 'defneqr';
+
     const ticket = await prisma.supportTicket.create({
       data: {
         ticketNumber,
         userId,
         restaurantId: restaurantId || null,
+        project,
         subject,
         description,
         category,

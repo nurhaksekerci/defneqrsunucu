@@ -9,11 +9,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Proje Tanımlayıcı (DefneQr / DefneRandevu ortak altyapı)
+enum Project {
+  defneqr
+  defnerandevu
+}
+
 // Kullanıcı Rolleri
 enum UserRole {
   ADMIN              // Sistem geliştiricileri
   STAFF              // Sistem çalışanları
-  RESTAURANT_OWNER   // Restoran sahibi
+  RESTAURANT_OWNER   // Restoran sahibi (DefneQr)
+  BUSINESS_OWNER     // İşletme sahibi (DefneRandevu)
+  APPOINTMENT_STAFF  // Randevu personeli (DefneRandevu)
   CASHIER            // Kasiyer
   WAITER             // Garson
   BARISTA            // Barista
@@ -77,6 +85,7 @@ model User {
   resolvedTickets SupportTicket[]  @relation("ResolvedTickets")
   ticketMessages   TicketMessage[]  @relation("TicketMessages")
   wheelSpins       WheelSpin[]
+  appointmentBusinesses AppointmentBusiness[]  @relation("AppointmentBusinessOwner")
 
   @@index([role])
   @@index([isDeleted])
@@ -784,6 +793,7 @@ enum TicketCategory {
 model SupportTicket {
   id            String         @id @default(uuid())
   ticketNumber  String         @unique
+  project       Project        @default(defneqr)
 
   userId        String
   user          User           @relation(fields: [userId], references: [id])
@@ -814,6 +824,7 @@ model SupportTicket {
 
   @@index([userId])
   @@index([restaurantId])
+  @@index([project])
   @@index([status])
   @@index([priority])
   @@index([category])
@@ -870,6 +881,206 @@ model AffiliateSettings {
   
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
-  
+
   @@map("affiliate_settings")
+}
+
+// ========== DefneRandevu Modelleri ==========
+
+// Randevu Durumları
+enum AppointmentStatus {
+  PENDING      // Bekliyor
+  CONFIRMED    // Onaylandı
+  COMPLETED    // Tamamlandı
+  CANCELLED    // İptal edildi
+  NO_SHOW      // Gelmedi
+  POSTPONED    // Ertelendi
+}
+
+// İşletme (DefneRandevu - kuaför, berber, klinik vb.)
+model AppointmentBusiness {
+  id            String   @id @default(uuid())
+  name          String
+  slug          String   @unique
+  description   String?
+  address       String?
+  phone         String?
+  logo          String?
+
+  ownerId       String
+  owner         User     @relation("AppointmentBusinessOwner", fields: [ownerId], references: [id])
+
+  isDeleted     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  staff         AppointmentStaff[]
+  services      AppointmentService[]
+  customers     AppointmentCustomer[]
+  appointments  Appointment[]
+  workingHours  AppointmentWorkingHours[]
+  smsLogs       AppointmentSmsLog[]
+
+  @@index([ownerId])
+  @@index([slug])
+  @@index([isDeleted])
+  @@map("appointment_businesses")
+}
+
+// Personel
+model AppointmentStaff {
+  id            String   @id @default(uuid())
+  businessId    String
+  business      AppointmentBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  fullName      String
+  phone         String?
+  specialty     String?
+  color         String?  // Takvim rengi (#hex)
+  notes         String?  @db.Text
+  isActive      Boolean  @default(true)
+
+  isDeleted     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  staffServices AppointmentStaffService[]
+  workingHours  AppointmentWorkingHours[]
+  appointments  Appointment[]
+
+  @@index([businessId])
+  @@index([isDeleted])
+  @@map("appointment_staff")
+}
+
+// Hizmet
+model AppointmentService {
+  id            String   @id @default(uuid())
+  businessId    String
+  business      AppointmentBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  name          String
+  duration      Int      // Dakika
+  price         Decimal  @db.Decimal(10, 2)
+  description   String?  @db.Text
+
+  isDeleted     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  staffServices AppointmentStaffService[]
+  appointments  Appointment[]
+
+  @@index([businessId])
+  @@index([isDeleted])
+  @@map("appointment_services")
+}
+
+// Personel-Hizmet ilişkisi (personel bazlı süre/fiyat override)
+model AppointmentStaffService {
+  id            String   @id @default(uuid())
+  staffId       String
+  staff         AppointmentStaff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  serviceId     String
+  service       AppointmentService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  duration      Int?     // null = service.duration kullan
+  price         Decimal? @db.Decimal(10, 2)  // null = service.price kullan
+
+  @@unique([staffId, serviceId])
+  @@index([staffId])
+  @@index([serviceId])
+  @@map("appointment_staff_services")
+}
+
+// Çalışma saatleri (personel veya işletme bazlı)
+model AppointmentWorkingHours {
+  id            String   @id @default(uuid())
+  businessId    String
+  business      AppointmentBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  staffId       String?
+  staff         AppointmentStaff? @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  dayOfWeek     Int      // 0=Pazar, 1=Pazartesi, ..., 6=Cumartesi
+  startTime     String   // "09:00"
+  endTime       String   // "18:00"
+  isClosed      Boolean  @default(false)
+
+  @@index([businessId])
+  @@index([staffId])
+  @@index([businessId, staffId, dayOfWeek])
+  @@map("appointment_working_hours")
+}
+
+// Müşteri
+model AppointmentCustomer {
+  id            String   @id @default(uuid())
+  businessId    String
+  business      AppointmentBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  fullName      String
+  phone         String
+  email         String?
+
+  isDeleted     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  appointments  Appointment[]
+
+  @@index([businessId])
+  @@index([phone])
+  @@index([isDeleted])
+  @@map("appointment_customers")
+}
+
+// Randevu
+model Appointment {
+  id            String           @id @default(uuid())
+  businessId    String
+  business      AppointmentBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  staffId       String
+  staff         AppointmentStaff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  serviceId     String
+  service       AppointmentService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  customerId    String
+  customer      AppointmentCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  startAt       DateTime
+  endAt         DateTime
+  status        AppointmentStatus @default(PENDING)
+  notes         String?          @db.Text
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([staffId])
+  @@index([customerId])
+  @@index([startAt])
+  @@index([status])
+  @@index([businessId, startAt])
+  @@map("appointments")
+}
+
+// SMS Log
+model AppointmentSmsLog {
+  id            String   @id @default(uuid())
+  businessId    String
+  business      AppointmentBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  phone         String
+  message       String   @db.Text
+  smsHeader     String?
+  sentAt        DateTime @default(now())
+  status        String?  // success, failed
+  providerResponse String? @db.Text
+
+  @@index([businessId])
+  @@index([sentAt])
+  @@map("appointment_sms_logs")
 }

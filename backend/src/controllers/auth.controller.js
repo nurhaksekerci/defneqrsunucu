@@ -52,6 +52,9 @@ exports.register = async (req, res, next) => {
     // Şifreyi hashle
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // DefneRandevu'dan kayıt = BUSINESS_OWNER, DefneQr = RESTAURANT_OWNER
+    const defaultRole = req.project === 'defnerandevu' ? 'BUSINESS_OWNER' : 'RESTAURANT_OWNER';
+
     // Kullanıcı oluştur
     const user = await prisma.user.create({
       data: {
@@ -59,7 +62,7 @@ exports.register = async (req, res, next) => {
         username,
         password: hashedPassword,
         fullName,
-        role: 'RESTAURANT_OWNER' // Varsayılan rol
+        role: defaultRole
       },
       select: {
         id: true,

@@ -3,7 +3,7 @@
 
 param(
     [Parameter(Position=0)]
-    [ValidateSet("deploy", "status", "seed", "backup", "avatar")]
+    [ValidateSet("deploy", "deploy-standalone", "status", "seed", "backup", "avatar", "defnerandevu")]
     [string]$Command = "deploy"
 )
 
@@ -11,6 +11,11 @@ switch ($Command) {
     "deploy" {
         Write-Host "🔄 Migration'lar uygulanıyor..." -ForegroundColor Cyan
         docker compose exec backend npx prisma migrate deploy
+        Write-Host "✅ Migration tamamlandı" -ForegroundColor Green
+    }
+    "deploy-standalone" {
+        Write-Host "🔄 Migration'lar uygulanıyor (one-off container)..." -ForegroundColor Cyan
+        docker compose run --rm backend npx prisma migrate deploy
         Write-Host "✅ Migration tamamlandı" -ForegroundColor Green
     }
     "status" {
@@ -33,5 +38,10 @@ switch ($Command) {
         Write-Host "🔄 Avatar sütunu ekleniyor..." -ForegroundColor Cyan
         docker compose exec backend node scripts/add-user-avatar-column.js
         Write-Host "✅ Avatar sütunu eklendi" -ForegroundColor Green
+    }
+    "defnerandevu" {
+        Write-Host "🔄 DefneRandevu şema değişiklikleri uygulanıyor..." -ForegroundColor Cyan
+        docker compose exec backend node scripts/add-defnerandevu-schema.js
+        Write-Host "✅ DefneRandevu şema tamamlandı" -ForegroundColor Green
     }
 }

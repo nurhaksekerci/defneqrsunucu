@@ -52,7 +52,13 @@ app.use(cors({
     process.env.FRONTEND_URL || 'http://localhost:3000',
     'https://www.defneqr.com',
     'https://defneqr.com',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    // DefneRandevu (geçici: randevu.defneqr.com → gelecek: defnerandevu.com)
+    'https://randevu.defneqr.com',
+    'http://randevu.defneqr.com',
+    'https://defnerandevu.com',
+    'https://www.defnerandevu.com',
+    'http://localhost:3001'
   ],
   credentials: true
 }));
@@ -70,6 +76,10 @@ app.use(metricsMiddleware());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Project context (DefneQr / DefneRandevu)
+const { setProjectContext } = require('./middleware/project.middleware');
+app.use(setProjectContext);
 
 // XSS Protection & Input Sanitization
 // DISABLED: HTML entity encoding breaks URLs and JSON data
@@ -126,6 +136,8 @@ app.use('/api/promo-codes', require('./routes/promoCode.routes'));
 app.use('/api/affiliates', require('./routes/affiliate.routes'));
 app.use('/api/tickets', require('./routes/ticket.routes'));
 app.use('/api/wheel', require('./routes/wheel.routes'));
+// DefneRandevu
+app.use('/api/businesses', require('./routes/business.routes'));
 app.use('/api/admin', require('./routes/admin.routes'));
 
 // Monitoring routes (health checks & metrics)

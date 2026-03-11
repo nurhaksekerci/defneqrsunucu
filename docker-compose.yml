@@ -85,6 +85,22 @@ services:
     networks:
       - defneqr-network
 
+  frontend-randevu:
+    build:
+      context: ./frontend-randevu
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${RANDEVU_API_URL:-https://api.defneqr.com/api}
+        NEXT_PUBLIC_SITE_URL: ${RANDEVU_SITE_URL:-https://randevu.defneqr.com}
+    container_name: defneqr-frontend-randevu
+    ports:
+      - "127.0.0.1:3001:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - defneqr-network
+
   nginx:
     image: nginx:alpine
     container_name: defneqr-nginx
@@ -98,6 +114,7 @@ services:
       - "443:443"
     depends_on:
       - frontend
+      - frontend-randevu
       - backend
     restart: unless-stopped
     networks:

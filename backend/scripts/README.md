@@ -115,7 +115,29 @@ node scripts/add-promo-to-premium.js
 
 ---
 
-### 4. `db-health-check.sh`
+### 4. `add-defnerandevu-schema.js`
+
+DefneRandevu şema değişikliklerini uygular: Project enum, support_tickets.project, appointment_businesses ve diğer DefneRandevu tabloları. Prisma migrate deploy başarısız olursa veya manuel uygulama gerekiyorsa kullanın.
+
+**Docker ile çalıştırma:**
+```bash
+docker compose exec backend node scripts/add-defnerandevu-schema.js
+```
+
+**Veya docker-migrate.sh üzerinden:**
+```bash
+./scripts/docker-migrate.sh defnerandevu
+```
+
+**Yerel ortamda:**
+```bash
+cd backend
+node scripts/add-defnerandevu-schema.js
+```
+
+---
+
+### 5. `db-health-check.sh`
 
 Comprehensive database health monitoring script.
 
