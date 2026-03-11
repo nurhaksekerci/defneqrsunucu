@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "referrals" ADD COLUMN "rejectionReason" TEXT;
+ALTER TABLE "referrals" ADD COLUMN IF NOT EXISTS "rejectionReason" TEXT;
