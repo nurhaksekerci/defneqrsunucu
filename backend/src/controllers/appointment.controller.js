@@ -1,4 +1,6 @@
 const prisma = require('../config/database');
+const crypto = require('crypto');
+const { addRecurrence } = require('../utils/recurrenceHelper');
 
 const ensureBusinessAccess = async (userId, businessId) => {
   const business = await prisma.appointmentBusiness.findFirst({
@@ -41,7 +43,7 @@ exports.getAppointments = async (req, res, next) => {
 exports.createAppointment = async (req, res, next) => {
   try {
     const { id: businessId } = req.params;
-    const { staffId, serviceId, customerId, startAt, notes } = req.body;
+    const { staffId, serviceId, customerId, startAt, notes, recurrenceType, recurrenceEndDate } = req.body;
     const business = await ensureBusinessAccess(req.user.id, businessId);
     if (!business) {
       return res.status(404).json({ success: false, message: 'İşletme bulunamadı' });
@@ -65,6 +67,10 @@ exports.createAppointment = async (req, res, next) => {
     }
     const start = new Date(startAt);
     const end = new Date(start.getTime() + service.duration * 60 * 1000);
+    const validRecurrence = ['WEEKLY', 'BIWEEKLY', 'MONTHLY'].includes(recurrenceType);
+    const seriesId = validRecurrence ? (crypto.randomUUID?.() || `series-${Date.now()}`) : null;
+    const recEnd = validRecurrence && recurrenceEndDate ? new Date(recurrenceEndDate) : null;
+
     const appointment = await prisma.appointment.create({
       data: {
         businessId,
@@ -73,7 +79,10 @@ exports.createAppointment = async (req, res, next) => {
         customerId,
         startAt: start,
         endAt: end,
-        notes: notes?.trim() || null
+        notes: notes?.trim() || null,
+        seriesId,
+        recurrenceType: validRecurrence ? recurrenceType : null,
+        recurrenceEndDate: recEnd
       },
       include: {
         staff: { select: { id: true, fullName: true, color: true } },
@@ -90,7 +99,7 @@ exports.createAppointment = async (req, res, next) => {
 exports.updateAppointment = async (req, res, next) => {
   try {
     const { id: businessId, appointmentId } = req.params;
-    const { staffId, serviceId, startAt, status, notes } = req.body;
+    const { staffId, serviceId, startAt, status, notes, usePackageId } = req.body;
     const business = await ensureBusinessAccess(req.user.id, businessId);
     if (!business) {
       return res.status(404).json({ success: false, message: 'İşletme bulunamadı' });
@@ -129,6 +138,66 @@ exports.updateAppointment = async (req, res, next) => {
         customer: { select: { id: true, fullName: true, phone: true } }
       }
     });
+
+    if (status === 'COMPLETED' && usePackageId) {
+      const pkg = await prisma.customerPackage.findFirst({
+        where: {
+          id: usePackageId,
+          businessId,
+          isDeleted: false,
+          customerId: existing.customerId,
+          serviceId: existing.serviceId,
+          remainingSessions: { gt: 0 }
+        }
+      });
+      if (pkg) {
+        const expired = pkg.expiresAt && new Date(pkg.expiresAt) < new Date();
+        if (!expired) {
+          await prisma.$transaction([
+            prisma.packageUsage.create({
+              data: { packageId: pkg.id, appointmentId }
+            }),
+            prisma.customerPackage.update({
+              where: { id: pkg.id },
+              data: { remainingSessions: { decrement: 1 } }
+            })
+          ]);
+        }
+      }
+    }
+
+    if (status === 'COMPLETED' && existing.seriesId && existing.recurrenceType && existing.recurrenceEndDate) {
+      const nextStart = addRecurrence(appointment.startAt, existing.recurrenceType);
+      if (nextStart && nextStart <= new Date(existing.recurrenceEndDate)) {
+        const nextEnd = new Date(nextStart.getTime() + existing.service.duration * 60 * 1000);
+        const conflict = await prisma.appointment.findFirst({
+          where: {
+            businessId,
+            staffId: appointment.staffId,
+            status: { notIn: ['CANCELLED'] },
+            startAt: { lt: nextEnd },
+            endAt: { gt: nextStart }
+          }
+        });
+        if (!conflict) {
+          await prisma.appointment.create({
+            data: {
+              businessId,
+              staffId: appointment.staffId,
+              serviceId: appointment.serviceId,
+              customerId: appointment.customerId,
+              startAt: nextStart,
+              endAt: nextEnd,
+              notes: existing.notes,
+              seriesId: existing.seriesId,
+              recurrenceType: existing.recurrenceType,
+              recurrenceEndDate: existing.recurrenceEndDate
+            }
+          });
+        }
+      }
+    }
+
     res.json({ success: true, data: appointment });
   } catch (error) {
     next(error);

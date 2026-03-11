@@ -200,11 +200,41 @@ export default function BusinessDetailPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">{business.name}</h1>
-        <Link href={`/dashboard/business/${businessId}/calendar`}>
-          <Button variant="secondary" size="sm">
-            📅 Takvimi Görüntüle
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <a
+            href={`/b/${business.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
+          >
+            🔗 Online Randevu Linki
+          </a>
+          <Link href={`/dashboard/business/${businessId}/calendar`}>
+            <Button variant="secondary" size="sm">
+              📅 Takvim
+            </Button>
+          </Link>
+          <Link href={`/dashboard/business/${businessId}/stats`}>
+            <Button variant="secondary" size="sm">
+              📈 İstatistik
+            </Button>
+          </Link>
+          <Link href={`/dashboard/business/${businessId}/finance`}>
+            <Button variant="secondary" size="sm">
+              💰 Gelir/Gider
+            </Button>
+          </Link>
+          <Link href={`/dashboard/business/${businessId}/packages`}>
+            <Button variant="secondary" size="sm">
+              📦 Paketler
+            </Button>
+          </Link>
+          <Link href={`/dashboard/business/${businessId}/products`}>
+            <Button variant="secondary" size="sm">
+              🛒 Ürünler
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
@@ -332,6 +362,29 @@ export default function BusinessDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <span className="text-xl">📱</span>
+            Randevu Hatırlatıcı
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600 mb-2">
+            Müşterilerinize randevu öncesi otomatik SMS ve e-posta hatırlatması gönderilir:
+          </p>
+          <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+            <li>24 saat önce</li>
+            <li>1 saat önce</li>
+          </ul>
+          {business.address && (
+            <p className="text-sm text-gray-500 mt-2">
+              Konum bilginiz (adres + harita linki) hatırlatma mesajlarına dahil edilir.
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

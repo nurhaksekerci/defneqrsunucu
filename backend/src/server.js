@@ -164,6 +164,14 @@ app.use(errorHandler);
 const { startPeriodicCleanup } = require('./utils/tokenCleanup');
 startPeriodicCleanup();
 
+// Randevu hatırlatıcı job (SMS + Email)
+const { startAppointmentReminderJob } = require('./jobs/appointmentReminderJob');
+startAppointmentReminderJob();
+
+// Paket bitiş uyarı job
+const { startPackageExpiryJob } = require('./jobs/packageExpiryJob');
+startPackageExpiryJob();
+
 // Start query monitoring (if enabled)
 const { startPeriodicLogging, queryStatsEndpoint } = require('./middleware/queryMonitoring.middleware');
 startPeriodicLogging(60); // Log stats every 60 minutes

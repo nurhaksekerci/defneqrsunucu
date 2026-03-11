@@ -8,7 +8,10 @@ import { authService } from '@/lib/auth';
 
 const baseMenuItems = [
   { name: 'Dashboard', href: '/dashboard', icon: '📊' },
-  { name: 'İşletmelerim', href: '/dashboard', icon: '🏪' },
+  { name: 'İstatistikler', href: '/dashboard/stats', icon: '📈' },
+  { name: 'Gelir/Gider', href: '/dashboard/finance', icon: '💰' },
+  { name: 'Paketler', href: '/dashboard/packages', icon: '📦' },
+  { name: 'Ürünler', href: '/dashboard/products', icon: '🛒' },
   { name: 'İşletme Oluştur', href: '/dashboard/business/create', icon: '➕' },
   { name: 'Destek', href: '/dashboard/support', icon: '🎫' },
 ];

@@ -333,6 +333,59 @@ async function sendTicketResolvedEmail(ticket) {
   return sendEmail({ to, subject, html });
 }
 
+/**
+ * Randevu hatırlatma emaili (DefneRandevu)
+ */
+async function sendAppointmentReminderEmail({ to, customerName, businessName, serviceName, staffName, appointmentDate, appointmentTime, address, bookingUrl }) {
+  if (!to) return false;
+
+  const subject = `${businessName} - Randevu Hatırlatması`;
+  const locationLine = address
+    ? `<p><strong>📍 Konum:</strong> <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}" target="_blank">${address}</a></p>`
+    : '';
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #7c3aed; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 24px; border-radius: 0 0 8px 8px; }
+    .meta { background: #ede9fe; padding: 16px; border-radius: 8px; margin: 16px 0; }
+    .footer { margin-top: 20px; font-size: 12px; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📅 Randevu Hatırlatması</h1>
+    </div>
+    <div class="content">
+      <p>Merhaba ${customerName},</p>
+      <p><strong>${businessName}</strong> ile randevunuzu hatırlatıyoruz:</p>
+      <div class="meta">
+        <p><strong>Hizmet:</strong> ${serviceName}</p>
+        <p><strong>Personel:</strong> ${staffName}</p>
+        <p><strong>Tarih:</strong> ${appointmentDate}</p>
+        <p><strong>Saat:</strong> ${appointmentTime}</p>
+        ${locationLine}
+      </div>
+      <p>Randevunuzu iptal veya değiştirmek için işletme ile iletişime geçin.</p>
+      <div class="footer">
+        <p>DefneRandevu - Randevu Yönetim Sistemi</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  return sendEmail({ to, subject, html });
+}
+
 module.exports = {
   sendEmail,
   sendPasswordResetEmail,
@@ -340,5 +393,6 @@ module.exports = {
   sendTicketRepliedEmail,
   sendTicketWaitingForCustomerEmail,
   sendTicketResolvedEmail,
+  sendAppointmentReminderEmail,
   getTransporter
 };

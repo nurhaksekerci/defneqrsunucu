@@ -17,25 +17,81 @@ interface Business {
   _count?: { staff: number; services: number; customers: number };
 }
 
+interface DashboardSummary {
+  thisMonthAppointments: number;
+  growthPercent: number;
+  totalIncome: number;
+  totalExpense: number;
+  net: number;
+  totalOutstanding: number;
+  expiringPackages: number;
+  todayAppointments: number;
+}
+
 const getQuickActions = (selectedBusinessId: string | undefined) => [
-  { href: '/dashboard', icon: '🏪', label: 'İşletmelerim', desc: 'İşletmelerinizi yönetin', color: 'from-amber-500 to-orange-500' },
+  { href: '/dashboard', icon: '🏪', label: 'İşletmem', desc: 'İşletmenizi yönetin', color: 'from-amber-500 to-orange-500' },
   { href: selectedBusinessId ? `/dashboard/business/${selectedBusinessId}` : '/dashboard', icon: '👥', label: 'Personel', desc: 'Personel yönetimi', color: 'from-emerald-500 to-teal-500' },
   { href: selectedBusinessId ? `/dashboard/business/${selectedBusinessId}` : '/dashboard', icon: '✂️', label: 'Hizmetler', desc: 'Hizmet tanımları', color: 'from-violet-500 to-purple-500' },
   { href: selectedBusinessId ? `/dashboard/business/${selectedBusinessId}/calendar` : '/dashboard', icon: '📅', label: 'Takvim', desc: 'Randevu takvimi', color: 'from-blue-500 to-indigo-500' },
+  { href: selectedBusinessId ? `/dashboard/business/${selectedBusinessId}/stats` : '/dashboard/stats', icon: '📈', label: 'İstatistikler', desc: 'Randevu analizi', color: 'from-rose-500 to-pink-500' },
+  { href: selectedBusinessId ? `/dashboard/business/${selectedBusinessId}/finance` : '/dashboard', icon: '💰', label: 'Gelir/Gider', desc: 'Finans takibi', color: 'from-emerald-600 to-green-600' },
+  { href: selectedBusinessId ? `/dashboard/business/${selectedBusinessId}/packages` : '/dashboard', icon: '📦', label: 'Paketler', desc: 'Seans paket takibi', color: 'from-indigo-500 to-blue-600' },
+  { href: selectedBusinessId ? `/dashboard/business/${selectedBusinessId}/products` : '/dashboard', icon: '🛒', label: 'Ürünler', desc: 'Ürün ve satış yönetimi', color: 'from-cyan-500 to-blue-500' },
   { href: '/dashboard/support', icon: '🎫', label: 'Destek', desc: 'Yardım alın', color: 'from-slate-500 to-gray-600' },
 ];
+
+const formatMoney = (v: number) =>
+  new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(v);
 
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<{ fullName: string } | null>(null);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadUser();
     loadBusinesses();
   }, []);
+
+  useEffect(() => {
+    if (selectedBusiness?.id) loadSummary(selectedBusiness.id);
+    else setSummary(null);
+  }, [selectedBusiness?.id]);
+
+  const loadSummary = async (businessId: string) => {
+    try {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      const [statsRes, financeRes, expiringRes, todayRes] = await Promise.all([
+        api.get(`/businesses/${businessId}/stats`, { params: { months: 2 } }),
+        api.get(`/businesses/${businessId}/finance/summary`, { params: { start: monthStart.toISOString(), end: monthEnd.toISOString() } }),
+        api.get(`/businesses/${businessId}/packages/expiring`, { params: { days: 7 } }),
+        api.get(`/businesses/${businessId}/appointments`, { params: { start: todayStart.toISOString(), end: todayEnd.toISOString() } }),
+      ]);
+      const stats = statsRes.data?.data;
+      const finance = financeRes.data?.data;
+      const expiring = expiringRes.data?.data || [];
+      const todayAppts = todayRes.data?.data || [];
+      setSummary({
+        thisMonthAppointments: stats?.thisMonth ?? 0,
+        growthPercent: stats?.growthPercent ?? 0,
+        totalIncome: finance?.totalIncome ?? 0,
+        totalExpense: finance?.totalExpense ?? 0,
+        net: finance?.net ?? 0,
+        totalOutstanding: finance?.totalOutstanding ?? 0,
+        expiringPackages: expiring.length,
+        todayAppointments: todayAppts.filter((a: { status: string }) => !['CANCELLED'].includes(a.status)).length,
+      });
+    } catch {
+      setSummary(null);
+    }
+  };
 
   const loadUser = async () => {
     try {
@@ -116,10 +172,78 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Özet Kartları - Seçili işletme için */}
+      {selectedBusiness && (
+        <section>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+            {selectedBusiness.name} — Bu Ay Özeti
+          </h2>
+          {!summary ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="p-4 rounded-xl bg-gray-50 border border-gray-100 animate-pulse">
+                  <div className="h-3 bg-gray-200 rounded w-20 mb-3" />
+                  <div className="h-8 bg-gray-200 rounded w-16" />
+                </div>
+              ))}
+            </div>
+          ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <Link
+              href={selectedBusiness ? `/dashboard/business/${selectedBusiness.id}/calendar` : '/dashboard'}
+              className="p-4 rounded-xl bg-white border border-gray-100 hover:border-primary-200 hover:shadow-md transition-all"
+            >
+              <p className="text-xs text-gray-500 mb-1">Bugün Randevu</p>
+              <p className="text-2xl font-bold text-gray-900">{summary.todayAppointments}</p>
+            </Link>
+            <Link
+              href={selectedBusiness ? `/dashboard/business/${selectedBusiness.id}/stats` : '/dashboard/stats'}
+              className="p-4 rounded-xl bg-white border border-gray-100 hover:border-primary-200 hover:shadow-md transition-all"
+            >
+              <p className="text-xs text-gray-500 mb-1">Bu Ay Randevu</p>
+              <p className="text-2xl font-bold text-primary-600">{summary.thisMonthAppointments}</p>
+              <p className={`text-xs mt-1 ${summary.growthPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {summary.growthPercent >= 0 ? '+' : ''}{summary.growthPercent}% önceki aya göre
+              </p>
+            </Link>
+            <Link
+              href={selectedBusiness ? `/dashboard/business/${selectedBusiness.id}/finance` : '/dashboard'}
+              className="p-4 rounded-xl bg-white border border-gray-100 hover:border-primary-200 hover:shadow-md transition-all"
+            >
+              <p className="text-xs text-gray-500 mb-1">Bu Ay Gelir</p>
+              <p className="text-lg font-bold text-green-600">{formatMoney(summary.totalIncome)}</p>
+            </Link>
+            <Link
+              href={selectedBusiness ? `/dashboard/business/${selectedBusiness.id}/finance` : '/dashboard'}
+              className="p-4 rounded-xl bg-white border border-gray-100 hover:border-primary-200 hover:shadow-md transition-all"
+            >
+              <p className="text-xs text-gray-500 mb-1">Bu Ay Gider</p>
+              <p className="text-lg font-bold text-red-600">{formatMoney(summary.totalExpense)}</p>
+            </Link>
+            <Link
+              href={selectedBusiness ? `/dashboard/business/${selectedBusiness.id}/finance` : '/dashboard'}
+              className="p-4 rounded-xl bg-white border border-gray-100 hover:border-primary-200 hover:shadow-md transition-all"
+            >
+              <p className="text-xs text-gray-500 mb-1">Bekleyen Alacak</p>
+              <p className="text-lg font-bold text-amber-600">{formatMoney(summary.totalOutstanding)}</p>
+            </Link>
+            <Link
+              href={selectedBusiness ? `/dashboard/business/${selectedBusiness.id}/packages` : '/dashboard'}
+              className="p-4 rounded-xl bg-white border border-gray-100 hover:border-primary-200 hover:shadow-md transition-all"
+            >
+              <p className="text-xs text-gray-500 mb-1">Yaklaşan Paket Bitişi</p>
+              <p className="text-2xl font-bold text-indigo-600">{summary.expiringPackages}</p>
+              <p className="text-xs text-gray-500 mt-1">7 gün içinde</p>
+            </Link>
+          </div>
+          )}
+        </section>
+      )}
+
       {/* Quick Actions */}
       <section>
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Hızlı Erişim</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {getQuickActions(selectedBusiness?.id).map((action) => (
             <Link
               key={action.href}
@@ -201,7 +325,7 @@ export default function DashboardPage() {
                     </div>
                   )}
 
-                  <div className="pt-4 border-t border-gray-100 space-y-3">
+                    <div className="pt-4 border-t border-gray-100 space-y-3">
                     <div className="flex gap-2 text-sm text-gray-600">
                       <span>{selectedBusiness._count?.staff ?? 0} personel</span>
                       <span>·</span>
@@ -209,6 +333,14 @@ export default function DashboardPage() {
                       <span>·</span>
                       <span>{selectedBusiness._count?.customers ?? 0} müşteri</span>
                     </div>
+                    <a
+                      href={`/b/${selectedBusiness.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full py-2 text-center text-sm font-medium text-primary-600 hover:text-primary-700 border border-primary-200 rounded-lg hover:bg-primary-50"
+                    >
+                      🔗 Online Randevu Linki
+                    </a>
                     <Link href={`/dashboard/business/${selectedBusiness.id}`}>
                       <Button variant="secondary" size="sm" className="w-full">
                         İşletmeyi Görüntüle →
@@ -235,7 +367,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <p className="text-sm text-gray-600 leading-relaxed mb-4">
-                Kuaför, berber, klinik ve daha fazlası için randevu yönetimi. Personel, hizmet ve takvim ile randevularınızı kolayca organize edin.
+                Kuaför, berber, klinik ve daha fazlası için randevu yönetimi. Personel, hizmet, takvim, istatistik, gelir/gider, paket ve ürün yönetimi tek ekranda.
               </p>
               <div className="flex flex-wrap gap-4">
                 <a

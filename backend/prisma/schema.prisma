@@ -921,6 +921,10 @@ model AppointmentBusiness {
   appointments  Appointment[]
   workingHours  AppointmentWorkingHours[]
   smsLogs       AppointmentSmsLog[]
+  financeEntries FinanceEntry[]
+  receivables   Receivable[]
+  customerPackages CustomerPackage[]
+  products      AppointmentProduct[]
 
   @@index([ownerId])
   @@index([slug])
@@ -973,6 +977,7 @@ model AppointmentService {
 
   staffServices AppointmentStaffService[]
   appointments  Appointment[]
+  customerPackages CustomerPackage[]
 
   @@index([businessId])
   @@index([isDeleted])
@@ -1031,6 +1036,8 @@ model AppointmentCustomer {
   deletedAt     DateTime?
 
   appointments  Appointment[]
+  receivables   Receivable[]
+  customerPackages CustomerPackage[]
 
   @@index([businessId])
   @@index([phone])
@@ -1055,8 +1062,16 @@ model Appointment {
   status        AppointmentStatus @default(PENDING)
   notes         String?          @db.Text
 
+  // Tekrar eden randevu
+  seriesId      String?          // Aynı serideki randevuları gruplar
+  recurrenceType String?         // WEEKLY | BIWEEKLY | MONTHLY
+  recurrenceEndDate DateTime?   // Tekrarın biteceği tarih
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  reminders     AppointmentReminder[]
+  packageUsages PackageUsage[]
 
   @@index([businessId])
   @@index([staffId])
@@ -1064,6 +1079,7 @@ model Appointment {
   @@index([startAt])
   @@index([status])
   @@index([businessId, startAt])
+  @@index([seriesId])
   @@map("appointments")
 }
 
@@ -1083,4 +1099,183 @@ model AppointmentSmsLog {
   @@index([businessId])
   @@index([sentAt])
   @@map("appointment_sms_logs")
+}
+
+// Randevu hatırlatması gönderim kaydı (tekrar gönderimi önlemek için)
+model AppointmentReminder {
+  id            String   @id @default(uuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  channel       String   // SMS | EMAIL
+  reminderType  String   // 24H | 3H | 1H
+  sentAt        DateTime @default(now())
+
+  @@unique([appointmentId, channel, reminderType])
+  @@index([appointmentId])
+  @@map("appointment_reminders")
+}
+
+// Gelir/Gider türü
+enum FinanceEntryType {
+  INCOME   // Gelir
+  EXPENSE  // Gider
+}
+
+// Gelir ve Gider kayıtları
+model FinanceEntry {
+  id            String          @id @default(uuid())
+  businessId    String
+  business      AppointmentBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  type          FinanceEntryType
+  amount        Decimal         @db.Decimal(10, 2)
+  date          DateTime
+  category      String          // Randevu, Ürün, Kira, Maaş, Malzeme, Diğer vb.
+  description   String?         @db.Text
+
+  appointmentId String?
+  appointment   Appointment?    @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  isDeleted     Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  deletedAt     DateTime?
+
+  @@index([businessId])
+  @@index([type])
+  @@index([date])
+  @@index([businessId, type, date])
+  @@index([isDeleted])
+  @@map("finance_entries")
+}
+
+// Alacak (müşteri borcu)
+model Receivable {
+  id            String   @id @default(uuid())
+  businessId    String
+  business      AppointmentBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerId    String
+  customer      AppointmentCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  totalAmount   Decimal  @db.Decimal(10, 2)
+  dueDate       DateTime?
+  description   String?  @db.Text
+
+  isDeleted     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  payments      ReceivablePayment[]
+
+  @@index([businessId])
+  @@index([customerId])
+  @@index([isDeleted])
+  @@map("receivables")
+}
+
+// Alacak tahsilatı
+model ReceivablePayment {
+  id            String     @id @default(uuid())
+  receivableId  String
+  receivable    Receivable @relation(fields: [receivableId], references: [id], onDelete: Cascade)
+
+  amount        Decimal    @db.Decimal(10, 2)
+  paidAt        DateTime   @default(now())
+  notes         String?    @db.Text
+
+  createdAt     DateTime   @default(now())
+
+  @@index([receivableId])
+  @@map("receivable_payments")
+}
+
+// Müşteri paketi (örn: 10 seans)
+model CustomerPackage {
+  id               String   @id @default(uuid())
+  businessId       String
+  business         AppointmentBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerId       String
+  customer         AppointmentCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  serviceId        String
+  service          AppointmentService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  totalSessions    Int      // Toplam seans (örn: 10)
+  remainingSessions Int     // Kalan seans
+  purchasedAt      DateTime @default(now())
+  expiresAt        DateTime? // Opsiyonel bitiş tarihi
+  expiryWarningSentAt DateTime? // Bitiş uyarısı gönderildi mi
+  notes            String?  @db.Text
+
+  isDeleted        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?
+
+  usages           PackageUsage[]
+
+  @@index([businessId])
+  @@index([customerId])
+  @@index([serviceId])
+  @@index([expiresAt])
+  @@index([isDeleted])
+  @@map("customer_packages")
+}
+
+// Paket kullanımı (randevu tamamlandığında 1 seans düşülür)
+model PackageUsage {
+  id            String   @id @default(uuid())
+  packageId     String
+  package       CustomerPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  usedAt        DateTime @default(now())
+
+  @@unique([appointmentId])
+  @@index([packageId])
+  @@index([appointmentId])
+  @@map("package_usages")
+}
+
+// Satışa sunulan ürünler (kuaförde şampuan, krem vb.)
+model AppointmentProduct {
+  id            String   @id @default(uuid())
+  businessId    String
+  business      AppointmentBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  name          String
+  sku           String?  // Stok kodu
+  price         Decimal  @db.Decimal(10, 2)
+  stockQuantity Int?
+
+  isDeleted     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  sales         ProductSale[]
+
+  @@index([businessId])
+  @@index([isDeleted])
+  @@map("appointment_products")
+}
+
+// Ürün satış kaydı
+model ProductSale {
+  id            String   @id @default(uuid())
+  productId     String
+  product       AppointmentProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  quantity      Int
+  unitPrice     Decimal  @db.Decimal(10, 2)
+  totalAmount   Decimal  @db.Decimal(10, 2)
+  customerId    String?
+  soldAt        DateTime @default(now())
+  notes         String?  @db.Text
+
+  @@index([productId])
+  @@index([soldAt])
+  @@map("product_sales")
 }

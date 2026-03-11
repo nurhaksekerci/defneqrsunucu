@@ -14,6 +14,8 @@ interface Appointment {
   endAt: string;
   status: string;
   notes?: string | null;
+  seriesId?: string | null;
+  recurrenceType?: string | null;
   staff: { id: string; fullName: string; color?: string | null };
   service: { id: string; name: string; duration: number; price: number };
   customer: { id: string; fullName: string; phone: string };
@@ -68,9 +70,12 @@ export default function CalendarPage() {
     date: '',
     time: '09:00',
     notes: '',
+    recurrenceType: '' as '' | 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY',
+    recurrenceEndDate: '',
   });
   const [newCustomer, setNewCustomer] = useState({ fullName: '', phone: '', email: '' });
   const [isSaving, setIsSaving] = useState(false);
+  const [completeModal, setCompleteModal] = useState<{ appointment: Appointment; packages: { id: string; remainingSessions: number; totalSessions: number; service: { name: string } }[] } | null>(null);
 
   const loadData = async () => {
     try {
@@ -168,9 +173,11 @@ export default function CalendarPage() {
         customerId: newAppointment.customerId,
         startAt: startAt.toISOString(),
         notes: newAppointment.notes || undefined,
+        recurrenceType: newAppointment.recurrenceType || undefined,
+        recurrenceEndDate: newAppointment.recurrenceEndDate || undefined,
       });
       setShowAddModal(false);
-      setNewAppointment({ staffId: '', serviceId: '', customerId: '', date: '', time: '09:00', notes: '' });
+      setNewAppointment({ staffId: '', serviceId: '', customerId: '', date: '', time: '09:00', notes: '', recurrenceType: '', recurrenceEndDate: '' });
       loadData();
     } catch (err: unknown) {
       alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Randevu oluşturulamadı.');
@@ -199,12 +206,45 @@ export default function CalendarPage() {
 
   const openAddModal = (prefillDate?: Date) => {
     const d = prefillDate || new Date();
+    const endDate = new Date(d);
+    endDate.setMonth(endDate.getMonth() + 3);
     setNewAppointment((prev) => ({
       ...prev,
       date: d.toISOString().slice(0, 10),
       time: '09:00',
+      recurrenceType: '',
+      recurrenceEndDate: endDate.toISOString().slice(0, 10),
     }));
     setShowAddModal(true);
+  };
+
+  const handleCompleteClick = async (appointment: Appointment) => {
+    try {
+      const res = await api.get(`/businesses/${businessId}/packages/for-customer`, {
+        params: { customerId: appointment.customer.id, serviceId: appointment.service.id },
+      });
+      const pkgs = res?.data?.data || [];
+      if (pkgs.length > 0) {
+        setCompleteModal({ appointment, packages: pkgs });
+        return;
+      }
+    } catch {
+      // ignore
+    }
+    handleUpdateStatus(appointment.id, 'COMPLETED');
+  };
+
+  const handleUpdateStatus = async (appointmentId: string, status: string, usePackageId?: string) => {
+    try {
+      await api.put(`/businesses/${businessId}/appointments/${appointmentId}`, {
+        status,
+        ...(usePackageId && { usePackageId }),
+      });
+      setCompleteModal(null);
+      loadData();
+    } catch {
+      alert('Durum güncellenemedi.');
+    }
   };
 
   const handleDeleteAppointment = async (appointmentId: string) => {
@@ -300,10 +340,22 @@ export default function CalendarPage() {
                     <div className="text-gray-500">
                       {getTimeString(a.startAt)} - {a.staff.fullName}
                     </div>
-                    <div className="flex gap-1 mt-1">
+                    <div className="flex gap-1 mt-1 flex-wrap items-center">
                       <span className={`px-1 rounded text-[10px] ${a.status === 'COMPLETED' ? 'bg-green-100' : a.status === 'CANCELLED' ? 'bg-red-100' : 'bg-amber-100'}`}>
                         {STATUS_LABELS[a.status] || a.status}
                       </span>
+                      {(a as { seriesId?: string }).seriesId && (
+                        <span className="text-[10px] text-violet-600" title="Tekrarlayan randevu">🔄</span>
+                      )}
+                      {a.status !== 'COMPLETED' && a.status !== 'CANCELLED' && (
+                        <button
+                          type="button"
+                          onClick={() => handleCompleteClick(a)}
+                          className="text-[10px] text-green-600 hover:text-green-700"
+                        >
+                          Tamamla
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleDeleteAppointment(a.id)}
@@ -427,6 +479,36 @@ export default function CalendarPage() {
                     rows={2}
                   />
                 </div>
+                <div className="p-3 bg-violet-50 rounded-lg border border-violet-100">
+                  <p className="text-sm font-medium text-gray-700 mb-2">🔄 Tekrar Eden Randevu</p>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Tekrar sıklığı</label>
+                      <select
+                        value={newAppointment.recurrenceType}
+                        onChange={(e) => setNewAppointment({ ...newAppointment, recurrenceType: e.target.value as '' | 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      >
+                        <option value="">Tekrarlama</option>
+                        <option value="WEEKLY">Haftalık</option>
+                        <option value="BIWEEKLY">İki haftada bir</option>
+                        <option value="MONTHLY">Aylık</option>
+                      </select>
+                    </div>
+                    {newAppointment.recurrenceType && (
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Tekrar bitiş tarihi</label>
+                        <input
+                          type="date"
+                          value={newAppointment.recurrenceEndDate}
+                          min={newAppointment.date}
+                          onChange={(e) => setNewAppointment({ ...newAppointment, recurrenceEndDate: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <div className="flex gap-2 pt-4">
                   <Button type="submit" isLoading={isSaving}>
                     Randevu Oluştur
@@ -438,6 +520,51 @@ export default function CalendarPage() {
               </form>
             </CardContent>
           </Card>
+          </div>
+        </div>
+      )}
+
+      {completeModal && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setCompleteModal(null)}
+        >
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm">
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-2">Randevuyu Tamamla</h2>
+                <p className="text-sm text-gray-600 mb-4">
+                  {completeModal.appointment.customer.fullName} — {completeModal.appointment.service.name}
+                </p>
+                <p className="text-sm font-medium text-gray-700 mb-2">Paket kullan?</p>
+                <div className="space-y-2 mb-4">
+                  {completeModal.packages.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => handleUpdateStatus(completeModal.appointment.id, 'COMPLETED', p.id)}
+                      className="w-full py-2 px-3 text-left rounded-lg border border-primary-200 bg-primary-50 hover:bg-primary-100 text-primary-800 font-medium"
+                    >
+                      {p.service.name} — {p.remainingSessions}/{p.totalSessions} seans kalan
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateStatus(completeModal.appointment.id, 'COMPLETED')}
+                    className="w-full py-2 px-3 text-left rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700"
+                  >
+                    Paket kullanma (nakit/ödeme)
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCompleteModal(null)}
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                >
+                  İptal
+                </button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       )}
