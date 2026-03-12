@@ -8,6 +8,13 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
+const toLocalDateString = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 const STATUS_LABELS: Record<string, string> = {
   PENDING: 'Bekliyor',
   CONFIRMED: 'Onaylandı',
@@ -64,6 +71,18 @@ interface CustomerDetail {
   financeEntries: FinanceEntry[];
 }
 
+interface Staff {
+  id: string;
+  fullName: string;
+}
+
+interface Service {
+  id: string;
+  name: string;
+  duration: number;
+  price: number;
+}
+
 export default function CustomerDetailPage() {
   const params = useParams();
   const businessId = params.id as string;
@@ -74,6 +93,25 @@ export default function CustomerDetailPage() {
   const [paymentModal, setPaymentModal] = useState<{ receivableId: string; remaining: number } | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  const [showAddAppointmentModal, setShowAddAppointmentModal] = useState(false);
+  const [showAddReceivableModal, setShowAddReceivableModal] = useState(false);
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<{ start: string; end: string }[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [appointmentForm, setAppointmentForm] = useState({
+    staffId: '',
+    serviceId: '',
+    date: toLocalDateString(new Date()),
+    time: '',
+    notes: '',
+  });
+  const [receivableForm, setReceivableForm] = useState({
+    totalAmount: '',
+    dueDate: '',
+    description: '',
+  });
 
   const loadAll = async () => {
     try {
@@ -93,6 +131,97 @@ export default function CustomerDetailPage() {
   useEffect(() => {
     loadAll();
   }, [businessId, customerId]);
+
+  useEffect(() => {
+    if (showAddAppointmentModal) {
+      api.get(`/businesses/${businessId}/staff`).then((r) => setStaff(r.data.data || []));
+      api.get(`/businesses/${businessId}/services`).then((r) => setServices(r.data.data || []));
+    }
+  }, [showAddAppointmentModal, businessId]);
+
+  useEffect(() => {
+    if (!appointmentForm.staffId || !appointmentForm.serviceId || !appointmentForm.date || !showAddAppointmentModal) {
+      setAvailableSlots([]);
+      return;
+    }
+    setLoadingSlots(true);
+    api
+      .get(`/businesses/${businessId}/slots`, {
+        params: {
+          staffId: appointmentForm.staffId,
+          serviceId: appointmentForm.serviceId,
+          date: appointmentForm.date,
+        },
+      })
+      .then((r) => setAvailableSlots(r.data.data || []))
+      .catch(() => setAvailableSlots([]))
+      .finally(() => setLoadingSlots(false));
+  }, [appointmentForm.staffId, appointmentForm.serviceId, appointmentForm.date, showAddAppointmentModal, businessId]);
+
+  const openAddAppointmentModal = () => {
+    setAppointmentForm({
+      staffId: '',
+      serviceId: '',
+      date: toLocalDateString(new Date()),
+      time: '',
+      notes: '',
+    });
+    setShowAddAppointmentModal(true);
+  };
+
+  const openAddReceivableModal = () => {
+    setReceivableForm({ totalAmount: '', dueDate: '', description: '' });
+    setShowAddReceivableModal(true);
+  };
+
+  const handleCreateAppointment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!appointmentForm.staffId || !appointmentForm.serviceId || !appointmentForm.date || !appointmentForm.time) {
+      alert('Personel, hizmet, tarih ve müsait bir saat seçin.');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const startAt = new Date(`${appointmentForm.date}T${appointmentForm.time}:00`);
+      await api.post(`/businesses/${businessId}/appointments`, {
+        staffId: appointmentForm.staffId,
+        serviceId: appointmentForm.serviceId,
+        customerId,
+        startAt: startAt.toISOString(),
+        notes: appointmentForm.notes || undefined,
+      });
+      setShowAddAppointmentModal(false);
+      loadAll();
+    } catch (err: unknown) {
+      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Randevu oluşturulamadı.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAddReceivable = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amt = parseFloat(receivableForm.totalAmount);
+    if (!amt || amt <= 0) {
+      alert('Geçerli tutar girin.');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await api.post(`/businesses/${businessId}/receivables`, {
+        customerId,
+        totalAmount: amt,
+        dueDate: receivableForm.dueDate || undefined,
+        description: receivableForm.description || undefined,
+      });
+      setShowAddReceivableModal(false);
+      loadAll();
+    } catch (err: unknown) {
+      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Borç eklenemedi.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleAddPayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,12 +291,8 @@ export default function CustomerDetailPage() {
           {customer.email && <p className="text-sm text-gray-500">{customer.email}</p>}
         </div>
         <div className="flex gap-2">
-          <Link href={`/dashboard/business/${businessId}/calendar?addCustomerId=${customer.id}`}>
-            <Button size="sm">+ Randevu Ekle</Button>
-          </Link>
-          <Link href={`/dashboard/business/${businessId}/finance`}>
-            <Button variant="secondary" size="sm">Borç/Alacak</Button>
-          </Link>
+          <Button size="sm" onClick={openAddAppointmentModal}>+ Randevu Ekle</Button>
+          <Button variant="secondary" size="sm" onClick={openAddReceivableModal}>+ Borç Ekle</Button>
         </div>
       </div>
 
@@ -179,9 +304,15 @@ export default function CustomerDetailPage() {
                 <p className="text-sm font-medium text-amber-800">Toplam Borç Bakiyesi</p>
                 <p className="text-2xl font-bold text-amber-900">₺{totalDebt.toLocaleString('tr-TR')}</p>
               </div>
-              <Link href={`/dashboard/business/${businessId}/finance`}>
-                <Button size="sm">Ödeme Al</Button>
-              </Link>
+              <Button
+                size="sm"
+                onClick={() => {
+                  const first = receivables.find((r) => r.remainingAmount > 0);
+                  if (first) setPaymentModal({ receivableId: first.id, remaining: first.remainingAmount });
+                }}
+              >
+                Ödeme Al
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -213,9 +344,9 @@ export default function CustomerDetailPage() {
                 ))}
               </ul>
             )}
-            <Link href={`/dashboard/business/${businessId}/calendar?addCustomerId=${customer.id}`} className="mt-3 inline-block text-sm text-primary-600 hover:text-primary-700 font-medium">
+            <button type="button" onClick={openAddAppointmentModal} className="mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium">
               + Yeni randevu
-            </Link>
+            </button>
           </CardContent>
         </Card>
 
@@ -275,9 +406,9 @@ export default function CustomerDetailPage() {
                 ))}
               </ul>
             )}
-            <Link href={`/dashboard/business/${businessId}/finance`} className="mt-3 inline-block text-sm text-primary-600 hover:text-primary-700 font-medium">
+            <button type="button" onClick={openAddReceivableModal} className="mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium">
               + Yeni borç ekle
-            </Link>
+            </button>
           </CardContent>
         </Card>
 
@@ -356,6 +487,158 @@ export default function CustomerDetailPage() {
                       Ödeme Al
                     </Button>
                     <Button type="button" variant="secondary" onClick={() => setPaymentModal(null)}>
+                      İptal
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {showAddAppointmentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowAddAppointmentModal(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md">
+            <Card className="max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <CardContent className="p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Yeni Randevu — {customer.fullName}</h2>
+                <form onSubmit={handleCreateAppointment} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Personel *</label>
+                    <select
+                      value={appointmentForm.staffId}
+                      onChange={(e) => setAppointmentForm({ ...appointmentForm, staffId: e.target.value, time: '' })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      required
+                    >
+                      <option value="">Seçin</option>
+                      {staff.map((s) => (
+                        <option key={s.id} value={s.id}>{s.fullName}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Hizmet *</label>
+                    <select
+                      value={appointmentForm.serviceId}
+                      onChange={(e) => setAppointmentForm({ ...appointmentForm, serviceId: e.target.value, time: '' })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      required
+                    >
+                      <option value="">Seçin</option>
+                      {services.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name} ({s.duration} dk)</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tarih *</label>
+                    <input
+                      type="date"
+                      value={appointmentForm.date}
+                      onChange={(e) => setAppointmentForm({ ...appointmentForm, date: e.target.value, time: '' })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Saat *</label>
+                    {appointmentForm.staffId && appointmentForm.serviceId && appointmentForm.date ? (
+                      loadingSlots ? (
+                        <div className="py-4 text-center text-sm text-gray-500">Müsait saatler yükleniyor...</div>
+                      ) : availableSlots.length === 0 ? (
+                        <div className="py-4 px-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                          Bu tarihte müsait saat yok.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
+                          {availableSlots.map((slot) => (
+                            <button
+                              key={slot.start}
+                              type="button"
+                              onClick={() => setAppointmentForm((prev) => ({ ...prev, time: slot.start }))}
+                              className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                                appointmentForm.time === slot.start
+                                  ? 'bg-primary-600 text-white ring-2 ring-primary-300'
+                                  : 'bg-gray-100 text-gray-800 hover:bg-primary-50 border border-transparent'
+                              }`}
+                            >
+                              {slot.start}
+                            </button>
+                          ))}
+                        </div>
+                      )
+                    ) : (
+                      <p className="text-sm text-gray-500 py-2">Önce personel, hizmet ve tarih seçin.</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Not</label>
+                    <textarea
+                      value={appointmentForm.notes}
+                      onChange={(e) => setAppointmentForm({ ...appointmentForm, notes: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      rows={2}
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-4">
+                    <Button type="submit" isLoading={isSaving} disabled={!appointmentForm.time || loadingSlots}>
+                      Randevu Oluştur
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={() => setShowAddAppointmentModal(false)}>
+                      İptal
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {showAddReceivableModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowAddReceivableModal(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm">
+            <Card>
+              <CardContent className="pt-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Yeni Borç — {customer.fullName}</h2>
+                <form onSubmit={handleAddReceivable} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tutar (₺) *</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={receivableForm.totalAmount}
+                      onChange={(e) => setReceivableForm({ ...receivableForm, totalAmount: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Vade Tarihi</label>
+                    <input
+                      type="date"
+                      value={receivableForm.dueDate}
+                      onChange={(e) => setReceivableForm({ ...receivableForm, dueDate: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
+                    <textarea
+                      value={receivableForm.description}
+                      onChange={(e) => setReceivableForm({ ...receivableForm, description: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      rows={2}
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button type="submit" isLoading={isSaving} disabled={!receivableForm.totalAmount || parseFloat(receivableForm.totalAmount) <= 0}>
+                      Borç Ekle
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={() => setShowAddReceivableModal(false)}>
                       İptal
                     </Button>
                   </div>
