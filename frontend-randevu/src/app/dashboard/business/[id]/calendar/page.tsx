@@ -95,7 +95,7 @@ export default function CalendarPage() {
   const [completeModal, setCompleteModal] = useState<{ appointment: Appointment; packages: { id: string; remainingSessions: number; totalSessions: number; service: { name: string } }[] } | null>(null);
   const [detailModal, setDetailModal] = useState<Appointment | null>(null);
   const [calendarView, setCalendarView] = useState<CalendarView>('week');
-  const [availableSlots, setAvailableSlots] = useState<{ start: string; end: string }[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<{ start: string; end: string; available: boolean }[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotConflictTime, setSlotConflictTime] = useState<string | null>(null);
 
@@ -226,7 +226,7 @@ export default function CalendarPage() {
     setIsSaving(true);
     setSlotConflictTime(null);
     try {
-      const startAt = new Date(`${newAppointment.date}T${newAppointment.time}:00`);
+      const startAt = new Date(`${newAppointment.date}T${newAppointment.time}:00+03:00`);
       await api.post(`/businesses/${businessId}/appointments`, {
         staffId: newAppointment.staffId,
         serviceId: newAppointment.serviceId,
@@ -593,17 +593,22 @@ export default function CalendarPage() {
                               <button
                                 key={slot.start}
                                 type="button"
+                                disabled={!slot.available}
                                 onClick={() => {
+                                  if (!slot.available) return;
                                   setSlotConflictTime(null);
                                   setNewAppointment((prev) => ({ ...prev, time: slot.start }));
                                 }}
-                                className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-                                  newAppointment.time === slot.start
-                                    ? 'bg-primary-600 text-white ring-2 ring-primary-300'
-                                    : 'bg-gray-100 text-gray-800 hover:bg-primary-50 hover:border-primary-200 border border-transparent'
+                                className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors flex flex-col items-center gap-0.5 ${
+                                  !slot.available
+                                    ? 'bg-red-50 text-red-600 border border-red-200 cursor-not-allowed opacity-90'
+                                    : newAppointment.time === slot.start
+                                      ? 'bg-primary-600 text-white ring-2 ring-primary-300'
+                                      : 'bg-gray-100 text-gray-800 hover:bg-primary-50 hover:border-primary-200 border border-transparent'
                                 }`}
                               >
-                                {slot.start}
+                                <span>{slot.start}</span>
+                                <span className="text-xs font-normal">{slot.available ? 'boş' : 'dolu'}</span>
                               </button>
                             ))}
                           </div>

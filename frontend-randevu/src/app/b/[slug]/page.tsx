@@ -73,7 +73,7 @@ export default function PublicBookingPage() {
     }
     setSubmitting(true);
     try {
-      const startAt = new Date(`${form.date}T${form.time}:00`);
+      const startAt = new Date(`${form.date}T${form.time}:00+03:00`);
       await api.post(`/businesses/slug/${slug}/book`, {
         staffId: form.staffId,
         serviceId: form.serviceId,

@@ -10,9 +10,15 @@ const ensureBusinessAccess = async (userId, businessId) => {
   return business;
 };
 
+const TZ_ISTANBUL = 'Europe/Istanbul';
+
+const formatTimeTR = (d) => {
+  return d.toLocaleTimeString('tr-TR', { timeZone: TZ_ISTANBUL, hour: '2-digit', minute: '2-digit', hour12: false });
+};
+
 /**
- * Müsait saat dilimlerini döndürür (personel + hizmet + tarih seçildiğinde)
- * Çalışma saatleri ve mevcut randevulara göre dolu slotlar hariç tutulur
+ * Tüm slotları döndürür (dolu + boş). Her slotta available: true/false.
+ * Türkiye saati (Europe/Istanbul) kullanılır.
  */
 exports.getAvailableSlots = async (req, res, next) => {
   try {
@@ -32,11 +38,10 @@ exports.getAvailableSlots = async (req, res, next) => {
     if (!service) return res.status(400).json({ success: false, message: 'Hizmet bulunamadı' });
     if (!staff) return res.status(400).json({ success: false, message: 'Personel bulunamadı' });
 
-    const targetDate = new Date(date);
-    targetDate.setHours(0, 0, 0, 0);
-    const dayOfWeek = targetDate.getDay(); // 0=Pazar, 1=Pazartesi, ...
+    const [y, m, d] = date.split('-').map(Number);
+    const targetDate = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+    const dayOfWeek = targetDate.getUTCDay();
 
-    // Çalışma saatleri: önce personel bazlı, yoksa işletme bazlı, yoksa varsayılan 09:00-18:00
     let startTime = '09:00';
     let endTime = '18:00';
     let isClosed = false;
@@ -62,14 +67,12 @@ exports.getAvailableSlots = async (req, res, next) => {
 
     const [startH, startM] = startTime.split(':').map(Number);
     const [endH, endM] = endTime.split(':').map(Number);
-    const dayStart = new Date(targetDate);
-    dayStart.setHours(startH, startM, 0, 0);
-    const dayEnd = new Date(targetDate);
-    dayEnd.setHours(endH, endM, 0, 0);
+    const TZ_OFFSET_H = 3;
+    const dayStart = new Date(Date.UTC(y, m - 1, d, startH - TZ_OFFSET_H, startM, 0));
+    const dayEnd = new Date(Date.UTC(y, m - 1, d, endH - TZ_OFFSET_H, endM, 0));
 
     const durationMs = service.duration * 60 * 1000;
 
-    // O gün personelin randevuları (iptal hariç) - çalışma saatleri ile örtüşenler
     const appointmentsWhere = {
       businessId,
       staffId,
@@ -85,8 +88,12 @@ exports.getAvailableSlots = async (req, res, next) => {
       select: { startAt: true, endAt: true }
     });
 
+    const now = new Date();
+    const todayInIstanbul = new Date(now.toLocaleString('en-US', { timeZone: TZ_ISTANBUL }));
+    const isToday = y === todayInIstanbul.getFullYear() && (m - 1) === todayInIstanbul.getMonth() && d === todayInIstanbul.getDate();
+
     const slots = [];
-    const slotInterval = 15; // 15 dakika aralıklarla slot üret
+    const slotInterval = 15;
     let current = new Date(dayStart);
 
     while (current.getTime() + durationMs <= dayEnd.getTime()) {
@@ -99,18 +106,11 @@ exports.getAvailableSlots = async (req, res, next) => {
         return slotStart < appEnd && slotEnd > appStart;
       });
 
-      // Bugün ise geçmiş saatleri gösterme
-      const now = new Date();
-      const isToday = targetDate.getFullYear() === now.getFullYear() &&
-        targetDate.getMonth() === now.getMonth() &&
-        targetDate.getDate() === now.getDate();
       const isPast = isToday && slotEnd.getTime() <= now.getTime();
+      const available = !overlaps && !isPast;
 
-      if (!overlaps && !isPast) {
-        const timeStr = slotStart.toTimeString().slice(0, 5);
-        slots.push({ start: timeStr, end: slotEnd.toTimeString().slice(0, 5) });
-      }
-
+      const timeStr = formatTimeTR(slotStart);
+      slots.push({ start: timeStr, end: formatTimeTR(slotEnd), available });
       current.setMinutes(current.getMinutes() + slotInterval);
     }
 

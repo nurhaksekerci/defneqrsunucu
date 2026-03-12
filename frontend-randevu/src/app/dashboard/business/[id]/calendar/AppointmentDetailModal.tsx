@@ -75,7 +75,7 @@ export function AppointmentDetailModal({
     notes: '',
     status: '',
   });
-  const [availableSlots, setAvailableSlots] = useState<{ start: string; end: string }[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<{ start: string; end: string; available: boolean }[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   useEffect(() => {
@@ -118,7 +118,7 @@ export function AppointmentDetailModal({
     }
     setIsSaving(true);
     try {
-      const startAt = new Date(`${editForm.date}T${editForm.time}:00`);
+      const startAt = new Date(`${editForm.date}T${editForm.time}:00+03:00`);
       await api.put(`/businesses/${businessId}/appointments/${appointment.id}`, {
         staffId: editForm.staffId,
         serviceId: editForm.serviceId,
@@ -222,14 +222,21 @@ export function AppointmentDetailModal({
                         <button
                           key={slot.start}
                           type="button"
-                          onClick={() => setEditForm({ ...editForm, time: slot.start })}
-                          className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-                            editForm.time === slot.start
-                              ? 'bg-primary-600 text-white'
-                              : 'bg-gray-100 text-gray-800 hover:bg-primary-50'
+                          disabled={!slot.available}
+                          onClick={() => {
+                            if (!slot.available) return;
+                            setEditForm({ ...editForm, time: slot.start });
+                          }}
+                          className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors flex flex-col items-center gap-0.5 ${
+                            !slot.available
+                              ? 'bg-red-50 text-red-600 border border-red-200 cursor-not-allowed opacity-90'
+                              : editForm.time === slot.start
+                                ? 'bg-primary-600 text-white'
+                                : 'bg-gray-100 text-gray-800 hover:bg-primary-50'
                           }`}
                         >
-                          {slot.start}
+                          <span>{slot.start}</span>
+                          <span className="text-xs font-normal">{slot.available ? 'boş' : 'dolu'}</span>
                         </button>
                       ))}
                     </div>

@@ -98,7 +98,7 @@ export default function CustomerDetailPage() {
   const [showAddReceivableModal, setShowAddReceivableModal] = useState(false);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [services, setServices] = useState<Service[]>([]);
-  const [availableSlots, setAvailableSlots] = useState<{ start: string; end: string }[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<{ start: string; end: string; available: boolean }[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [appointmentForm, setAppointmentForm] = useState({
     staffId: '',
@@ -185,7 +185,7 @@ export default function CustomerDetailPage() {
     setIsSaving(true);
     setSlotConflictTime(null);
     try {
-      const startAt = new Date(`${appointmentForm.date}T${appointmentForm.time}:00`);
+      const startAt = new Date(`${appointmentForm.date}T${appointmentForm.time}:00+03:00`);
       await api.post(`/businesses/${businessId}/appointments`, {
         staffId: appointmentForm.staffId,
         serviceId: appointmentForm.serviceId,
@@ -592,17 +592,22 @@ export default function CustomerDetailPage() {
                               <button
                                 key={slot.start}
                                 type="button"
+                                disabled={!slot.available}
                                 onClick={() => {
+                                  if (!slot.available) return;
                                   setSlotConflictTime(null);
                                   setAppointmentForm((prev) => ({ ...prev, time: slot.start }));
                                 }}
-                                className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-                                  appointmentForm.time === slot.start
-                                    ? 'bg-primary-600 text-white ring-2 ring-primary-300'
-                                    : 'bg-gray-100 text-gray-800 hover:bg-primary-50 border border-transparent'
+                                className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors flex flex-col items-center gap-0.5 ${
+                                  !slot.available
+                                    ? 'bg-red-50 text-red-600 border border-red-200 cursor-not-allowed opacity-90'
+                                    : appointmentForm.time === slot.start
+                                      ? 'bg-primary-600 text-white ring-2 ring-primary-300'
+                                      : 'bg-gray-100 text-gray-800 hover:bg-primary-50 border border-transparent'
                                 }`}
                               >
-                                {slot.start}
+                                <span>{slot.start}</span>
+                                <span className="text-xs font-normal">{slot.available ? 'boş' : 'dolu'}</span>
                               </button>
                             ))}
                           </div>
