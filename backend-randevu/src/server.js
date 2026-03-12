@@ -32,6 +32,7 @@ app.use(helmet({
 
 app.use(cors({
   origin: [
+    'https://admin.defneqr.com',
     process.env.FRONTEND_URL || 'http://localhost:3000',
     'https://www.defneqr.com',
     'https://defneqr.com',

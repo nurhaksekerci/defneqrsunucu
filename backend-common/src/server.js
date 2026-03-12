@@ -47,6 +47,7 @@ app.use(cors({
     'http://localhost:3000',
     'https://randevu.defneqr.com',
     'http://randevu.defneqr.com',
+    'https://admin.defneqr.com',
     'https://defnerandevu.com',
     'https://www.defnerandevu.com',
     'http://localhost:3001',
