@@ -1,0 +1,369 @@
+const prisma = require('../config/database');
+const { parsePaginationParams, createPaginatedResponse } = require('../utils/pagination');
+const { generateTicketNumber } = require('../utils/ticketNumberGenerator');
+const {
+  sendTicketCreatedEmail,
+  sendTicketRepliedEmail,
+  sendTicketWaitingForCustomerEmail,
+  sendTicketResolvedEmail
+} = require('../utils/emailService');
+const logger = require('../utils/logger');
+
+const ticketInclude = {
+  user: { select: { id: true, fullName: true, email: true } },
+  assignedTo: { select: { id: true, fullName: true, email: true } },
+  _count: { select: { messages: true } }
+};
+
+exports.getMyTicketStats = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const [total, resolved, open, avgRating] = await Promise.all([
+      prisma.supportTicket.count({ where: { userId } }),
+      prisma.supportTicket.count({ where: { userId, status: { in: ['RESOLVED', 'CLOSED'] } } }),
+      prisma.supportTicket.count({ where: { userId, status: { in: ['OPEN', 'IN_PROGRESS', 'WAITING_CUSTOMER'] } } }),
+      prisma.supportTicket.aggregate({
+        where: { userId, rating: { not: null } },
+        _avg: { rating: true },
+        _count: { rating: true }
+      })
+    ]);
+    const averageRating = avgRating._count.rating > 0 ? Math.round(avgRating._avg.rating * 10) / 10 : null;
+    res.json({
+      success: true,
+      data: { total, resolved, open, averageRating }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getAllTicketStats = async (req, res, next) => {
+  try {
+    const [total, resolved, open, avgRating] = await Promise.all([
+      prisma.supportTicket.count(),
+      prisma.supportTicket.count({ where: { status: { in: ['RESOLVED', 'CLOSED'] } } }),
+      prisma.supportTicket.count({ where: { status: { in: ['OPEN', 'IN_PROGRESS', 'WAITING_CUSTOMER'] } } }),
+      prisma.supportTicket.aggregate({
+        where: { rating: { not: null } },
+        _avg: { rating: true },
+        _count: { rating: true }
+      })
+    ]);
+    const averageRating = avgRating._count.rating > 0 ? Math.round(avgRating._avg.rating * 10) / 10 : null;
+    res.json({
+      success: true,
+      data: { total, resolved, open, averageRating }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getMyTickets = async (req, res, next) => {
+  try {
+    const { page, limit, skip } = parsePaginationParams(req.query);
+    const { status, category } = req.query;
+    const userId = req.user.id;
+
+    const where = { userId };
+    if (req.project === 'defnerandevu') where.project = 'defnerandevu';
+    else where.project = 'defneqr';
+
+    if (status) where.status = status;
+    if (category) where.category = category;
+
+    const totalCount = await prisma.supportTicket.count({ where });
+
+    const tickets = await prisma.supportTicket.findMany({
+      where,
+      include: ticketInclude,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
+    });
+
+    res.json(createPaginatedResponse(tickets, totalCount, { page, limit }));
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getAllTickets = async (req, res, next) => {
+  try {
+    const { page, limit, skip } = parsePaginationParams(req.query);
+    const { status, category, priority, search } = req.query;
+
+    const where = {};
+    if (req.query.project) where.project = req.query.project;
+
+    if (status) where.status = status;
+    if (category) where.category = category;
+    if (priority) where.priority = priority;
+
+    if (search) {
+      where.OR = [
+        { ticketNumber: { contains: search, mode: 'insensitive' } },
+        { subject: { contains: search, mode: 'insensitive' } },
+        { user: { email: { contains: search, mode: 'insensitive' } } },
+        { user: { fullName: { contains: search, mode: 'insensitive' } } }
+      ];
+    }
+
+    const totalCount = await prisma.supportTicket.count({ where });
+
+    const tickets = await prisma.supportTicket.findMany({
+      where,
+      include: ticketInclude,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
+    });
+
+    res.json(createPaginatedResponse(tickets, totalCount, { page, limit }));
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getTicketById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+
+    const ticket = await prisma.supportTicket.findUnique({
+      where: { id },
+      include: {
+        user: { select: { id: true, fullName: true, email: true } },
+        assignedTo: { select: { id: true, fullName: true, email: true } },
+        messages: {
+          where: user.role === 'ADMIN' || user.role === 'STAFF' ? {} : { isInternal: false },
+          include: {
+            author: { select: { id: true, fullName: true, email: true } }
+          },
+          orderBy: { createdAt: 'asc' }
+        }
+      }
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: 'Talep bulunamadı' });
+    }
+
+    if (user.role !== 'ADMIN' && user.role !== 'STAFF' && ticket.userId !== user.id) {
+      return res.status(403).json({ success: false, message: 'Bu talebe erişim yetkiniz yok' });
+    }
+
+    res.json({ success: true, data: ticket });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.createTicket = async (req, res, next) => {
+  try {
+    const { subject, description, category, priority, restaurantId } = req.body;
+    const userId = req.user.id;
+
+    const ticketNumber = await generateTicketNumber();
+    const project = req.project === 'defnerandevu' ? 'defnerandevu' : 'defneqr';
+
+    const ticket = await prisma.supportTicket.create({
+      data: {
+        ticketNumber,
+        userId,
+        restaurantId: restaurantId || null,
+        project,
+        subject,
+        description,
+        category,
+        priority: priority || 'MEDIUM',
+        status: 'OPEN'
+      },
+      include: ticketInclude
+    });
+
+    try {
+      await sendTicketCreatedEmail(ticket);
+    } catch (emailErr) {
+      logger.warn('Destek talebi maili gönderilemedi', { ticketId: ticket.id, error: emailErr.message });
+    }
+    logger.info('Destek talebi oluşturuldu', { ticketId: ticket.id, ticketNumber: ticket.ticketNumber });
+
+    res.status(201).json({ success: true, data: ticket, message: 'Destek talebiniz oluşturuldu' });
+  } catch (error) {
+    logger.error('Destek talebi oluşturma hatası', { error: error.message, stack: error.stack });
+    next(error);
+  }
+};
+
+exports.updateTicket = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status, priority, assignedToId, resolution } = req.body;
+    const user = req.user;
+
+    const ticket = await prisma.supportTicket.findUnique({ where: { id } });
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: 'Talep bulunamadı' });
+    }
+
+    const isAdmin = user.role === 'ADMIN' || user.role === 'STAFF';
+
+    if (!isAdmin && ticket.userId !== user.id) {
+      return res.status(403).json({ success: false, message: 'Bu talebi güncelleme yetkiniz yok' });
+    }
+
+    const updateData = {};
+    if (isAdmin) {
+      if (status !== undefined) updateData.status = status;
+      if (priority !== undefined) updateData.priority = priority;
+      if (assignedToId !== undefined) updateData.assignedToId = assignedToId || null;
+      if (resolution !== undefined) updateData.resolution = resolution;
+      if (status === 'RESOLVED' || status === 'CLOSED') {
+        updateData.resolvedAt = new Date();
+        updateData.resolvedById = user.id;
+        updateData.closedAt = new Date();
+      }
+    }
+
+    const updated = await prisma.supportTicket.update({
+      where: { id },
+      data: updateData,
+      include: { ...ticketInclude, user: { select: { id: true, fullName: true, email: true } } }
+    });
+
+    if (isAdmin && status) {
+      if (status === 'WAITING_CUSTOMER') {
+        await sendTicketWaitingForCustomerEmail(updated);
+        logger.info('Destek talebi - sizden cevap bekleniyor maili gönderildi', { ticketId: id });
+      } else if (status === 'RESOLVED' || status === 'CLOSED') {
+        const ticketForEmail = await prisma.supportTicket.findUnique({
+          where: { id },
+          include: { user: { select: { id: true, fullName: true, email: true } } }
+        });
+        await sendTicketResolvedEmail(ticketForEmail);
+        logger.info('Destek talebi - çözüldü maili gönderildi', { ticketId: id });
+      }
+    }
+
+    res.json({ success: true, data: updated, message: 'Talep güncellendi' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.addMessage = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { message, isInternal } = req.body;
+    const user = req.user;
+
+    const ticket = await prisma.supportTicket.findUnique({ where: { id } });
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: 'Talep bulunamadı' });
+    }
+
+    const isAdmin = user.role === 'ADMIN' || user.role === 'STAFF';
+
+    if (!isAdmin && ticket.userId !== user.id) {
+      return res.status(403).json({ success: false, message: 'Bu talebe mesaj ekleme yetkiniz yok' });
+    }
+
+    if (ticket.status === 'CLOSED' || ticket.status === 'RESOLVED') {
+      return res.status(400).json({ success: false, message: 'Kapalı taleplere mesaj eklenemez' });
+    }
+
+    const internal = isAdmin && isInternal === true;
+
+    const msg = await prisma.ticketMessage.create({
+      data: {
+        ticketId: id,
+        authorId: user.id,
+        message: message.trim(),
+        isInternal: internal
+      },
+      include: {
+        author: { select: { id: true, fullName: true, email: true } }
+      }
+    });
+
+    if (isAdmin && !internal) {
+      const fullTicket = await prisma.supportTicket.findUnique({
+        where: { id },
+        include: { user: { select: { id: true, fullName: true, email: true } } }
+      });
+      const replyPreview = message.trim().length > 100 ? message.trim().substring(0, 100) + '...' : message.trim();
+      await sendTicketRepliedEmail(fullTicket, replyPreview);
+      logger.info('Destek talebi - cevaplandı maili gönderildi', { ticketId: id });
+    }
+
+    res.status(201).json({ success: true, data: msg, message: 'Mesaj gönderildi' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.rateTicket = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rating } = req.body;
+    const user = req.user;
+
+    const ticket = await prisma.supportTicket.findUnique({ where: { id } });
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: 'Talep bulunamadı' });
+    }
+
+    if (ticket.userId !== user.id) {
+      return res.status(403).json({ success: false, message: 'Sadece talep sahibi değerlendirme yapabilir' });
+    }
+
+    if (ticket.status !== 'RESOLVED') {
+      return res.status(400).json({ success: false, message: 'Sadece çözülen talepler değerlendirilebilir' });
+    }
+
+    if (ticket.rating != null) {
+      return res.status(400).json({ success: false, message: 'Bu talep zaten değerlendirildi' });
+    }
+
+    const ratingNum = parseInt(rating, 10);
+    if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 10) {
+      return res.status(400).json({ success: false, message: 'Değerlendirme 1 ile 10 arasında olmalıdır' });
+    }
+
+    const updated = await prisma.supportTicket.update({
+      where: { id },
+      data: { rating: ratingNum },
+      include: ticketInclude
+    });
+
+    logger.info('Destek talebi değerlendirildi', { ticketId: id, rating: ratingNum });
+    res.json({ success: true, data: updated, message: 'Değerlendirmeniz kaydedildi' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.deleteTicket = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+
+    if (user.role !== 'ADMIN' && user.role !== 'STAFF') {
+      return res.status(403).json({ success: false, message: 'Bu işlem için yetkiniz yok' });
+    }
+
+    const ticket = await prisma.supportTicket.findUnique({ where: { id } });
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: 'Talep bulunamadı' });
+    }
+
+    await prisma.supportTicket.delete({ where: { id } });
+    logger.info('Destek talebi silindi', { ticketId: id, ticketNumber: ticket.ticketNumber });
+
+    res.json({ success: true, message: 'Talep silindi' });
+  } catch (error) {
+    next(error);
+  }
+};

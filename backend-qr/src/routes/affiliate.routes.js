@@ -1,0 +1,51 @@
+const express = require('express');
+const router = express.Router();
+const affiliateController = require('../controllers/affiliate.controller');
+const { authenticate, authorize } = require('../middleware/auth.middleware');
+const { handleValidationErrors } = require('../middleware/validation.middleware');
+const { body } = require('express-validator');
+
+const applyAffiliateValidation = [
+  body('bankName').optional().trim().isLength({ max: 100 }).withMessage('Banka adı en fazla 100 karakter olabilir'),
+  body('accountHolder').optional().trim().isLength({ max: 100 }).withMessage('Hesap sahibi en fazla 100 karakter olabilir'),
+  body('iban').optional().trim().isLength({ max: 34 }).withMessage('IBAN en fazla 34 karakter olabilir'),
+  handleValidationErrors,
+];
+
+const rejectRewardValidation = [
+  body('reason')
+    .trim()
+    .notEmpty()
+    .withMessage('Red açıklaması zorunludur')
+    .isLength({ min: 5, max: 500 })
+    .withMessage('Açıklama 5-500 karakter olmalıdır'),
+  handleValidationErrors,
+];
+
+router.use(authenticate);
+
+router.get('/terms', affiliateController.getAffiliateTerms);
+router.post('/apply', applyAffiliateValidation, affiliateController.applyForAffiliate);
+router.get('/me/referral-discount', affiliateController.getReferralDiscount);
+router.get('/me', affiliateController.getMyAffiliateInfo);
+router.get('/me/link', affiliateController.getMyReferralLink);
+router.get('/me/referrals', affiliateController.getMyReferrals);
+router.get('/me/commissions', affiliateController.getMyCommissions);
+router.put('/me/bank-info', affiliateController.updateBankInfo);
+
+router.get('/all', authorize('ADMIN'), affiliateController.getAllAffiliates);
+router.get('/pending-rewards', authorize('ADMIN'), affiliateController.getPendingReferralRewards);
+router.post('/approve-all-rewards', authorize('ADMIN'), affiliateController.approveAllPendingReferralRewards);
+router.post('/referrals/:id/approve-reward', authorize('ADMIN'), affiliateController.approveReferralReward);
+router.post('/referrals/:id/reject-reward', authorize('ADMIN'), rejectRewardValidation, affiliateController.rejectReferralReward);
+router.put('/:id/status', authorize('ADMIN'), affiliateController.updateAffiliateStatus);
+router.get('/stats', authorize('ADMIN'), affiliateController.getAffiliateStats);
+
+router.get('/settings', authorize('ADMIN'), affiliateController.getAffiliateSettings);
+router.put('/settings', authorize('ADMIN'), affiliateController.updateAffiliateSettings);
+
+router.post('/payouts', authorize('ADMIN'), affiliateController.createPayout);
+router.get('/payouts', authorize('ADMIN'), affiliateController.getAllPayouts);
+router.put('/payouts/:id', authorize('ADMIN'), affiliateController.updatePayoutStatus);
+
+module.exports = router;

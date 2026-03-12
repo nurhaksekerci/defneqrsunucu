@@ -44,4 +44,7 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },
+  // For full E2E: start docker-compose (backend-common, backend-qr, backend-randevu, backend-admin, postgres)
+  // or monolith backend. Frontend uses NEXT_PUBLIC_API_URL (default api.defneqr.com or localhost:5000).
 });
+

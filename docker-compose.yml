@@ -8,6 +8,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./scripts/postgres/init-multiple-databases.sh:/docker-entrypoint-initdb.d/02-init-databases.sh:ro
     ports:
       - "127.0.0.1:5432:5432"
     restart: unless-stopped
@@ -16,6 +17,102 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - defneqr-network
+
+  backend-common:
+    build:
+      context: ./backend-common
+      dockerfile: Dockerfile
+    container_name: defneqr-backend-common
+    environment:
+      NODE_ENV: production
+      PORT: 5001
+      DATABASE_URL: postgresql://${DB_USER:-defneqr}:${DB_PASSWORD}@postgres:5432/defneqr_common
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      FRONTEND_URL: ${FRONTEND_URL:-https://defneqr.com}
+      RANDEVU_FRONTEND_URL: ${RANDEVU_FRONTEND_URL:-https://randevu.defneqr.com}
+      SESSION_SECRET: ${SESSION_SECRET:-${JWT_SECRET}}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-destek@defneqr.com}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-https://api.defneqr.com/api/auth/google/callback}
+    ports:
+      - "127.0.0.1:5001:5001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - defneqr-network
+
+  backend-qr:
+    build:
+      context: ./backend-qr
+      dockerfile: Dockerfile
+    container_name: defneqr-backend-qr
+    environment:
+      NODE_ENV: production
+      PORT: 5002
+      DATABASE_URL: postgresql://${DB_USER:-defneqr}:${DB_PASSWORD}@postgres:5432/defneqr_qr
+      JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL:-https://defneqr.com}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-5242880}
+    volumes:
+      - ./backend/uploads:/app/public/uploads
+    ports:
+      - "127.0.0.1:5002:5002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - defneqr-network
+
+  backend-randevu:
+    build:
+      context: ./backend-randevu
+      dockerfile: Dockerfile
+    container_name: defneqr-backend-randevu
+    environment:
+      NODE_ENV: production
+      PORT: 5003
+      DATABASE_URL: postgresql://${DB_USER:-defneqr}:${DB_PASSWORD}@postgres:5432/defneqr_randevu
+      JWT_SECRET: ${JWT_SECRET}
+      RANDEVU_FRONTEND_URL: ${RANDEVU_FRONTEND_URL:-https://randevu.defneqr.com}
+    ports:
+      - "127.0.0.1:5003:5003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - defneqr-network
+
+  backend-admin:
+    build:
+      context: ./backend-admin
+      dockerfile: Dockerfile
+    container_name: defneqr-backend-admin
+    environment:
+      NODE_ENV: production
+      PORT: 5004
+      JWT_SECRET: ${JWT_SECRET}
+      BACKEND_COMMON_URL: http://backend-common:5001
+      BACKEND_QR_URL: http://backend-qr:5002
+      BACKEND_RANDEVU_URL: http://backend-randevu:5003
+    ports:
+      - "127.0.0.1:5004:5004"
+    depends_on:
+      - backend-common
+      - backend-qr
+      - backend-randevu
+    restart: unless-stopped
     networks:
       - defneqr-network
 
@@ -102,6 +199,22 @@ services:
     networks:
       - defneqr-network
 
+  frontend-admin:
+    build:
+      context: ./frontend-admin
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.defneqr.com}
+        NEXT_PUBLIC_SITE_URL: ${ADMIN_SITE_URL:-https://admin.defneqr.com}
+    container_name: defneqr-frontend-admin
+    ports:
+      - "127.0.0.1:3002:3000"
+    depends_on:
+      - backend-admin
+    restart: unless-stopped
+    networks:
+      - defneqr-network
+
   nginx:
     image: nginx:alpine
     container_name: defneqr-nginx
@@ -116,7 +229,12 @@ services:
     depends_on:
       - frontend
       - frontend-randevu
+      - frontend-admin
       - backend
+      - backend-common
+      - backend-qr
+      - backend-randevu
+      - backend-admin
     restart: unless-stopped
     networks:
       - defneqr-network

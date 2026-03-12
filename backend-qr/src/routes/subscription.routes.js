@@ -1,0 +1,18 @@
+const express = require('express');
+const router = express.Router();
+const subscriptionController = require('../controllers/subscription.controller');
+const { authenticate, authorize } = require('../middleware/auth.middleware');
+
+router.use(authenticate);
+
+router.get('/my', subscriptionController.getMySubscription);
+router.get('/my/history', subscriptionController.getMySubscriptions);
+router.post('/subscribe', subscriptionController.subscribeSelf);
+
+router.get('/all', authorize('ADMIN', 'STAFF'), subscriptionController.getAllSubscriptions);
+router.get('/stats', authorize('ADMIN', 'STAFF'), subscriptionController.getSubscriptionStats);
+router.post('/', authorize('ADMIN'), subscriptionController.createSubscription);
+router.post('/extend', authorize('ADMIN'), subscriptionController.extendSubscription);
+router.put('/:id/cancel', subscriptionController.cancelSubscription);
+
+module.exports = router;

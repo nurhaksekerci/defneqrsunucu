@@ -1,0 +1,582 @@
+// Prisma Schema - DefneQr backend-qr (db-qr models only, no User relations)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Sipariş Durumları
+enum OrderStatus {
+  PENDING
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+// Ödeme Durumları
+enum PaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+}
+
+// Ödeme Yöntemleri
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+}
+
+// Plan Tipleri
+enum PlanType {
+  FREE
+  PREMIUM
+  CUSTOM
+}
+
+// Abonelik Durumları
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+// Promosyon Kodları
+enum PromoCodeType {
+  PERCENTAGE
+  FIXED
+  FREE_TRIAL
+}
+
+// Affiliate Partner Durumları
+enum AffiliateStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+// Restoranlar Tablosu
+model Restaurant {
+  id            String         @id @default(uuid())
+  name          String
+  slug          String         @unique
+  description   String?
+  address       String?
+  phone         String?
+  logo          String?
+
+  menuSettings  Json?
+
+  isDeleted     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+
+  ownerId       String
+
+  categories    Category[]
+  products      Product[]
+  orders        Order[]
+  payments      Payment[]
+  stocks        Stock[]
+  menuScans     MenuScan[]
+  tables        Table[]
+
+  @@index([ownerId])
+  @@index([isDeleted])
+  @@index([createdAt])
+  @@index([slug, isDeleted])
+  @@map("restaurants")
+}
+
+// Kategoriler Tablosu
+model Category {
+  id            String         @id @default(uuid())
+  name          String
+  description   String?
+  image         String?
+  order         Int            @default(0)
+
+  isGlobal      Boolean        @default(false)
+  restaurantId  String?
+  restaurant    Restaurant?    @relation(fields: [restaurantId], references: [id])
+
+  isDeleted     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+
+  products      Product[]
+
+  @@index([restaurantId])
+  @@index([isGlobal])
+  @@index([isDeleted])
+  @@index([order])
+  @@index([restaurantId, isDeleted, isGlobal])
+  @@map("categories")
+}
+
+// Ürünler Tablosu
+model Product {
+  id            String         @id @default(uuid())
+  name          String
+  description   String?
+  image         String?
+  basePrice     Decimal?       @db.Decimal(10, 2)
+  order         Int            @default(0)
+
+  isGlobal      Boolean        @default(false)
+  isActive      Boolean        @default(true)
+  restaurantId  String?
+  restaurant    Restaurant?    @relation(fields: [restaurantId], references: [id])
+
+  categoryId    String
+  category      Category       @relation(fields: [categoryId], references: [id])
+
+  isDeleted     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+
+  stocks        Stock[]
+  orderItems    OrderItem[]
+
+  @@index([categoryId])
+  @@index([restaurantId])
+  @@index([isGlobal])
+  @@index([isActive])
+  @@index([isDeleted])
+  @@index([order])
+  @@index([restaurantId, categoryId, isDeleted])
+  @@index([isGlobal, isActive, isDeleted])
+  @@map("products")
+}
+
+// Stok Tablosu
+model Stock {
+  id            String         @id @default(uuid())
+  quantity      Int            @default(0)
+  price         Decimal        @db.Decimal(10, 2)
+  minStock      Int            @default(0)
+
+  restaurantId  String
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id])
+
+  productId     String
+  product       Product        @relation(fields: [productId], references: [id])
+
+  isDeleted     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+
+  @@unique([restaurantId, productId])
+  @@index([restaurantId])
+  @@index([productId])
+  @@index([isDeleted])
+  @@index([quantity])
+  @@map("stocks")
+}
+
+// Siparişler Tablosu
+model Order {
+  id            String         @id @default(uuid())
+  orderNumber   String         @unique
+  tableNumber   String?
+  status        OrderStatus    @default(PENDING)
+  notes         String?
+
+  restaurantId  String
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id])
+
+  tableId       String?
+  table         Table?         @relation(fields: [tableId], references: [id])
+
+  waiterId      String?
+
+  isDeleted     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+
+  orderItems    OrderItem[]
+  payments      Payment[]
+
+  @@index([restaurantId])
+  @@index([tableId])
+  @@index([waiterId])
+  @@index([status])
+  @@index([isDeleted])
+  @@index([createdAt])
+  @@index([restaurantId, status, isDeleted])
+  @@index([tableId, status])
+  @@map("orders")
+}
+
+// Sipariş Detayları
+model OrderItem {
+  id            String         @id @default(uuid())
+  quantity      Int
+  unitPrice     Decimal        @db.Decimal(10, 2)
+  totalPrice    Decimal        @db.Decimal(10, 2)
+  notes         String?
+
+  orderId       String
+  order         Order          @relation(fields: [orderId], references: [id])
+
+  productId     String
+  product       Product        @relation(fields: [productId], references: [id])
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("order_items")
+}
+
+// Ödemeler Tablosu
+model Payment {
+  id            String         @id @default(uuid())
+  amount        Decimal        @db.Decimal(10, 2)
+  method        PaymentMethod
+  status        PaymentStatus  @default(UNPAID)
+
+  orderId       String
+  order         Order          @relation(fields: [orderId], references: [id])
+
+  restaurantId  String
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id])
+
+  cashierId     String?
+
+  isDeleted     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+
+  @@index([restaurantId])
+  @@index([orderId])
+  @@index([status])
+  @@index([isDeleted])
+  @@index([createdAt])
+  @@index([restaurantId, status, isDeleted])
+  @@map("payments")
+}
+
+// Masalar Tablosu
+model Table {
+  id            String         @id @default(uuid())
+  name          String
+  restaurantId  String
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id])
+
+  isOccupied    Boolean        @default(false)
+
+  isDeleted     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+
+  orders        Order[]
+
+  @@map("tables")
+  @@unique([restaurantId, name])
+  @@index([restaurantId])
+}
+
+// QR Menü Taramaları
+model MenuScan {
+  id            String      @id @default(uuid())
+  restaurantId  String
+  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id])
+
+  scannedAt     DateTime    @default(now())
+  ipAddress     String?
+  userAgent     String?
+
+  @@map("menu_scans")
+  @@index([restaurantId, scannedAt])
+}
+
+// Planlar Tablosu
+model Plan {
+  id                    String   @id @default(uuid())
+  name                  String   @unique
+  type                  PlanType
+  price                 Float    @default(0)
+  duration              Int      @default(365)
+
+  maxRestaurants        Int      @default(1)
+  maxCategories         Int      @default(5)
+  maxProducts           Int      @default(20)
+
+  canRemoveBranding     Boolean  @default(false)
+  hasGlobalCatalog      Boolean  @default(true)
+  hasDetailedReports    Boolean  @default(true)
+
+  isPopular             Boolean  @default(false)
+  extraRestaurantPrice  Float    @default(0)
+
+  description           String?
+  features              Json?
+
+  isActive              Boolean  @default(true)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  subscriptions        Subscription[]
+
+  @@map("plans")
+}
+
+// Abonelikler Tablosu
+model Subscription {
+  id            String              @id @default(uuid())
+  userId        String
+  planId        String
+  plan          Plan                @relation(fields: [planId], references: [id])
+
+  startDate     DateTime            @default(now())
+  endDate       DateTime
+  status        SubscriptionStatus  @default(ACTIVE)
+
+  amount        Float
+  paymentDate   DateTime?
+
+  customRestaurantCount Int?
+
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  cancelledAt   DateTime?
+
+  promoCodeUsages PromoCodeUsage[]
+
+  @@map("subscriptions")
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+}
+
+// Promosyon Kodları
+model PromoCode {
+  id            String        @id @default(uuid())
+  code          String        @unique
+  type          PromoCodeType
+
+  discountValue Float
+
+  maxUses       Int?
+  usedCount     Int           @default(0)
+
+  validFrom     DateTime      @default(now())
+  validUntil    DateTime?
+
+  applicablePlans Json?
+
+  isActive      Boolean       @default(true)
+
+  description   String?
+
+  createdBy     String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  usages        PromoCodeUsage[]
+
+  @@map("promo_codes")
+  @@index([code])
+  @@index([isActive])
+  @@index([validFrom, validUntil])
+}
+
+// Promosyon Kodu Kullanımları
+model PromoCodeUsage {
+  id            String    @id @default(uuid())
+  promoCodeId   String
+  promoCode     PromoCode @relation(fields: [promoCodeId], references: [id])
+
+  userId        String
+
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  discountAmount Float
+  originalAmount Float
+  finalAmount    Float
+
+  usedAt        DateTime  @default(now())
+
+  @@map("promo_code_usages")
+  @@index([promoCodeId])
+  @@index([userId])
+  @@index([subscriptionId])
+  @@index([usedAt])
+}
+
+// Affiliate Partners
+model AffiliatePartner {
+  id                String          @id @default(uuid())
+  userId            String          @unique
+
+  referralCode      String          @unique
+
+  totalReferrals    Int             @default(0)
+  totalEarnings     Float           @default(0)
+  pendingEarnings   Float           @default(0)
+  paidEarnings      Float           @default(0)
+
+  status            AffiliateStatus @default(PENDING)
+
+  bankName          String?
+  accountHolder     String?
+  iban              String?
+
+  approvedBy        String?
+  approvedAt        DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  referrals         Referral[]
+  commissions       AffiliateCommission[]
+  payouts           AffiliatePayout[]
+
+  @@map("affiliate_partners")
+  @@index([userId])
+  @@index([referralCode])
+  @@index([status])
+}
+
+// Referanslar
+model Referral {
+  id                String           @id @default(uuid())
+  affiliateId       String
+  affiliate         AffiliatePartner @relation(fields: [affiliateId], references: [id])
+
+  referredUserId    String
+
+  ipAddress         String?
+  userAgent         String?
+
+  hasSubscribed     Boolean          @default(false)
+  firstSubscription DateTime?
+
+  pendingDaysApproval Boolean        @default(false)
+  daysAwarded       Int?
+  rejectionReason   String?
+
+  createdAt         DateTime         @default(now())
+
+  @@map("referrals")
+  @@index([affiliateId])
+  @@index([referredUserId])
+  @@index([createdAt])
+}
+
+// Affiliate Komisyonları
+model AffiliateCommission {
+  id              String           @id @default(uuid())
+  affiliateId     String
+  affiliate       AffiliatePartner @relation(fields: [affiliateId], references: [id])
+
+  referredUserId  String
+  subscriptionId  String
+
+  amount          Float
+  percentage      Float
+  subscriptionAmount Float
+
+  isPaid          Boolean          @default(false)
+  paidAt          DateTime?
+  payoutId        String?
+
+  createdAt       DateTime         @default(now())
+
+  @@map("affiliate_commissions")
+  @@index([affiliateId])
+  @@index([referredUserId])
+  @@index([isPaid])
+  @@index([createdAt])
+}
+
+// Affiliate Ödemeleri
+model AffiliatePayout {
+  id              String           @id @default(uuid())
+  affiliateId     String
+  affiliate       AffiliatePartner @relation(fields: [affiliateId], references: [id])
+
+  amount          Float
+  commissionIds   Json
+
+  method          String
+
+  bankName        String?
+  accountHolder   String?
+  iban            String?
+
+  transactionId   String?
+  notes           String?
+
+  status          String           @default("PENDING")
+
+  processedBy     String?
+  processedAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@map("affiliate_payouts")
+  @@index([affiliateId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Affiliate Ayarları
+model AffiliateSettings {
+  id                    String   @id @default(uuid())
+
+  commissionRate        Float    @default(10)
+  minimumPayout         Float    @default(100)
+  daysPerReferral       Int      @default(7)
+  daysPerReferralFree   Int      @default(7)
+  daysPerReferralPaid   Int      @default(14)
+
+  isEnabled             Boolean  @default(true)
+  requireApproval       Boolean  @default(true)
+
+  cookieDuration        Int      @default(30)
+  referralDiscountPercent Float  @default(0)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("affiliate_settings")
+}
+
+// Çark Oyunu Ayarları
+model WheelGameSettings {
+  id          String   @id @default(uuid())
+  isEnabled   Boolean  @default(true)
+  title       String   @default("Şansını Dene!")
+  description String?  @db.Text
+  segments    Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@map("wheel_game_settings")
+}
+
+// Çark çevirme kaydı
+model WheelSpin {
+  id         String   @id @default(uuid())
+  userId     String
+  prizeType  String
+  prizeValue Json
+  spunAt     DateTime @default(now())
+  @@index([userId])
+  @@index([spunAt])
+  @@map("wheel_spins")
+}
