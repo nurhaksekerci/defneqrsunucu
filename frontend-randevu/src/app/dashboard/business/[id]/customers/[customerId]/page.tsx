@@ -385,7 +385,7 @@ export default function CustomerDetailPage() {
             ) : (
               <ul className="space-y-3">
                 {receivables.map((r) => (
-                  <li key={r.id} className="py-2 border-b border-gray-100 last:border-0">
+                  <li key={r.id} className="py-3 border-b border-gray-100 last:border-0">
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="font-medium">₺{Number(r.totalAmount).toLocaleString('tr-TR')}</p>
@@ -402,6 +402,19 @@ export default function CustomerDetailPage() {
                         </Button>
                       )}
                     </div>
+                    {r.payments && r.payments.length > 0 && (
+                      <div className="mt-2 ml-0 pl-3 border-l-2 border-gray-200">
+                        <p className="text-xs font-medium text-gray-600 mb-1">Ödeme geçmişi</p>
+                        <ul className="space-y-1">
+                          {r.payments.map((p) => (
+                            <li key={p.id} className="text-xs text-gray-600 flex justify-between">
+                              <span>{new Date(p.paidAt).toLocaleDateString('tr-TR')} {new Date(p.paidAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
+                              <span className="text-green-600 font-medium">+₺{Number(p.amount).toLocaleString('tr-TR')}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

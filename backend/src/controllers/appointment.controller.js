@@ -99,7 +99,14 @@ exports.getAvailableSlots = async (req, res, next) => {
         return slotStart < appEnd && slotEnd > appStart;
       });
 
-      if (!overlaps) {
+      // Bugün ise geçmiş saatleri gösterme
+      const now = new Date();
+      const isToday = targetDate.getFullYear() === now.getFullYear() &&
+        targetDate.getMonth() === now.getMonth() &&
+        targetDate.getDate() === now.getDate();
+      const isPast = isToday && slotEnd.getTime() <= now.getTime();
+
+      if (!overlaps && !isPast) {
         const timeStr = slotStart.toTimeString().slice(0, 5);
         slots.push({ start: timeStr, end: slotEnd.toTimeString().slice(0, 5) });
       }
