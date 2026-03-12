@@ -10,6 +10,7 @@ const baseMenuItems = [
   { name: 'Dashboard', href: '/dashboard', icon: '📊' },
   { name: 'İstatistikler', href: '/dashboard/stats', icon: '📈' },
   { name: 'Gelir/Gider', href: '/dashboard/finance', icon: '💰' },
+  { name: 'Müşteriler', href: '/dashboard/customers', icon: '👥' },
   { name: 'Paketler', href: '/dashboard/packages', icon: '📦' },
   { name: 'Ürünler', href: '/dashboard/products', icon: '🛒' },
   { name: 'İşletme Oluştur', href: '/dashboard/business/create', icon: '➕' },
