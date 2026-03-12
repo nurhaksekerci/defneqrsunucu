@@ -192,6 +192,23 @@ exports.createAppointment = async (req, res, next) => {
     const seriesId = validRecurrence ? (crypto.randomUUID?.() || `series-${Date.now()}`) : null;
     const recEnd = validRecurrence && recurrenceEndDate ? new Date(recurrenceEndDate) : null;
 
+    // Aynı personele aynı saatte çakışan randevu var mı kontrol et
+    const conflicting = await prisma.appointment.findFirst({
+      where: {
+        businessId,
+        staffId,
+        status: { notIn: ['CANCELLED'] },
+        startAt: { lt: end },
+        endAt: { gt: start }
+      }
+    });
+    if (conflicting) {
+      return res.status(409).json({
+        success: false,
+        message: 'Bu saatte personelin başka bir randevusu var. Lütfen müsait bir saat seçin.'
+      });
+    }
+
     const appointment = await prisma.appointment.create({
       data: {
         businessId,
@@ -250,6 +267,32 @@ exports.updateAppointment = async (req, res, next) => {
     }
     if (status) updateData.status = status;
     if (notes !== undefined) updateData.notes = notes?.trim() || null;
+
+    // Tarih/saat veya personel değişiyorsa çakışma kontrolü
+    const finalStaffId = updateData.staffId || existing.staffId;
+    const finalStart = updateData.startAt ? new Date(updateData.startAt) : existing.startAt;
+    const finalDuration = (updateData.serviceId ? (await prisma.appointmentService.findUnique({ where: { id: updateData.serviceId } }))?.duration : null) ?? existing.service.duration;
+    const finalEnd = updateData.endAt || new Date(finalStart.getTime() + finalDuration * 60 * 1000);
+
+    if (updateData.staffId || updateData.startAt) {
+      const conflicting = await prisma.appointment.findFirst({
+        where: {
+          businessId,
+          staffId: finalStaffId,
+          id: { not: appointmentId },
+          status: { notIn: ['CANCELLED'] },
+          startAt: { lt: finalEnd },
+          endAt: { gt: finalStart }
+        }
+      });
+      if (conflicting) {
+        return res.status(409).json({
+          success: false,
+          message: 'Bu saatte personelin başka bir randevusu var. Lütfen müsait bir saat seçin.'
+        });
+      }
+    }
+
     const appointment = await prisma.appointment.update({
       where: { id: appointmentId },
       data: updateData,
