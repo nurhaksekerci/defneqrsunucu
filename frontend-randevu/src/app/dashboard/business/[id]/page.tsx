@@ -234,6 +234,11 @@ export default function BusinessDetailPage() {
               🛒 Ürünler
             </Button>
           </Link>
+          <Link href={`/dashboard/business/${businessId}/customers`}>
+            <Button variant="secondary" size="sm">
+              👥 Müşteriler
+            </Button>
+          </Link>
         </div>
       </div>
 

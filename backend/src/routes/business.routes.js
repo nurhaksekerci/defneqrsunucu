@@ -90,6 +90,7 @@ router.delete('/:id/packages/:packageId', uuidParamValidation('id'), uuidParamVa
 
 // Müşteriler
 router.get('/:id/customers', uuidParamValidation('id'), appointmentCustomerController.getCustomers);
+router.get('/:id/customers/:customerId/detail', uuidParamValidation('id'), uuidParamValidation('customerId'), appointmentCustomerController.getCustomerDetail);
 router.post('/:id/customers', uuidParamValidation('id'), appointmentCustomerController.createCustomer);
 
 // Randevular

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -65,6 +65,7 @@ const STAFF_COLORS = [
 
 export default function CalendarPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const businessId = params.id as string;
   const [businessName, setBusinessName] = useState('');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -129,6 +130,19 @@ export default function CalendarPage() {
   useEffect(() => {
     loadData();
   }, [businessId, currentDate]);
+
+  const addCustomerId = searchParams.get('addCustomerId');
+  const [hasOpenedFromUrl, setHasOpenedFromUrl] = useState(false);
+  useEffect(() => {
+    if (addCustomerId && customers.length > 0 && !hasOpenedFromUrl) {
+      const exists = customers.some((c) => c.id === addCustomerId);
+      if (exists) {
+        setNewAppointment((prev) => ({ ...prev, customerId: addCustomerId }));
+        setShowAddModal(true);
+        setHasOpenedFromUrl(true);
+      }
+    }
+  }, [addCustomerId, customers, hasOpenedFromUrl]);
 
   // Personel, hizmet ve tarih seçildiğinde müsait saatleri yükle
   useEffect(() => {
