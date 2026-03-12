@@ -97,6 +97,7 @@ export default function CalendarPage() {
   const [calendarView, setCalendarView] = useState<CalendarView>('week');
   const [availableSlots, setAvailableSlots] = useState<{ start: string; end: string }[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotConflictTime, setSlotConflictTime] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -223,6 +224,7 @@ export default function CalendarPage() {
       return;
     }
     setIsSaving(true);
+    setSlotConflictTime(null);
     try {
       const startAt = new Date(`${newAppointment.date}T${newAppointment.time}:00`);
       await api.post(`/businesses/${businessId}/appointments`, {
@@ -238,7 +240,25 @@ export default function CalendarPage() {
       setNewAppointment({ staffId: '', serviceId: '', customerId: '', date: '', time: '', notes: '', recurrenceType: '', recurrenceEndDate: '' });
       loadData();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Randevu oluşturulamadı.');
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 409) {
+        setSlotConflictTime(newAppointment.time);
+        setNewAppointment((prev) => ({ ...prev, time: '' }));
+        setLoadingSlots(true);
+        api
+          .get(`/businesses/${businessId}/slots`, {
+            params: {
+              staffId: newAppointment.staffId,
+              serviceId: newAppointment.serviceId,
+              date: newAppointment.date,
+            },
+          })
+          .then((r) => setAvailableSlots(r.data.data || []))
+          .catch(() => setAvailableSlots([]))
+          .finally(() => setLoadingSlots(false));
+      } else {
+        alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Randevu oluşturulamadı.');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -285,6 +305,7 @@ export default function CalendarPage() {
       recurrenceType: '',
       recurrenceEndDate: toLocalDateString(endDate),
     }));
+    setSlotConflictTime(null);
     setShowAddModal(true);
   };
 
@@ -566,22 +587,30 @@ export default function CalendarPage() {
                           Bu tarihte müsait saat yok. Personel kapalı veya tüm slotlar dolu.
                         </div>
                       ) : (
-                        <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
-                          {availableSlots.map((slot) => (
-                            <button
-                              key={slot.start}
-                              type="button"
-                              onClick={() => setNewAppointment((prev) => ({ ...prev, time: slot.start }))}
-                              className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-                                newAppointment.time === slot.start
-                                  ? 'bg-primary-600 text-white ring-2 ring-primary-300'
-                                  : 'bg-gray-100 text-gray-800 hover:bg-primary-50 hover:border-primary-200 border border-transparent'
-                              }`}
-                            >
-                              {slot.start}
-                            </button>
-                          ))}
-                        </div>
+                        <>
+                          <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
+                            {availableSlots.map((slot) => (
+                              <button
+                                key={slot.start}
+                                type="button"
+                                onClick={() => {
+                                  setSlotConflictTime(null);
+                                  setNewAppointment((prev) => ({ ...prev, time: slot.start }));
+                                }}
+                                className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                                  newAppointment.time === slot.start
+                                    ? 'bg-primary-600 text-white ring-2 ring-primary-300'
+                                    : 'bg-gray-100 text-gray-800 hover:bg-primary-50 hover:border-primary-200 border border-transparent'
+                                }`}
+                              >
+                                {slot.start}
+                              </button>
+                            ))}
+                          </div>
+                          {slotConflictTime && (
+                            <p className="mt-2 text-sm text-amber-600">{slotConflictTime} — dolu</p>
+                          )}
+                        </>
                       )}
                     </>
                   ) : (

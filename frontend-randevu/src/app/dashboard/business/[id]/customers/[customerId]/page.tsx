@@ -112,6 +112,7 @@ export default function CustomerDetailPage() {
     dueDate: '',
     description: '',
   });
+  const [slotConflictTime, setSlotConflictTime] = useState<string | null>(null);
 
   const loadAll = async () => {
     try {
@@ -166,6 +167,7 @@ export default function CustomerDetailPage() {
       time: '',
       notes: '',
     });
+    setSlotConflictTime(null);
     setShowAddAppointmentModal(true);
   };
 
@@ -181,6 +183,7 @@ export default function CustomerDetailPage() {
       return;
     }
     setIsSaving(true);
+    setSlotConflictTime(null);
     try {
       const startAt = new Date(`${appointmentForm.date}T${appointmentForm.time}:00`);
       await api.post(`/businesses/${businessId}/appointments`, {
@@ -193,7 +196,25 @@ export default function CustomerDetailPage() {
       setShowAddAppointmentModal(false);
       loadAll();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Randevu oluşturulamadı.');
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 409) {
+        setSlotConflictTime(appointmentForm.time);
+        setAppointmentForm((prev) => ({ ...prev, time: '' }));
+        setLoadingSlots(true);
+        api
+          .get(`/businesses/${businessId}/slots`, {
+            params: {
+              staffId: appointmentForm.staffId,
+              serviceId: appointmentForm.serviceId,
+              date: appointmentForm.date,
+            },
+          })
+          .then((r) => setAvailableSlots(r.data.data || []))
+          .catch(() => setAvailableSlots([]))
+          .finally(() => setLoadingSlots(false));
+      } else {
+        alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Randevu oluşturulamadı.');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -565,22 +586,30 @@ export default function CustomerDetailPage() {
                           Bu tarihte müsait saat yok.
                         </div>
                       ) : (
-                        <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
-                          {availableSlots.map((slot) => (
-                            <button
-                              key={slot.start}
-                              type="button"
-                              onClick={() => setAppointmentForm((prev) => ({ ...prev, time: slot.start }))}
-                              className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-                                appointmentForm.time === slot.start
-                                  ? 'bg-primary-600 text-white ring-2 ring-primary-300'
-                                  : 'bg-gray-100 text-gray-800 hover:bg-primary-50 border border-transparent'
-                              }`}
-                            >
-                              {slot.start}
-                            </button>
-                          ))}
-                        </div>
+                        <>
+                          <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
+                            {availableSlots.map((slot) => (
+                              <button
+                                key={slot.start}
+                                type="button"
+                                onClick={() => {
+                                  setSlotConflictTime(null);
+                                  setAppointmentForm((prev) => ({ ...prev, time: slot.start }));
+                                }}
+                                className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                                  appointmentForm.time === slot.start
+                                    ? 'bg-primary-600 text-white ring-2 ring-primary-300'
+                                    : 'bg-gray-100 text-gray-800 hover:bg-primary-50 border border-transparent'
+                                }`}
+                              >
+                                {slot.start}
+                              </button>
+                            ))}
+                          </div>
+                          {slotConflictTime && (
+                            <p className="mt-2 text-sm text-amber-600">{slotConflictTime} — dolu</p>
+                          )}
+                        </>
                       )
                     ) : (
                       <p className="text-sm text-gray-500 py-2">Önce personel, hizmet ve tarih seçin.</p>
