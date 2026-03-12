@@ -116,55 +116,6 @@ services:
     networks:
       - defneqr-network
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: defneqr-backend
-    environment:
-      NODE_ENV: production
-      PORT: 5000
-      DATABASE_URL: postgresql://${DB_USER:-defneqr}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-defneqr}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
-      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
-      FRONTEND_URL: ${FRONTEND_URL:-https://defneqr.com}
-      RANDEVU_FRONTEND_URL: ${RANDEVU_FRONTEND_URL:-https://randevu.defneqr.com}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.defneqr.com/api}
-      UPLOAD_DIR: /app/public/uploads
-      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-5242880}
-      # Sentry (optional)
-      SENTRY_DSN: ${SENTRY_DSN:-}
-      # Email (optional)
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: ${SMTP_FROM:-destek@defneqr.com}
-      # Google OAuth
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-https://api.defneqr.com/api/auth/google/callback}
-      # Logging
-      FILE_LOGGING: ${FILE_LOGGING:-false}
-    volumes:
-      - ./backend/uploads:/app/public/uploads
-      - ./backend/logs:/app/logs
-    ports:
-      - "127.0.0.1:5000:5000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - defneqr-network
-
   frontend:
     build:
       context: ./frontend
@@ -178,7 +129,7 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:
-      - backend
+      - backend-common
     restart: unless-stopped
     networks:
       - defneqr-network
@@ -194,7 +145,7 @@ services:
     ports:
       - "127.0.0.1:3001:3000"
     depends_on:
-      - backend
+      - backend-common
     restart: unless-stopped
     networks:
       - defneqr-network
@@ -230,7 +181,6 @@ services:
       - frontend
       - frontend-randevu
       - frontend-admin
-      - backend
       - backend-common
       - backend-qr
       - backend-randevu
