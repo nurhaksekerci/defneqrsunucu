@@ -45,8 +45,7 @@ exports.getAllRestaurants = async (req, res, next) => {
     // Admin/Staff: enrich with owner (fullName, email) from backend-common
     let ownersById = {};
     if ((req.user?.role === 'ADMIN' || req.user?.role === 'STAFF') && ownerIds.length > 0) {
-      const authHeader = req.headers.authorization;
-      ownersById = await fetchUsersFromCommon(ownerIds, authHeader);
+      ownersById = await fetchUsersFromCommon(ownerIds);
     }
 
     const enriched = restaurants.map((r) => {

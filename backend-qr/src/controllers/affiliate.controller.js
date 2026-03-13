@@ -239,7 +239,7 @@ exports.getMyReferrals = async (req, res, next) => {
 
     const referredUserIds = referrals.map((r) => r.referredUserId);
     const usersById = referredUserIds.length
-      ? await fetchUsersFromCommon([...new Set(referredUserIds)], req.headers.authorization)
+      ? await fetchUsersFromCommon([...new Set(referredUserIds)])
       : {};
 
     const commissionsMap = referredUserIds.length
@@ -435,7 +435,7 @@ exports.getAllAffiliates = async (req, res, next) => {
 
     // Enrich with user (fullName, email) from backend-common
     const userIds = [...new Set(affiliates.map((a) => a.userId))];
-    const usersById = await fetchUsersFromCommon(userIds, req.headers.authorization);
+    const usersById = await fetchUsersFromCommon(userIds);
 
     const enriched = affiliates.map((a) => {
       const user = usersById[a.userId];
@@ -620,7 +620,7 @@ exports.getPendingReferralRewards = async (req, res, next) => {
               return map;
             })
         : {},
-      allUserIds.length ? fetchUsersFromCommon(allUserIds, req.headers.authorization) : {}
+      allUserIds.length ? fetchUsersFromCommon(allUserIds) : {}
     ]);
 
     const settings = await prisma.affiliateSettings.findFirst();

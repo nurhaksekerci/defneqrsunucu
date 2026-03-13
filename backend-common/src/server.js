@@ -92,6 +92,7 @@ app.use('/api/tickets', require('./routes/ticket.routes'));
 app.use('/api/settings', require('./routes/settings.routes'));
 app.use('/api/users', require('./routes/user.routes'));
 app.use('/api/internal/admin', require('./routes/admin.routes'));
+app.use('/api/internal/service', require('./routes/internalService.routes'));
 
 app.get('/health', async (req, res) => {
   try {

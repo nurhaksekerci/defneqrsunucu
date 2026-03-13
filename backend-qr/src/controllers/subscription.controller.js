@@ -150,7 +150,7 @@ exports.getAllSubscriptions = async (req, res, next) => {
 
     // Enrich with user (fullName, email) from backend-common
     const userIds = [...new Set(subscriptions.map((s) => s.userId))];
-    const usersById = await fetchUsersFromCommon(userIds, req.headers.authorization);
+    const usersById = await fetchUsersFromCommon(userIds);
 
     const enriched = subscriptions.map((s) => {
       const user = usersById[s.userId];
