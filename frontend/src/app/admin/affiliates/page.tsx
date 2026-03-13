@@ -20,7 +20,7 @@ interface AffiliatePartner {
   iban: string | null;
   approvedAt: string | null;
   createdAt: string;
-  user: {
+  user?: {
     fullName: string;
     email: string;
   };
@@ -208,8 +208,8 @@ export default function AffiliatesPage() {
                     <tr key={affiliate.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div>
-                          <div className="font-medium text-gray-900">{affiliate.user.fullName}</div>
-                          <div className="text-sm text-gray-500">{affiliate.user.email}</div>
+                          <div className="font-medium text-gray-900">{affiliate.user?.fullName ?? affiliate.userId ?? '—'}</div>
+                          <div className="text-sm text-gray-500">{affiliate.user?.email ?? '—'}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -312,7 +312,7 @@ export default function AffiliatesPage() {
             <div className="bg-gray-50 p-4 rounded-lg space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Partner:</span>
-                <span className="font-semibold text-gray-900">{selectedAffiliate.user.fullName}</span>
+                <span className="font-semibold text-gray-900">{selectedAffiliate.user?.fullName ?? selectedAffiliate.userId ?? '—'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Bekleyen Kazanç:</span>

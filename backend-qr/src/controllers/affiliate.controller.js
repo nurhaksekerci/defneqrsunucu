@@ -1,4 +1,5 @@
 const prisma = require('../config/database');
+const { fetchUsersFromCommon } = require('../utils/commonService');
 const crypto = require('crypto');
 
 // Helper: Referral için abonelik süresini uzat (referred user'ın aboneliğine gün ekler)
@@ -429,9 +430,21 @@ exports.getAllAffiliates = async (req, res, next) => {
       prisma.affiliatePartner.count({ where })
     ]);
 
+    // Enrich with user (fullName, email) from backend-common
+    const userIds = [...new Set(affiliates.map((a) => a.userId))];
+    const usersById = await fetchUsersFromCommon(userIds, req.headers.authorization);
+
+    const enriched = affiliates.map((a) => {
+      const user = usersById[a.userId];
+      return {
+        ...a,
+        user: user ? { id: user.id, fullName: user.fullName, email: user.email } : undefined
+      };
+    });
+
     res.json({
       success: true,
-      data: affiliates,
+      data: enriched,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
