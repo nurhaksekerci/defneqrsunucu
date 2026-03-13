@@ -108,7 +108,8 @@ export default function AdminRestaurantsPage() {
 
   const filteredRestaurants = restaurants.filter(r =>
     r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.owner.fullName.toLowerCase().includes(searchTerm.toLowerCase())
+    (r.owner?.fullName ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (r.owner?.email ?? '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (isLoading) {
