@@ -62,6 +62,7 @@ services:
       DATABASE_URL: postgresql://${DB_USER:-defneqr}:${DB_PASSWORD}@postgres:5432/defneqr_qr
       JWT_SECRET: ${JWT_SECRET}
       FRONTEND_URL: ${FRONTEND_URL:-https://defneqr.com}
+      BACKEND_COMMON_URL: http://backend-common:5001
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-5242880}
     volumes:
       - ./backend/uploads:/app/public/uploads

@@ -3,6 +3,22 @@ const { generateUniqueSlug } = require('../utils/slugify');
 const { parsePaginationParams, createPaginatedResponse } = require('../utils/pagination');
 const crypto = require('crypto');
 
+async function fetchOwnersFromCommon(ownerIds, authHeader) {
+  if (ownerIds.length === 0) return {};
+  const commonUrl = process.env.BACKEND_COMMON_URL || 'http://backend-common:5001';
+  const url = `${commonUrl}/api/internal/admin/users-by-ids?ids=${ownerIds.join(',')}`;
+  try {
+    const res = await fetch(url, {
+      headers: { Authorization: authHeader || '' }
+    });
+    if (!res.ok) return {};
+    const json = await res.json();
+    return json.data || {};
+  } catch {
+    return {};
+  }
+}
+
 exports.getAllRestaurants = async (req, res, next) => {
   try {
     const { page, limit, skip } = parsePaginationParams(req.query);
@@ -41,7 +57,21 @@ exports.getAllRestaurants = async (req, res, next) => {
       if (!subByOwner[s.userId]) subByOwner[s.userId] = s;
     });
 
-    const enriched = restaurants.map((r) => ({ ...r, subscription: subByOwner[r.ownerId] || null }));
+    // Admin/Staff: enrich with owner (fullName, email) from backend-common
+    let ownersById = {};
+    if ((req.user?.role === 'ADMIN' || req.user?.role === 'STAFF') && ownerIds.length > 0) {
+      const authHeader = req.headers.authorization;
+      ownersById = await fetchOwnersFromCommon(ownerIds, authHeader);
+    }
+
+    const enriched = restaurants.map((r) => {
+      const owner = ownersById[r.ownerId];
+      return {
+        ...r,
+        subscription: subByOwner[r.ownerId] || null,
+        owner: owner ? { id: owner.id, fullName: owner.fullName, email: owner.email } : undefined
+      };
+    });
     res.json(createPaginatedResponse(enriched, totalCount, { page, limit }));
   } catch (error) {
     next(error);
