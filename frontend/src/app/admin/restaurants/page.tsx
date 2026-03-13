@@ -15,7 +15,8 @@ interface Restaurant {
   description?: string;
   address?: string;
   phone?: string;
-  owner: {
+  ownerId?: string;
+  owner?: {
     id: string;
     fullName: string;
     email: string;
@@ -184,8 +185,8 @@ export default function AdminRestaurantsPage() {
                       </td>
                       <td className="py-3 px-4">
                         <div>
-                          <p className="font-medium">{restaurant.owner.fullName}</p>
-                          <p className="text-sm text-gray-600">{restaurant.owner.email}</p>
+                          <p className="font-medium">{restaurant.owner?.fullName ?? restaurant.ownerId ?? '—'}</p>
+                          <p className="text-sm text-gray-600">{restaurant.owner?.email ?? '—'}</p>
                         </div>
                       </td>
                       <td className="py-3 px-4">
