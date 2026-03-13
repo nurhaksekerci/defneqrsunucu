@@ -31,6 +31,7 @@ interface AffiliateInfo {
 
 interface Referral {
   id: string;
+  referredUserId?: string;
   referredUser?: {
     fullName: string;
     email: string;
