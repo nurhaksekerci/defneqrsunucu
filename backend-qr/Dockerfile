@@ -23,6 +23,7 @@ RUN apk add --no-cache curl wget openssl openssl-dev
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/src ./src
+COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/package*.json ./
 
 RUN mkdir -p /app/public/uploads /app/logs && \

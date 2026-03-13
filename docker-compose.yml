@@ -43,6 +43,7 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-https://api.defneqr.com/api/auth/google/callback}
       BACKEND_QR_URL: http://backend-qr:5002
+      BACKEND_RANDEVU_URL: http://backend-randevu:5003
       BACKEND_INTERNAL_SECRET: ${BACKEND_INTERNAL_SECRET:-}
     ports:
       - "127.0.0.1:5001:5001"
@@ -89,6 +90,7 @@ services:
       DATABASE_URL: postgresql://${DB_USER:-defneqr}:${DB_PASSWORD}@postgres:5432/defneqr_randevu
       JWT_SECRET: ${JWT_SECRET}
       RANDEVU_FRONTEND_URL: ${RANDEVU_FRONTEND_URL:-https://randevu.defneqr.com}
+      BACKEND_INTERNAL_SECRET: ${BACKEND_INTERNAL_SECRET:-}
     ports:
       - "127.0.0.1:5003:5003"
     depends_on:

@@ -208,8 +208,12 @@ export default function AffiliatesPage() {
                     <tr key={affiliate.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div>
-                          <div className="font-medium text-gray-900">{affiliate.user?.fullName ?? affiliate.userId ?? '—'}</div>
-                          <div className="text-sm text-gray-500">{affiliate.user?.email ?? '—'}</div>
+                          <div className="font-medium text-gray-900">
+                            {affiliate.user?.fullName ?? (affiliate.userId ? 'Silinmiş kullanıcı' : '—')}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {affiliate.user?.email ?? (affiliate.userId ? 'Hesap kaldırılmış' : '—')}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">

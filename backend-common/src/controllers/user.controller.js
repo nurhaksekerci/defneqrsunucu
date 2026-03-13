@@ -140,7 +140,7 @@ exports.deleteUser = async (req, res, next) => {
 };
 
 /**
- * Hard delete - only removes from db-common. Backend-admin should orchestrate cleanup in db-qr/db-randevu first.
+ * Hard delete - önce backend-qr ve backend-randevu'daki ilişkili kayıtları siler, sonra db-common'dan kullanıcıyı siler.
  */
 exports.hardDeleteUser = async (req, res, next) => {
   try {
@@ -149,6 +149,38 @@ exports.hardDeleteUser = async (req, res, next) => {
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
 
+    const secret = process.env.BACKEND_INTERNAL_SECRET;
+    const headers = secret ? { 'X-Internal-Secret': secret, 'Content-Type': 'application/json' } : {};
+
+    // 1. backend-qr: Affiliate, restoranlar, abonelikler vb.
+    const qrUrl = process.env.BACKEND_QR_URL || 'http://backend-qr:5002';
+    try {
+      const qrRes = await fetch(`${qrUrl}/api/internal/users/${id}`, {
+        method: 'DELETE',
+        headers
+      });
+      if (!qrRes.ok) {
+        console.warn('backend-qr cascade delete failed:', qrRes.status, await qrRes.text());
+      }
+    } catch (err) {
+      console.warn('backend-qr cascade delete error:', err?.message);
+    }
+
+    // 2. backend-randevu: İşletmeler
+    const randevuUrl = process.env.BACKEND_RANDEVU_URL || 'http://backend-randevu:5003';
+    try {
+      const randevuRes = await fetch(`${randevuUrl}/api/internal/users/${id}`, {
+        method: 'DELETE',
+        headers
+      });
+      if (!randevuRes.ok) {
+        console.warn('backend-randevu cascade delete failed:', randevuRes.status, await randevuRes.text());
+      }
+    } catch (err) {
+      console.warn('backend-randevu cascade delete error:', err?.message);
+    }
+
+    // 3. db-common: Kullanıcı ve ilişkili
     await prisma.$transaction(async (tx) => {
       await tx.ticketMessage.deleteMany({ where: { authorId: id } });
       await tx.supportTicket.updateMany({ where: { assignedToId: id }, data: { assignedToId: null } });
@@ -159,7 +191,7 @@ exports.hardDeleteUser = async (req, res, next) => {
       await tx.user.delete({ where: { id } });
     });
 
-    res.json({ success: true, message: 'Kullanıcı kalıcı olarak silindi (db-common). İlişkili QR/Randevu verileri backend-admin ile temizlenmeli.' });
+    res.json({ success: true, message: 'Kullanıcı ve tüm ilişkili veriler (restoranlar, işletmeler, affiliate vb.) kalıcı olarak silindi.' });
   } catch (error) {
     next(error);
   }

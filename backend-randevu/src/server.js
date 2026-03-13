@@ -45,7 +45,7 @@ app.use(cors({
     'http://localhost:3002',
   ],
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Project'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Project', 'X-Internal-Secret'],
 }));
 
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev', { stream: logger.stream }));
@@ -63,6 +63,7 @@ app.use('/api/', limiter);
 
 // Routes
 app.use('/api/businesses', require('./routes/business.routes'));
+app.use('/api/internal', require('./routes/internal.routes'));
 
 app.get('/health', async (req, res) => {
   try {
