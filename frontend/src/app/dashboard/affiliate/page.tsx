@@ -31,10 +31,10 @@ interface AffiliateInfo {
 
 interface Referral {
   id: string;
-  referredUser: {
+  referredUser?: {
     fullName: string;
     email: string;
-    createdAt: string;
+    createdAt?: string;
   };
   hasSubscribed: boolean;
   firstSubscription: string | null;
@@ -637,8 +637,8 @@ export default function AffiliateDashboardPage() {
                     <tr key={referral.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div>
-                          <div className="font-medium text-gray-900">{referral.referredUser.fullName}</div>
-                          <div className="text-sm text-gray-500">{referral.referredUser.email}</div>
+                          <div className="font-medium text-gray-900">{referral.referredUser?.fullName ?? referral.referredUserId ?? '—'}</div>
+                          <div className="text-sm text-gray-500">{referral.referredUser?.email ?? '—'}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">

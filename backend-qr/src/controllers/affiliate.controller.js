@@ -238,6 +238,10 @@ exports.getMyReferrals = async (req, res, next) => {
     ]);
 
     const referredUserIds = referrals.map((r) => r.referredUserId);
+    const usersById = referredUserIds.length
+      ? await fetchUsersFromCommon([...new Set(referredUserIds)], req.headers.authorization)
+      : {};
+
     const commissionsMap = referredUserIds.length
       ? await prisma.affiliateCommission
           .findMany({
@@ -302,11 +306,13 @@ exports.getMyReferrals = async (req, res, next) => {
         }
       }
 
+      const referredUser = usersById[r.referredUserId];
       return {
         ...r,
         planName,
         planType: planType ?? 'NONE',
-        reward
+        reward,
+        referredUser: referredUser ? { fullName: referredUser.fullName, email: referredUser.email } : undefined
       };
     });
 
