@@ -1,7 +1,41 @@
 const prisma = require('../config/database');
 const { fetchUsersFromCommon } = require('../utils/commonService');
-const { extendSubscriptionForReferral } = require('../utils/referralHelper');
+const { extendSubscriptionForReferral, processReferral } = require('../utils/referralHelper');
 const crypto = require('crypto');
+
+// Referans kodu talep et (daha önce affiliate ile kaydolup referral oluşmamış kullanıcılar için)
+exports.claimReferral = async (req, res, next) => {
+  try {
+    const { referralCode } = req.body || {};
+    const code = typeof referralCode === 'string' ? referralCode.trim().toUpperCase() : '';
+    if (!code) {
+      return res.status(400).json({ success: false, message: 'Referans kodu gerekli' });
+    }
+
+    const settings = await prisma.affiliateSettings.findFirst();
+    if (!settings || !settings.isEnabled || !settings.referralDiscountPercent || settings.referralDiscountPercent <= 0) {
+      return res.status(400).json({ success: false, message: 'Referans indirimi şu an aktif değil' });
+    }
+
+    const userId = req.user.id;
+    const referral = await processReferral(code, userId, req.ip, req.headers['user-agent']);
+
+    if (!referral) {
+      return res.status(400).json({
+        success: false,
+        message: 'Geçersiz veya kullanılamayan referans kodu. Kendi kodunuzu kullanamazsınız.'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `%${settings.referralDiscountPercent} indirim uygulandı`,
+      data: { hasDiscount: true, discountPercent: settings.referralDiscountPercent }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // Affiliate başvurusu yap
 exports.applyForAffiliate = async (req, res, next) => {

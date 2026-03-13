@@ -31,6 +31,8 @@ function CheckoutContent() {
   const [promoCode, setPromoCode] = useState('');
   const [promoDiscount, setPromoDiscount] = useState<any>(null);
   const [referralDiscount, setReferralDiscount] = useState<{ hasDiscount: boolean; discountPercent: number } | null>(null);
+  const [referralCodeInput, setReferralCodeInput] = useState('');
+  const [isClaimingReferral, setIsClaimingReferral] = useState(false);
   const [isValidatingPromo, setIsValidatingPromo] = useState(false);
   
   const [paymentData, setPaymentData] = useState({
@@ -57,18 +59,51 @@ function CheckoutContent() {
   const loadPlan = async () => {
     try {
       setIsLoading(true);
+      const refFromUrl = searchParams.get('ref');
       const [planRes, referralRes] = await Promise.all([
         api.get(`/plans/${planId}`),
         api.get('/affiliates/me/referral-discount').catch(() => ({ data: { data: { hasDiscount: false } } }))
       ]);
       setPlan(planRes.data.data);
-      setReferralDiscount(referralRes.data.data);
+      let discount = referralRes.data.data;
+
+      // Daha önce affiliate ile kaydolup referral oluşmamış kullanıcılar: URL'deki ref ile talep et
+      if (!discount?.hasDiscount && refFromUrl) {
+        try {
+          const claimRes = await api.post('/affiliates/claim-referral', { referralCode: refFromUrl });
+          if (claimRes.data.success && claimRes.data.data?.hasDiscount) {
+            discount = claimRes.data.data;
+          }
+        } catch {
+          // Sessizce devam et - kod geçersiz olabilir
+        }
+      }
+
+      setReferralDiscount(discount);
     } catch (error) {
       console.error('Failed to load plan:', error);
       alert('Plan yüklenemedi');
       router.push('/');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const claimReferralCode = async () => {
+    const code = referralCodeInput.trim();
+    if (!code) return;
+    try {
+      setIsClaimingReferral(true);
+      const res = await api.post('/affiliates/claim-referral', { referralCode: code });
+      if (res.data.success && res.data.data) {
+        setReferralDiscount(res.data.data);
+        setReferralCodeInput('');
+        alert('✅ ' + (res.data.message || 'Referans indirimi uygulandı'));
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Referans kodu geçersiz veya kullanılamıyor');
+    } finally {
+      setIsClaimingReferral(false);
     }
   };
 
@@ -238,6 +273,34 @@ function CheckoutContent() {
                     <span className="font-bold text-primary-600">₺{getFinalAmount().toFixed(2)}</span>
                   </div>
                 </div>
+
+                {/* Referans Kodu - affiliate ile kaydolup indirim alamayanlar için */}
+                {!referralDiscount?.hasDiscount && (
+                  <div className="pt-4 pb-4 border-b">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      🎁 Referans Kodunuz var mı?
+                    </label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Birinden davet kodu aldıysanız buraya girin, indirim uygulanacak
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        value={referralCodeInput}
+                        onChange={(e) => setReferralCodeInput(e.target.value.toUpperCase())}
+                        placeholder="REFERANS KODU"
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={claimReferralCode}
+                        isLoading={isClaimingReferral}
+                        disabled={!referralCodeInput.trim()}
+                      >
+                        Uygula
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Promo Code */}
                 <div className="pt-4">

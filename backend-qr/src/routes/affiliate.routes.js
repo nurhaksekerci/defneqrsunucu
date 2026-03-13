@@ -26,6 +26,7 @@ router.use(authenticate);
 
 router.get('/terms', affiliateController.getAffiliateTerms);
 router.post('/apply', applyAffiliateValidation, affiliateController.applyForAffiliate);
+router.post('/claim-referral', affiliateController.claimReferral);
 router.get('/me/referral-discount', affiliateController.getReferralDiscount);
 router.get('/me', affiliateController.getMyAffiliateInfo);
 router.get('/me/link', affiliateController.getMyReferralLink);
