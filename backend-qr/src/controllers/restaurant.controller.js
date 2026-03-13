@@ -1,23 +1,8 @@
 const prisma = require('../config/database');
 const { generateUniqueSlug } = require('../utils/slugify');
 const { parsePaginationParams, createPaginatedResponse } = require('../utils/pagination');
+const { fetchUsersFromCommon } = require('../utils/commonService');
 const crypto = require('crypto');
-
-async function fetchOwnersFromCommon(ownerIds, authHeader) {
-  if (ownerIds.length === 0) return {};
-  const commonUrl = process.env.BACKEND_COMMON_URL || 'http://backend-common:5001';
-  const url = `${commonUrl}/api/internal/admin/users-by-ids?ids=${ownerIds.join(',')}`;
-  try {
-    const res = await fetch(url, {
-      headers: { Authorization: authHeader || '' }
-    });
-    if (!res.ok) return {};
-    const json = await res.json();
-    return json.data || {};
-  } catch {
-    return {};
-  }
-}
 
 exports.getAllRestaurants = async (req, res, next) => {
   try {
@@ -61,7 +46,7 @@ exports.getAllRestaurants = async (req, res, next) => {
     let ownersById = {};
     if ((req.user?.role === 'ADMIN' || req.user?.role === 'STAFF') && ownerIds.length > 0) {
       const authHeader = req.headers.authorization;
-      ownersById = await fetchOwnersFromCommon(ownerIds, authHeader);
+      ownersById = await fetchUsersFromCommon(ownerIds, authHeader);
     }
 
     const enriched = restaurants.map((r) => {

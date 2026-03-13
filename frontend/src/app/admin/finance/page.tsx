@@ -23,7 +23,7 @@ interface Subscription {
   customRestaurantCount: number | null;
   createdAt: string;
   plan: { id: string; name: string; type: string; price: number };
-  user: { id: string; fullName: string; email: string };
+  user?: { id: string; fullName: string; email: string };
   promoCodeUsages?: PromoUsage[];
   isUpgraded?: boolean;
 }
@@ -288,8 +288,8 @@ export default function AdminFinancePage() {
                       <tr key={sub.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4">
                           <div>
-                            <p className="font-medium text-gray-900">{sub.user.fullName}</p>
-                            <p className="text-xs text-gray-500">{sub.user.email}</p>
+                            <p className="font-medium text-gray-900">{sub.user?.fullName ?? sub.userId ?? '—'}</p>
+                            <p className="text-xs text-gray-500">{sub.user?.email ?? '—'}</p>
                           </div>
                         </td>
                         <td className="px-6 py-4">

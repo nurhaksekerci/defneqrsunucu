@@ -1,4 +1,5 @@
 const prisma = require('../config/database');
+const { fetchUsersFromCommon } = require('../utils/commonService');
 const { getUserPlan } = require('../middleware/planLimit.middleware');
 
 exports.getMySubscription = async (req, res, next) => {
@@ -146,10 +147,18 @@ exports.getAllSubscriptions = async (req, res, next) => {
       upgraded.forEach((u) => userIdsWithUpgrade.add(u.userId));
     }
 
-    const enriched = subscriptions.map((s) => ({
-      ...s,
-      isUpgraded: s.status === 'CANCELLED' && s.plan?.type === 'FREE' && userIdsWithUpgrade.has(s.userId),
-    }));
+    // Enrich with user (fullName, email) from backend-common
+    const userIds = [...new Set(subscriptions.map((s) => s.userId))];
+    const usersById = await fetchUsersFromCommon(userIds, req.headers.authorization);
+
+    const enriched = subscriptions.map((s) => {
+      const user = usersById[s.userId];
+      return {
+        ...s,
+        isUpgraded: s.status === 'CANCELLED' && s.plan?.type === 'FREE' && userIdsWithUpgrade.has(s.userId),
+        user: user ? { id: user.id, fullName: user.fullName, email: user.email } : undefined,
+      };
+    });
 
     res.json({
       success: true,
