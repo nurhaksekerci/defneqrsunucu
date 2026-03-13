@@ -1,44 +1,7 @@
 const prisma = require('../config/database');
 const { fetchUsersFromCommon } = require('../utils/commonService');
+const { extendSubscriptionForReferral } = require('../utils/referralHelper');
 const crypto = require('crypto');
-
-// Helper: Referral için abonelik süresini uzat (referred user'ın aboneliğine gün ekler)
-const extendSubscriptionForReferral = async (referredUserId, affiliateId, daysToAdd) => {
-  try {
-    const settings = await prisma.affiliateSettings.findFirst();
-    if (!settings || !settings.isEnabled) {
-      return null;
-    }
-
-    const days = daysToAdd ?? settings.daysPerReferral ?? settings.daysPerReferralPaid ?? 7;
-    if (!days || days < 1) return null;
-
-    const activeSubscription = await prisma.subscription.findFirst({
-      where: {
-        userId: referredUserId,
-        status: 'ACTIVE',
-        endDate: { gte: new Date() }
-      },
-      orderBy: { endDate: 'desc' }
-    });
-
-    if (!activeSubscription) {
-      console.log('⚠️  Affiliate has no active subscription to extend');
-      return null;
-    }
-
-    const newEndDate = new Date(activeSubscription.endDate);
-    newEndDate.setDate(newEndDate.getDate() + days);
-
-    return prisma.subscription.update({
-      where: { id: activeSubscription.id },
-      data: { endDate: newEndDate }
-    });
-  } catch (error) {
-    console.error('❌ Extend subscription error:', error);
-    return null;
-  }
-};
 
 // Affiliate başvurusu yap
 exports.applyForAffiliate = async (req, res, next) => {
@@ -598,42 +561,54 @@ exports.getPendingReferralRewards = async (req, res, next) => {
     });
 
     const referredUserIds = referrals.map((r) => r.referredUserId);
-    const restaurantsByOwner = referredUserIds.length
-      ? await prisma.restaurant
-          .findMany({
-            where: {
-              ownerId: { in: referredUserIds },
-              isDeleted: false
-            },
-            orderBy: { createdAt: 'desc' },
-            select: { ownerId: true, slug: true, name: true }
-          })
-          .then((list) => {
-            const map = {};
-            for (const r of list) {
-              if (!map[r.ownerId]) map[r.ownerId] = r;
-            }
-            return map;
-          })
-      : {};
+    const affiliateUserIds = [...new Set(referrals.map((r) => r.affiliate?.userId).filter(Boolean))];
+    const allUserIds = [...new Set([...referredUserIds, ...affiliateUserIds])];
+
+    const [restaurantsByOwner, usersById] = await Promise.all([
+      referredUserIds.length
+        ? prisma.restaurant
+            .findMany({
+              where: { ownerId: { in: referredUserIds }, isDeleted: false },
+              orderBy: { createdAt: 'desc' },
+              select: { ownerId: true, slug: true, name: true }
+            })
+            .then((list) => {
+              const map = {};
+              for (const r of list) {
+                if (!map[r.ownerId]) map[r.ownerId] = r;
+              }
+              return map;
+            })
+        : {},
+      allUserIds.length ? fetchUsersFromCommon(allUserIds, req.headers.authorization) : {}
+    ]);
 
     const settings = await prisma.affiliateSettings.findFirst();
     const daysToAward = settings?.daysPerReferralFree ?? 7;
-
+    const requireApproval = settings?.requireApproval ?? true;
     const siteUrl = process.env.FRONTEND_URL || 'https://defneqr.com';
-    res.json({
-      success: true,
+
+    const payload = {
       data: referrals.map((r) => {
         const restaurant = restaurantsByOwner[r.referredUserId];
+        const referredUser = usersById[r.referredUserId];
+        const affiliateUser = usersById[r.affiliate?.userId];
         return {
           ...r,
           daysToAward,
           restaurantSlug: restaurant?.slug ?? null,
           restaurantName: restaurant?.name ?? null,
-          restaurantUrl: restaurant ? `${siteUrl}/${restaurant.slug}/menu` : null
+          restaurantUrl: restaurant ? `${siteUrl}/${restaurant.slug}/menu` : null,
+          referredUser: referredUser ? { fullName: referredUser.fullName, email: referredUser.email } : { fullName: '—', email: '—' },
+          affiliate: {
+            ...r.affiliate,
+            user: affiliateUser ? { fullName: affiliateUser.fullName, email: affiliateUser.email } : { fullName: '—', email: '—' }
+          }
         };
-      })
-    });
+      }),
+      requireApproval
+    };
+    res.json({ success: true, data: payload.data, requireApproval: payload.requireApproval });
   } catch (error) {
     console.error('❌ getPendingReferralRewards error:', error?.message || error);
     if (error?.code === 'P2021' || error?.message?.includes('column') || error?.message?.includes('does not exist')) {

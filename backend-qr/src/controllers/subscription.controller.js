@@ -1,6 +1,7 @@
 const prisma = require('../config/database');
 const { fetchUsersFromCommon } = require('../utils/commonService');
 const { getUserPlan } = require('../middleware/planLimit.middleware');
+const { processReferralOnSubscription } = require('../utils/referralCommission');
 
 exports.getMySubscription = async (req, res, next) => {
   try {
@@ -315,6 +316,14 @@ exports.createSubscription = async (req, res, next) => {
         console.error('Promo code usage recording failed:', promoError);
       }
     }
+
+    // Affiliate referral ödülü: referral ile kayıtlı kullanıcı abone oldu
+    processReferralOnSubscription(
+      userId,
+      subscription.id,
+      parseFloat(subscription.amount) || 0,
+      plan?.type
+    ).catch((err) => console.error('Referral commission failed:', err?.message));
 
     res.status(201).json({
       success: true,

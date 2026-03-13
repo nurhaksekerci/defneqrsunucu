@@ -81,6 +81,7 @@ app.use('/api/promo-codes', require('./routes/promoCode.routes'));
 app.use('/api/affiliates', require('./routes/affiliate.routes'));
 app.use('/api/wheel', require('./routes/wheel.routes'));
 app.use('/api/internal/admin', require('./routes/admin.routes'));
+app.use('/api/internal', require('./routes/internal.routes'));
 
 app.get('/health', async (req, res) => {
   try {

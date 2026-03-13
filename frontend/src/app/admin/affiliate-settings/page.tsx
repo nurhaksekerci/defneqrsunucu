@@ -173,9 +173,9 @@ export default function AffiliateSettingsPage() {
             {/* Require Approval - Affiliate başvurusu */}
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900">Affiliate Başvuru Onayı</h3>
+                <h3 className="text-sm font-semibold text-gray-900">Referral Ödülü Onayı</h3>
                 <p className="text-xs text-gray-600 mt-1">
-                  Yeni affiliate başvuruları manuel onay gerektirsin
+                  Ücretsiz plana geçen davetliler için affiliate&apos;e gün ödülü admin onayı gerekli
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -409,7 +409,7 @@ export default function AffiliateSettingsPage() {
           <div className="space-y-4 text-sm text-gray-700">
             <div>
               <h4 className="font-semibold mb-2">1. Affiliate Başvurusu</h4>
-              <p>Kullanıcılar affiliate olmak için başvuruda bulunur. {formData.requireApproval ? 'Manuel onay gerekir.' : 'Otomatik onaylanır.'}</p>
+              <p>Restoran sahipleri affiliate olmak için başvuruda bulunur. Onaylandıktan sonra referral linki alır.</p>
             </div>
             <div>
               <h4 className="font-semibold mb-2">2. Referral Link</h4>
@@ -421,7 +421,7 @@ export default function AffiliateSettingsPage() {
             </div>
             <div>
               <h4 className="font-semibold mb-2">4. Ödül / Komisyon / İndirim</h4>
-              <p>Ücretsiz plan: Admin onayı sonrası {formData.daysPerReferralFree} gün. Ücretli plan: Otomatik {formData.daysPerReferralPaid} gün. Davet edilen kullanıcılar satın alırken %{formData.referralDiscountPercent} indirim alır. Para komisyonu: %{formData.commissionRate}</p>
+              <p>Ücretsiz plan: {formData.requireApproval ? `Admin onayı sonrası ${formData.daysPerReferralFree} gün` : `Otomatik ${formData.daysPerReferralFree} gün`}. Ücretli plan: Otomatik {formData.daysPerReferralPaid} gün. Davet edilen kullanıcılar satın alırken %{formData.referralDiscountPercent} indirim alır. Para komisyonu: %{formData.commissionRate}</p>
             </div>
             <div>
               <h4 className="font-semibold mb-2">5. Ödeme</h4>

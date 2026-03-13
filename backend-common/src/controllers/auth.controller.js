@@ -70,6 +70,22 @@ exports.register = async (req, res, next) => {
       req.ip
     );
 
+    // DefneQr: ref ile kayıt olunduysa backend-qr'da referral oluştur
+    const ref = req.body?.ref;
+    if (ref && req.project !== 'defnerandevu') {
+      const qrUrl = process.env.BACKEND_QR_URL || 'http://backend-qr:5002';
+      fetch(`${qrUrl}/api/internal/referrals/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          referralCode: ref,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent']
+        })
+      }).catch((err) => logger.warn?.('Referral create failed', { err: err?.message }));
+    }
+
     res.status(201).json({
       success: true,
       message: 'Kayıt başarılı',

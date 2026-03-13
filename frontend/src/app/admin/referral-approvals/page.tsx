@@ -9,8 +9,8 @@ import Link from 'next/link';
 
 interface PendingReward {
   id: string;
-  referredUser: { fullName: string; email: string };
-  affiliate: { user: { fullName: string; email: string } };
+  referredUser?: { fullName: string; email: string };
+  affiliate?: { user?: { fullName: string; email: string } };
   firstSubscription: string;
   daysToAward: number;
   restaurantSlug: string | null;
@@ -20,6 +20,7 @@ interface PendingReward {
 
 export default function ReferralApprovalsPage() {
   const [pendingRewards, setPendingRewards] = useState<PendingReward[]>([]);
+  const [requireApproval, setRequireApproval] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isApproving, setIsApproving] = useState(false);
   const [rejectModalId, setRejectModalId] = useState<string | null>(null);
@@ -30,6 +31,7 @@ export default function ReferralApprovalsPage() {
     try {
       const response = await api.get('/affiliates/pending-rewards');
       setPendingRewards(response.data.data || []);
+      setRequireApproval(response.data.requireApproval !== false);
     } catch (error) {
       console.error('Failed to load pending rewards:', error);
     } finally {
@@ -129,14 +131,28 @@ export default function ReferralApprovalsPage() {
               Affiliate linki ile kayıt olup ücretsiz plana geçen kullanıcılar. Onayladığınızda davet eden kişiye Premium gün eklenir.
             </p>
           </div>
-          {pendingRewards.length > 0 && (
+          {requireApproval && pendingRewards.length > 0 && (
             <Button onClick={handleApproveAll} disabled={isApproving}>
               Tümünü Onayla
             </Button>
           )}
         </CardHeader>
         <CardContent>
-          {pendingRewards.length === 0 ? (
+          {!requireApproval ? (
+            <div className="text-center py-12 bg-green-50 rounded-lg border border-green-200">
+              <div className="text-4xl mb-3">⚡</div>
+              <p className="text-gray-700 font-medium">Otomatik Onay Aktif</p>
+              <p className="text-sm text-gray-600 mt-1">
+                Affiliate ayarlarında &quot;Referral ödülü onayı gerekli&quot; kapalı. Ücretsiz plana geçen davetliler için ödüller otomatik veriliyor.
+              </p>
+              <Link
+                href="/admin/affiliate-settings"
+                className="inline-block mt-4 text-primary-600 hover:text-primary-700 font-medium text-sm"
+              >
+                Affiliate ayarlarını değiştir →
+              </Link>
+            </div>
+          ) : pendingRewards.length === 0 ? (
             <div className="text-center py-12 bg-gray-50 rounded-lg">
               <div className="text-4xl mb-3">✅</div>
               <p className="text-gray-600 font-medium">Bekleyen onay yok</p>
@@ -159,11 +175,11 @@ export default function ReferralApprovalsPage() {
                 >
                   <div className="flex-1">
                     <p className="font-semibold text-gray-900">
-                      {r.referredUser.fullName}
+                      {r.referredUser?.fullName ?? '—'}
                     </p>
-                    <p className="text-sm text-gray-600">{r.referredUser.email}</p>
+                    <p className="text-sm text-gray-600">{r.referredUser?.email ?? '—'}</p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Davet eden: <strong>{r.affiliate.user.fullName}</strong> ({r.affiliate.user.email}) •{' '}
+                      Davet eden: <strong>{r.affiliate?.user?.fullName ?? '—'}</strong> ({r.affiliate?.user?.email ?? '—'}) •{' '}
                       <span className="text-amber-700 font-medium">{r.daysToAward} gün</span> kazanacak
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
