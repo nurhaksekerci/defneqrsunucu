@@ -98,12 +98,17 @@ api.interceptors.response.use(
           
           return api(originalRequest);
         }
-      } catch (refreshError) {
+      } catch (refreshError: any) {
         processQueue(refreshError, null);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('token');
-        window.location.href = '/auth/login';
+        if (refreshError?.response?.status === 503 && refreshError?.response?.data?.code === 'MAINTENANCE_MODE') {
+          const msg = encodeURIComponent(refreshError?.response?.data?.message || 'Sistem bakımda. Lütfen biraz bekledikten sonra tekrar deneyin.');
+          window.location.href = `/auth/login?error=maintenance&message=${msg}`;
+        } else {
+          window.location.href = '/auth/login';
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -116,6 +121,16 @@ api.interceptors.response.use(
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('token');
       window.location.href = '/auth/login';
+      return Promise.reject(error);
+    }
+
+    // Bakım modu: oturum sonlandırıldı veya giriş engellendi
+    if (error.response?.status === 503 && error.response?.data?.code === 'MAINTENANCE_MODE' && typeof window !== 'undefined') {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('token');
+      const msg = encodeURIComponent(error.response?.data?.message || 'Sistem bakımda. Lütfen biraz bekledikten sonra tekrar deneyin.');
+      window.location.href = `/auth/login?error=maintenance&message=${msg}`;
       return Promise.reject(error);
     }
 

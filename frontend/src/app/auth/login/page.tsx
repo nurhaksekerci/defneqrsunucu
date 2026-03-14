@@ -22,14 +22,16 @@ function LoginForm() {
   useEffect(() => {
     loadSettings();
     
-    // URL'den error parametresini kontrol et (OAuth veya proje uyumsuzluğu)
+    // URL'den error parametresini kontrol et (OAuth, proje uyumsuzluğu, bakım modu)
     const errorParam = searchParams.get('error');
     const messageParam = searchParams.get('message');
     if (errorParam) {
-      // project_mismatch için message parametresini kullan
-      const displayMessage = (errorParam === 'project_mismatch' && messageParam)
+      // project_mismatch ve maintenance için message parametresini kullan
+      const displayMessage = ((errorParam === 'project_mismatch' || errorParam === 'maintenance') && messageParam)
         ? decodeURIComponent(messageParam)
-        : decodeURIComponent(errorParam);
+        : errorParam === 'maintenance'
+          ? 'Sistem bakımda. Lütfen biraz bekledikten sonra tekrar deneyin.'
+          : decodeURIComponent(errorParam);
       setError(displayMessage);
     }
   }, [searchParams]);

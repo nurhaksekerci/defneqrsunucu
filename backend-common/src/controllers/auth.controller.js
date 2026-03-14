@@ -104,6 +104,13 @@ const isRoleAllowedForProject = (role, project) => {
   return DEFNEQR_ROLES.includes(role);
 };
 
+const isAdminOrStaff = (role) => ['ADMIN', 'STAFF'].includes(role);
+
+const getMaintenanceMode = async () => {
+  const settings = await prisma.systemSettings.findFirst();
+  return settings?.maintenanceMode ?? false;
+};
+
 exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -137,6 +144,16 @@ exports.login = async (req, res, next) => {
         message: isRandevu
           ? 'Bu hesap DefneRandevu için değil. Lütfen defneqr.com üzerinden giriş yapın.'
           : 'Bu hesap Defne Qr için değil. Lütfen randevu.defneqr.com üzerinden giriş yapın.'
+      });
+    }
+
+    // Bakım modu açıkken sadece ADMIN ve STAFF giriş yapabilir
+    const maintenanceMode = await getMaintenanceMode();
+    if (maintenanceMode && !isAdminOrStaff(user.role)) {
+      return res.status(503).json({
+        success: false,
+        code: 'MAINTENANCE_MODE',
+        message: 'Sistem bakımda. Lütfen biraz bekledikten sonra tekrar deneyin.'
       });
     }
 
@@ -458,6 +475,17 @@ exports.refreshToken = async (req, res, next) => {
       where: { id: tokenRecord.userId, isDeleted: false },
       select: { role: true }
     });
+
+    // Bakım modu açıkken sadece ADMIN ve STAFF token yenileyebilir
+    const maintenanceMode = await getMaintenanceMode();
+    if (maintenanceMode && user && !isAdminOrStaff(user.role)) {
+      return res.status(503).json({
+        success: false,
+        code: 'MAINTENANCE_MODE',
+        message: 'Sistem bakımda. Lütfen biraz bekledikten sonra tekrar deneyin.'
+      });
+    }
+
     if (user && !isRoleAllowedForProject(user.role, project)) {
       const isRandevu = project === 'defnerandevu';
       return res.status(403).json({

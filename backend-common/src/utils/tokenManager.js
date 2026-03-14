@@ -146,6 +146,39 @@ exports.revokeAllUserTokens = async (userId) => {
 };
 
 /**
+ * Revoke all refresh tokens for users who are NOT ADMIN or STAFF (maintenance mode)
+ * @returns {Promise<number>} Number of revoked tokens
+ */
+exports.revokeAllNonAdminStaffTokens = async () => {
+  try {
+    const nonAdminStaffUserIds = await prisma.user.findMany({
+      where: {
+        role: { notIn: ['ADMIN', 'STAFF'] },
+        isDeleted: false
+      },
+      select: { id: true }
+    });
+    const userIds = nonAdminStaffUserIds.map(u => u.id);
+    if (userIds.length === 0) return 0;
+
+    const result = await prisma.refreshToken.updateMany({
+      where: {
+        userId: { in: userIds },
+        isRevoked: false
+      },
+      data: {
+        isRevoked: true,
+        revokedAt: new Date()
+      }
+    });
+    return result.count;
+  } catch (error) {
+    console.error('revokeAllNonAdminStaffTokens error:', error);
+    return 0;
+  }
+};
+
+/**
  * Add access token to blacklist
  * @param {string} token 
  * @param {string} reason 

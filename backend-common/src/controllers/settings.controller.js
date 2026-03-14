@@ -1,4 +1,5 @@
 const prisma = require('../config/database');
+const tokenManager = require('../utils/tokenManager');
 
 exports.getSettings = async (req, res, next) => {
   try {
@@ -47,6 +48,8 @@ exports.updateSettings = async (req, res, next) => {
     if (enableGoogleAuth !== undefined) updateData.enableGoogleAuth = enableGoogleAuth;
     if (maintenanceMode !== undefined) updateData.maintenanceMode = maintenanceMode;
 
+    const wasMaintenanceOff = settings ? !settings.maintenanceMode : true;
+
     if (!settings) {
       settings = await prisma.systemSettings.create({
         data: {
@@ -63,6 +66,14 @@ exports.updateSettings = async (req, res, next) => {
         where: { id: settings.id },
         data: updateData
       });
+    }
+
+    // Bakım modu açıldığında admin/staff dışındaki tüm oturumları sonlandır
+    if (wasMaintenanceOff && settings.maintenanceMode) {
+      const revokedCount = await tokenManager.revokeAllNonAdminStaffTokens();
+      if (revokedCount > 0) {
+        // Log veya response'a eklenebilir
+      }
     }
 
     res.json({

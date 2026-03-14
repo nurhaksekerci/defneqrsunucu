@@ -42,6 +42,16 @@ const authenticate = async (req, res, next) => {
       });
     }
 
+    // Bakım modu açıkken sadece ADMIN ve STAFF erişebilir
+    const settings = await prisma.systemSettings.findFirst();
+    if (settings?.maintenanceMode && !['ADMIN', 'STAFF'].includes(user.role)) {
+      return res.status(503).json({
+        success: false,
+        code: 'MAINTENANCE_MODE',
+        message: 'Sistem bakımda. Lütfen biraz bekledikten sonra tekrar deneyin.'
+      });
+    }
+
     req.user = user;
     next();
   } catch (error) {
