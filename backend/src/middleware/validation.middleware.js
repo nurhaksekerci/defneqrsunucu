@@ -186,6 +186,14 @@ exports.createCategoryValidation = [
     .optional()
     .isBoolean().withMessage('Aktiflik durumu boolean olmalıdır'),
   
+  body('images')
+    .optional()
+    .isArray().withMessage('Görseller dizi olmalıdır'),
+  
+  body('images.*')
+    .optional()
+    .isURL().withMessage('Geçerli görsel URL girin'),
+  
   handleValidationErrors
 ];
 
@@ -210,6 +218,14 @@ exports.updateCategoryValidation = [
   body('isActive')
     .optional()
     .isBoolean().withMessage('Aktiflik durumu boolean olmalıdır'),
+  
+  body('images')
+    .optional()
+    .isArray().withMessage('Görseller dizi olmalıdır'),
+  
+  body('images.*')
+    .optional()
+    .isURL().withMessage('Geçerli görsel URL girin'),
   
   handleValidationErrors
 ];

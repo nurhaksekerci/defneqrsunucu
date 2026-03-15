@@ -31,6 +31,8 @@ interface Category {
   id: string;
   name: string;
   description?: string;
+  image?: string;
+  images?: string[] | null;
   order: number;
   isGlobal?: boolean;
   _count?: { products: number };
@@ -288,7 +290,8 @@ export default function MenuPage() {
   // Category form
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [categoryFormData, setCategoryFormData] = useState({ name: '', description: '', order: 0 });
+  const [categoryFormData, setCategoryFormData] = useState<{ name: string; description: string; order: number; images: string[] }>({ name: '', description: '', order: 0, images: [] });
+  const [newCategoryImageUrl, setNewCategoryImageUrl] = useState('');
   const [isSavingCategory, setIsSavingCategory] = useState(false);
 
   // Product form
@@ -514,7 +517,8 @@ export default function MenuPage() {
           restaurantId: selectedRestaurant,
         });
       }
-      setCategoryFormData({ name: '', description: '', order: 0 });
+      setCategoryFormData({ name: '', description: '', order: 0, images: [] });
+      setNewCategoryImageUrl('');
       setShowCategoryForm(false);
       setEditingCategory(null);
       loadAllData();
@@ -577,6 +581,26 @@ export default function MenuPage() {
       fd.append('image', file);
       const res = await api.post('/upload/image', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       if (res.data.success) setProductFormData((p) => ({ ...p, image: res.data.data.url }));
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Yükleme başarısız');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleCategoryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Dosya 5MB\'dan küçük olmalı');
+      return;
+    }
+    setIsUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const res = await api.post('/upload/image', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      if (res.data.success) setCategoryFormData((c) => ({ ...c, images: [...(c.images || []), res.data.data.url] }));
     } catch (err: any) {
       alert(err.response?.data?.message || 'Yükleme başarısız');
     } finally {
@@ -737,7 +761,7 @@ export default function MenuPage() {
           <Button variant="secondary" size="sm" onClick={loadGlobalProducts}>
             📦 Global Katalogdan Ürün
           </Button>
-          <Button size="sm" onClick={() => { setEditingCategory(null); setCategoryFormData({ name: '', description: '', order: 0 }); setShowCategoryForm(true); }}>
+          <Button size="sm" onClick={() => { setEditingCategory(null); setCategoryFormData({ name: '', description: '', order: 0, images: [] }); setNewCategoryImageUrl(''); setShowCategoryForm(true); }}>
             + Kategori
           </Button>
           <Button size="sm" onClick={() => { setEditingProduct(null); setProductFormData({ name: '', description: '', image: '', basePrice: '', categoryId: '' }); setShowProductForm(true); }}>
@@ -802,7 +826,7 @@ export default function MenuPage() {
                     onToggleExpand={toggleCategoryExpand}
                     onProductDragEnd={handleProductDragEnd}
                     onToggleActive={toggleProductActive}
-                    onEditCategory={(cat) => { setEditingCategory(cat); setCategoryFormData({ name: cat.name, description: cat.description || '', order: cat.order }); setShowCategoryForm(true); }}
+                    onEditCategory={(cat) => { setEditingCategory(cat); setCategoryFormData({ name: cat.name, description: cat.description || '', order: cat.order, images: Array.isArray((cat as any).images) ? (cat as any).images : ((cat as any).image ? [(cat as any).image] : []) }); setNewCategoryImageUrl(''); setShowCategoryForm(true); }}
                     onDeleteCategory={handleDeleteCategory}
                     onEditProduct={(p) => { setEditingProduct(p); setProductFormData({ name: p.name, description: p.description || '', image: p.image || '', basePrice: p.basePrice?.toString() || '', categoryId: p.category.id }); setShowProductForm(true); }}
                     onDeleteProduct={handleDeleteProduct}
@@ -828,7 +852,7 @@ export default function MenuPage() {
             {categories.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500 mb-4">Henüz kategori yok</p>
-                <Button onClick={() => setShowCategoryForm(true)}>İlk Kategoriyi Ekle</Button>
+                <Button onClick={() => { setEditingCategory(null); setCategoryFormData({ name: '', description: '', order: 0, images: [] }); setNewCategoryImageUrl(''); setShowCategoryForm(true); }}>İlk Kategoriyi Ekle</Button>
               </div>
             ) : (
               <div className="space-y-3">
@@ -915,12 +939,40 @@ export default function MenuPage() {
       )}
 
       {/* Category Modal */}
-      <Modal isOpen={showCategoryForm} onClose={() => { setShowCategoryForm(false); setEditingCategory(null); }} title={editingCategory ? 'Kategori Düzenle' : 'Yeni Kategori'}>
+      <Modal isOpen={showCategoryForm} onClose={() => { setShowCategoryForm(false); setEditingCategory(null); setNewCategoryImageUrl(''); }} title={editingCategory ? 'Kategori Düzenle' : 'Yeni Kategori'}>
         <form onSubmit={handleCategorySubmit} className="space-y-4">
           <Input label="Kategori Adı" value={categoryFormData.name} onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })} required />
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
             <textarea value={categoryFormData.description} onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })} className="w-full px-3 py-2 border rounded-lg" rows={3} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Kategori Görselleri</label>
+            <p className="text-xs text-gray-500 mb-2">Menü şablonlarında kategorinin üstünde gösterilir (en fazla 4)</p>
+            <div className="flex gap-2 mb-2">
+              <label className="flex-1 border-2 border-dashed rounded-lg p-3 text-center cursor-pointer hover:border-primary-500 text-sm">
+                <input type="file" accept="image/*" onChange={handleCategoryImageUpload} className="hidden" disabled={isUploading} />
+                {isUploading ? 'Yükleniyor...' : '📷 Görsel Yükle'}
+              </label>
+              <Input type="url" placeholder="URL ekle" value={newCategoryImageUrl} onChange={(e) => setNewCategoryImageUrl(e.target.value)} className="flex-1" />
+              <Button type="button" variant="secondary" size="sm" onClick={() => {
+                const url = newCategoryImageUrl.trim();
+                if (url && (categoryFormData.images?.length ?? 0) < 4) {
+                  setCategoryFormData((c) => ({ ...c, images: [...(c.images || []), url] }));
+                  setNewCategoryImageUrl('');
+                }
+              }}>Ekle</Button>
+            </div>
+            {(categoryFormData.images?.length ?? 0) > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {(categoryFormData.images || []).slice(0, 4).map((url, i) => (
+                  <div key={i} className="relative group">
+                    <img src={getImageUrl(url) || url} alt="" className="w-16 h-16 object-cover rounded-lg border" />
+                    <button type="button" onClick={() => setCategoryFormData((c) => ({ ...c, images: (c.images || []).filter((_, j) => j !== i) }))} className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs leading-none opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <Input label="Sıralama" type="number" value={categoryFormData.order} onChange={(e) => setCategoryFormData({ ...categoryFormData, order: parseInt(e.target.value) || 0 })} />
           <div className="flex gap-3">

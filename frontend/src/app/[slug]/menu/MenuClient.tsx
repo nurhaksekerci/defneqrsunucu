@@ -5,11 +5,14 @@ import { useParams, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { getImageUrl } from '@/lib/imageHelper';
+import MenuTemplateMarjinal from './MenuTemplateMarjinal';
 
 interface Category {
   id: string;
   name: string;
   description?: string;
+  image?: string;
+  images?: string[] | null;
   order: number;
   products: Product[];
 }
@@ -76,6 +79,7 @@ interface MenuSettings {
   currencyPosition?: 'before' | 'after';
   enableAnimations?: boolean;
   showSearch?: boolean;
+  menuTemplate?: 'classic' | 'cafe-playful' | 'dark-vintage' | 'cutout-collage' | 'neon-retro' | 'organic-sketch';
 }
 
 interface Restaurant {
@@ -316,6 +320,9 @@ export default function MenuClient() {
   // Preview mode'daysa URL parametrelerini, değilse restaurant settings'i kullan
   const menuSettings = previewSettings || restaurant?.menuSettings || defaultMenuSettings;
 
+  const MARJINAL_TEMPLATES = ['cafe-playful', 'dark-vintage', 'cutout-collage', 'neon-retro', 'organic-sketch'] as const;
+  const isMarjinalTemplate = menuSettings.menuTemplate && MARJINAL_TEMPLATES.includes(menuSettings.menuTemplate as typeof MARJINAL_TEMPLATES[number]);
+
   // Custom currency formatter
   const formatPrice = (amount: number) => {
     const numAmount = Number(amount) || 0;
@@ -345,14 +352,7 @@ export default function MenuClient() {
   }
 
   return (
-    <div 
-      className="min-h-screen flex flex-col" 
-      style={{ 
-        backgroundColor: menuSettings.mainBgColor,
-        fontFamily: menuSettings.fontFamily,
-        color: menuSettings.mainTextColor
-      }}
-    >
+    <>
       {/* JSON-LD Structured Data - Restaurant schema */}
       {!isPreviewMode && (
         <script
@@ -373,6 +373,23 @@ export default function MenuClient() {
         />
       )}
 
+      {isMarjinalTemplate ? (
+        <MenuTemplateMarjinal
+          restaurant={{ name: restaurant.name, description: restaurant.description }}
+          categories={categories}
+          formatPrice={formatPrice}
+          siteName={siteName}
+          template={menuSettings.menuTemplate!}
+        />
+      ) : (
+    <div 
+      className="min-h-screen flex flex-col" 
+      style={{ 
+        backgroundColor: menuSettings.mainBgColor,
+        fontFamily: menuSettings.fontFamily,
+        color: menuSettings.mainTextColor
+      }}
+    >
       {/* Header */}
       {menuSettings.showHeader && (
         <div 
@@ -817,5 +834,7 @@ export default function MenuClient() {
         </div>
       )}
     </div>
+      )}
+    </>
   );
 }

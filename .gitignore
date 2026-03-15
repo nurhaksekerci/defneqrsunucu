@@ -9,6 +9,7 @@ node_modules/
 **/.env
 **/.env.local
 
+**/menu-design-previews/
 # Logs
 *.log
 npm-debug.log*

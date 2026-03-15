@@ -51,7 +51,10 @@ const PositionSelector = ({ label, value, onChange }: any) => (
   </div>
 );
 
+export type MenuTemplate = 'classic' | 'cafe-playful' | 'dark-vintage' | 'cutout-collage' | 'neon-retro' | 'organic-sketch';
+
 interface MenuSettings {
+  menuTemplate?: MenuTemplate;
   primaryColor: string;
   backgroundColor: string;
   viewType: 'card' | 'list';
@@ -124,6 +127,7 @@ interface MenuSettings {
 }
 
 const defaultSettings: MenuSettings = {
+  menuTemplate: 'classic',
   primaryColor: '#2563eb',
   backgroundColor: '#ffffff',
   viewType: 'card',
@@ -334,6 +338,47 @@ export default function MenuSettingsPage() {
         {/* Sol Taraf - Ayarlar */}
         <div className="xl:col-span-2 space-y-5">
           
+          {/* Menü Şablonu */}
+          <Card className="border-2 border-primary-100 bg-gradient-to-br from-white to-primary-50/30">
+            <CardHeader className="border-b border-primary-100 bg-white/50">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
+                  <span className="text-lg">📄</span>
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Menü Şablonu</CardTitle>
+                  <p className="text-xs text-gray-600 mt-0.5">Hazır tasarımlardan birini seçin</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {[
+                  { id: 'classic' as MenuTemplate, label: 'Klasik', desc: 'Kart/Liste' },
+                  { id: 'cafe-playful' as MenuTemplate, label: 'Cafe Playful', desc: 'Turuncu, sıcak' },
+                  { id: 'dark-vintage' as MenuTemplate, label: 'Dark Vintage', desc: 'Sepia, nostaljik' },
+                  { id: 'cutout-collage' as MenuTemplate, label: 'Cutout Collage', desc: 'Keskin, zine' },
+                  { id: 'neon-retro' as MenuTemplate, label: 'Neon Retro', desc: 'Magenta/cyan' },
+                  { id: 'organic-sketch' as MenuTemplate, label: 'Organic Sketch', desc: 'El çizimi' },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setSettings({ ...settings, menuTemplate: t.id })}
+                    className={`p-3 border-2 rounded-xl text-left transition-all ${
+                      (settings.menuTemplate || 'classic') === t.id
+                        ? 'border-primary-600 bg-primary-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="font-medium text-gray-900">{(settings.menuTemplate || 'classic') === t.id && '✓ '}{t.label}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{t.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Tema Presets */}
           <Card className="border-2 border-primary-100 bg-gradient-to-br from-white to-primary-50/30">
             <CardHeader className="border-b border-primary-100 bg-white/50">
@@ -343,7 +388,7 @@ export default function MenuSettingsPage() {
                 </div>
                 <div>
                   <CardTitle className="text-lg">Hazır Temalar</CardTitle>
-                  <p className="text-xs text-gray-600 mt-0.5">Hızlı başlangıç için bir tema seçin</p>
+                  <p className="text-xs text-gray-600 mt-0.5">Hızlı başlangıç için bir tema seçin (Klasik şablon için)</p>
                 </div>
               </div>
             </CardHeader>

@@ -101,6 +101,7 @@ model Category {
   name          String
   description   String?
   image         String?
+  images        Json?          // Kategori görselleri [url1, url2, ...] - menü şablonları için
   order         Int            @default(0)
 
   isGlobal      Boolean        @default(false)
