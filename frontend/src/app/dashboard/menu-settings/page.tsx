@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import api from '@/lib/api';
+import { getImageUrl } from '@/lib/imageHelper';
 
 // Color picker component
 const ColorPicker = ({ label, value, onChange, description }: any) => (
@@ -191,6 +192,7 @@ export default function MenuSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [siteName, setSiteName] = useState('Defne Qr');
+  const [categoryImages, setCategoryImages] = useState<string[]>([]);
 
   useEffect(() => {
     loadRestaurants();
@@ -200,8 +202,30 @@ export default function MenuSettingsPage() {
   useEffect(() => {
     if (selectedRestaurant) {
       loadMenuSettings();
+      loadCategoryImages();
     }
   }, [selectedRestaurant]);
+
+  const loadCategoryImages = async () => {
+    if (!selectedRestaurant) return;
+    try {
+      const res = await api.get('/categories', {
+        params: { restaurantId: selectedRestaurant, includeGlobal: 'true' }
+      });
+      const cats = res.data.data || [];
+      const imgs: string[] = [];
+      for (const c of cats) {
+        if (Array.isArray(c.images) && c.images.length > 0) {
+          imgs.push(...c.images.slice(0, 2).map((u: string) => getImageUrl(u) || u));
+        } else if (c.image) {
+          imgs.push(getImageUrl(c.image) || c.image);
+        }
+      }
+      setCategoryImages(imgs.slice(0, 6));
+    } catch {
+      setCategoryImages([]);
+    }
+  };
 
   useEffect(() => {
     // Her ayar değişikliğinde preview URL'ini güncelle
@@ -352,14 +376,15 @@ export default function MenuSettingsPage() {
               </div>
             </CardHeader>
             <CardContent className="pt-4">
+              <p className="text-xs text-gray-500 mb-3">Şablonlarda kategorilerinizdeki görseller otomatik gösterilir</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {[
-                  { id: 'classic' as MenuTemplate, label: 'Klasik', desc: 'Kart/Liste' },
-                  { id: 'cafe-playful' as MenuTemplate, label: 'Cafe Playful', desc: 'Turuncu, sıcak' },
-                  { id: 'dark-vintage' as MenuTemplate, label: 'Dark Vintage', desc: 'Sepia, nostaljik' },
-                  { id: 'cutout-collage' as MenuTemplate, label: 'Cutout Collage', desc: 'Keskin, zine' },
-                  { id: 'neon-retro' as MenuTemplate, label: 'Neon Retro', desc: 'Magenta/cyan' },
-                  { id: 'organic-sketch' as MenuTemplate, label: 'Organic Sketch', desc: 'El çizimi' },
+                  { id: 'classic' as MenuTemplate, label: 'Klasik', desc: 'Kart/Liste', showImages: false },
+                  { id: 'cafe-playful' as MenuTemplate, label: 'Cafe Playful', desc: 'Turuncu, sıcak', showImages: true },
+                  { id: 'dark-vintage' as MenuTemplate, label: 'Dark Vintage', desc: 'Sepia, nostaljik', showImages: true },
+                  { id: 'cutout-collage' as MenuTemplate, label: 'Cutout Collage', desc: 'Keskin, zine', showImages: true },
+                  { id: 'neon-retro' as MenuTemplate, label: 'Neon Retro', desc: 'Magenta/cyan', showImages: true },
+                  { id: 'organic-sketch' as MenuTemplate, label: 'Organic Sketch', desc: 'El çizimi', showImages: true },
                 ].map((t) => (
                   <button
                     key={t.id}
@@ -371,6 +396,13 @@ export default function MenuSettingsPage() {
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
+                    {t.showImages && categoryImages.length > 0 && (
+                      <div className="grid grid-cols-2 gap-1 mb-2">
+                        {categoryImages.slice(0, 4).map((url, i) => (
+                          <img key={i} src={url} alt="" className="w-full aspect-square object-cover rounded" />
+                        ))}
+                      </div>
+                    )}
                     <div className="font-medium text-gray-900">{(settings.menuTemplate || 'classic') === t.id && '✓ '}{t.label}</div>
                     <div className="text-xs text-gray-500 mt-0.5">{t.desc}</div>
                   </button>
