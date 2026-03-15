@@ -866,7 +866,7 @@ export default function MenuPage() {
                         <p className="text-xs text-gray-400 mt-1">Sıra: {cat.order} • {prodCount} ürün</p>
                       </div>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="secondary" onClick={() => { setEditingCategory(cat); setCategoryFormData({ name: cat.name, description: cat.description || '', order: cat.order }); setShowCategoryForm(true); }}>
+                        <Button size="sm" variant="secondary" onClick={() => { setEditingCategory(cat); setCategoryFormData({ name: cat.name, description: cat.description || '', order: cat.order, images: Array.isArray((cat as any).images) ? (cat as any).images : ((cat as any).image ? [(cat as any).image] : []) }); setNewCategoryImageUrl(''); setShowCategoryForm(true); }}>
                           Düzenle
                         </Button>
                         <Button size="sm" variant="ghost" className="text-red-600" onClick={() => handleDeleteCategory(cat.id, cat)}>
