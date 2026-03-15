@@ -15,8 +15,11 @@ export const getImageUrl = (imagePath: string | undefined | null): string | unde
     : 'http://localhost:5000';
   
   // Relative path ise backend URL ile birleştir
-  if (imagePath.startsWith('/uploads/')) {
+  if (imagePath.startsWith('/uploads/') || imagePath.startsWith('/public/uploads/')) {
     return `${backendUrl}${imagePath}`;
+  }
+  if (imagePath.startsWith('uploads/') && !imagePath.startsWith('http')) {
+    return `${backendUrl}/${imagePath}`;
   }
   
   return imagePath;

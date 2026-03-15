@@ -223,16 +223,15 @@ export default function MenuClient() {
         // Sessizce başarısız ol
       });
 
-      // Kategorileri ve ürünleri al
+      // Kategorileri ve ürünleri al (includeGlobal: restoran + global kategoriler/ürünler - görseller dahil)
       const productsResponse = await api.get('/products', {
-        params: { restaurantId: restaurantData.id }
+        params: { restaurantId: restaurantData.id, includeGlobal: 'true' }
       });
 
       const products = productsResponse.data.data;
 
-      // Kategorilere göre grupla
       const categoriesResponse = await api.get('/categories', {
-        params: { restaurantId: restaurantData.id }
+        params: { restaurantId: restaurantData.id, includeGlobal: 'true' }
       });
 
       const categoriesData = categoriesResponse.data.data
@@ -580,7 +579,8 @@ export default function MenuClient() {
       {/* Menu Items */}
       <div className={`max-w-4xl mx-auto flex-1 w-full ${getContentPadding(menuSettings.contentPadding)}`}>
         {filteredCategories.map((category) => {
-          const catImages = (Array.isArray(category.images) ? category.images : category.image ? [category.image] : []).slice(0, 4);
+          const rawImgs = category.images ?? category.image;
+          const catImages = (Array.isArray(rawImgs) ? rawImgs : rawImgs ? [rawImgs] : []).slice(0, 4).map((u: string) => getImageUrl(u) || u).filter(Boolean);
           return (
           <div key={category.id} className="mb-8 w-full">
             <h2 
@@ -592,7 +592,7 @@ export default function MenuClient() {
             {catImages.length > 0 && (
               <div className="grid grid-cols-4 gap-2 mb-4">
                 {catImages.map((url, i) => (
-                  <img key={i} src={getImageUrl(url) || url} alt="" className="w-full aspect-square object-cover rounded-lg border" loading="lazy" />
+                  <img key={i} src={url} alt="" className="w-full aspect-square object-cover rounded-lg border" loading="lazy" />
                 ))}
               </div>
             )}
