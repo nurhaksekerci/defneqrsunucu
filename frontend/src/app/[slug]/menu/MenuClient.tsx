@@ -579,7 +579,9 @@ export default function MenuClient() {
 
       {/* Menu Items */}
       <div className={`max-w-4xl mx-auto flex-1 w-full ${getContentPadding(menuSettings.contentPadding)}`}>
-        {filteredCategories.map((category) => (
+        {filteredCategories.map((category) => {
+          const catImages = (Array.isArray(category.images) ? category.images : category.image ? [category.image] : []).slice(0, 4);
+          return (
           <div key={category.id} className="mb-8 w-full">
             <h2 
               className={`text-xl font-bold mb-4 ${getFontSizeClass(menuSettings.fontSize)}`}
@@ -587,7 +589,13 @@ export default function MenuClient() {
             >
               {category.name}
             </h2>
-            
+            {catImages.length > 0 && (
+              <div className="grid grid-cols-4 gap-2 mb-4">
+                {catImages.map((url, i) => (
+                  <img key={i} src={getImageUrl(url) || url} alt="" className="w-full aspect-square object-cover rounded-lg border" loading="lazy" />
+                ))}
+              </div>
+            )}
             {menuSettings.viewType === 'card' ? (
               <div 
                 className={`grid w-full ${getCardGap(menuSettings.cardGap)}`}
@@ -701,7 +709,8 @@ export default function MenuClient() {
               </div>
             )}
           </div>
-        ))}
+        );
+        })}
 
         {filteredCategories.length === 0 && (
           <div className="text-center py-12">

@@ -54,7 +54,7 @@ exports.getCategories = async (req, res, next) => {
 
 exports.createCategory = async (req, res, next) => {
   try {
-    const { name, description, image, order, isGlobal, restaurantId } = req.body;
+    const { name, description, image, images, order, isGlobal, restaurantId } = req.body;
 
     if (isGlobal && req.user.role !== 'ADMIN') {
       return res.status(403).json({ success: false, message: 'Global kategori oluşturmak için admin yetkisi gerekli' });
@@ -74,6 +74,7 @@ exports.createCategory = async (req, res, next) => {
         name,
         description,
         image,
+        images: Array.isArray(images) ? images : undefined,
         order: order || 0,
         isGlobal: isGlobal || false,
         restaurantId: isGlobal ? null : restaurantId,
@@ -93,7 +94,7 @@ exports.createCategory = async (req, res, next) => {
 exports.updateCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, description, image, order } = req.body;
+    const { name, description, image, images, order } = req.body;
 
     const existing = await prisma.category.findUnique({
       where: { id, isDeleted: false },
@@ -112,9 +113,16 @@ exports.updateCategory = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Bu kategoriyi güncelleme yetkiniz yok' });
     }
 
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (image !== undefined) updateData.image = image;
+    if (images !== undefined) updateData.images = Array.isArray(images) ? images : null;
+    if (order !== undefined) updateData.order = order;
+
     const category = await prisma.category.update({
       where: { id },
-      data: { name, description, image, order },
+      data: updateData,
     });
 
     res.json({
@@ -200,6 +208,7 @@ exports.copyGlobalCategoryWithProducts = async (req, res, next) => {
         name: globalCategory.name,
         description: globalCategory.description,
         image: globalCategory.image,
+        images: Array.isArray(globalCategory.images) ? globalCategory.images : undefined,
         order: globalCategory.order,
         isGlobal: false,
         restaurantId,
@@ -258,6 +267,7 @@ exports.copyGlobalCategories = async (req, res, next) => {
             name: cat.name,
             description: cat.description,
             image: cat.image,
+            images: Array.isArray(cat.images) ? cat.images : undefined,
             order: cat.order,
             isGlobal: false,
             restaurantId,
