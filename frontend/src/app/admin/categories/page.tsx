@@ -5,11 +5,14 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import api from '@/lib/api';
+import { getImageUrl } from '@/lib/imageHelper';
 
 interface Category {
   id: string;
   name: string;
   description?: string;
+  image?: string;
+  images?: string[] | null;
   order: number;
   isGlobal: boolean;
   _count?: {
@@ -62,7 +65,8 @@ export default function AdminCategoriesPage() {
         });
       }
 
-      setFormData({ name: '', description: '', order: 0 });
+      setFormData({ name: '', description: '', order: 0, images: [] });
+      setNewImageUrl('');
       setShowAddForm(false);
       setEditingCategory(null);
       loadCategories();
@@ -79,9 +83,31 @@ export default function AdminCategoriesPage() {
     setFormData({
       name: category.name,
       description: category.description || '',
-      order: category.order
+      order: category.order,
+      images: Array.isArray(category.images) ? category.images : (category.image ? [category.image] : [])
     });
+    setNewImageUrl('');
     setShowAddForm(true);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Dosya 5MB\'dan küçük olmalı');
+      return;
+    }
+    setIsUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const res = await api.post('/upload/image', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      if (res.data.success) setFormData((f) => ({ ...f, images: [...(f.images || []), res.data.data.url] }));
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Yükleme başarısız');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleDelete = async (id: string, category: Category) => {
@@ -126,7 +152,8 @@ export default function AdminCategoriesPage() {
         </div>
         <Button onClick={() => {
           setEditingCategory(null);
-          setFormData({ name: '', description: '', order: 0 });
+          setFormData({ name: '', description: '', order: 0, images: [] });
+          setNewImageUrl('');
           setShowAddForm(true);
         }}>
           + Yeni Kategori Ekle
@@ -162,6 +189,54 @@ export default function AdminCategoriesPage() {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Kategori Görselleri</label>
+                <p className="text-xs text-gray-500 mb-2">Menü şablonlarında kategorinin üstünde gösterilir (en fazla 4)</p>
+                <div className="flex gap-2 mb-2">
+                  <label className="flex-1 border-2 border-dashed rounded-lg p-3 text-center cursor-pointer hover:border-primary-500 text-sm text-gray-600">
+                    <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={isUploading} />
+                    {isUploading ? 'Yükleniyor...' : '📷 Görsel Yükle'}
+                  </label>
+                  <Input
+                    type="url"
+                    placeholder="URL ekle"
+                    value={newImageUrl}
+                    onChange={(e) => setNewImageUrl(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      const url = newImageUrl.trim();
+                      if (url && (formData.images?.length ?? 0) < 4) {
+                        setFormData((f) => ({ ...f, images: [...(f.images || []), url] }));
+                        setNewImageUrl('');
+                      }
+                    }}
+                  >
+                    Ekle
+                  </Button>
+                </div>
+                {(formData.images?.length ?? 0) > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {(formData.images || []).slice(0, 4).map((url, i) => (
+                      <div key={i} className="relative group">
+                        <img src={getImageUrl(url) || url} alt="" className="w-16 h-16 object-cover rounded-lg border" />
+                        <button
+                          type="button"
+                          onClick={() => setFormData((f) => ({ ...f, images: (f.images || []).filter((_, j) => j !== i) }))}
+                          className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs leading-none opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <Input
                 label="Sıralama"
                 type="number"
@@ -180,6 +255,7 @@ export default function AdminCategoriesPage() {
                   onClick={() => {
                     setShowAddForm(false);
                     setEditingCategory(null);
+                    setNewImageUrl('');
                   }}
                 >
                   İptal
@@ -198,7 +274,7 @@ export default function AdminCategoriesPage() {
           {categories.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500 mb-4">Henüz global kategori eklenmemiş</p>
-              <Button onClick={() => setShowAddForm(true)}>
+              <Button onClick={() => { setEditingCategory(null); setFormData({ name: '', description: '', order: 0, images: [] }); setNewImageUrl(''); setShowAddForm(true); }}>
                 İlk Kategoriyi Ekle
               </Button>
             </div>
@@ -209,9 +285,17 @@ export default function AdminCategoriesPage() {
                 .map((category) => (
                   <div
                     key={category.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100"
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 gap-4"
                   >
-                    <div>
+                    <div className="flex items-center gap-4 min-w-0 flex-1">
+                      {(Array.isArray(category.images) ? category.images : category.image ? [category.image] : []).length > 0 && (
+                        <div className="flex gap-1 flex-shrink-0">
+                          {(Array.isArray(category.images) ? category.images : [category.image!]).slice(0, 3).map((url, i) => (
+                            <img key={i} src={getImageUrl(url) || url} alt="" className="w-12 h-12 object-cover rounded border" />
+                          ))}
+                        </div>
+                      )}
+                    <div className="min-w-0">
                       <h3 className="font-medium text-gray-900">{category.name}</h3>
                       {category.description && (
                         <p className="text-sm text-gray-600">{category.description}</p>
@@ -225,7 +309,8 @@ export default function AdminCategoriesPage() {
                         )}
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
                       <Button size="sm" variant="secondary" onClick={() => handleEdit(category)}>
                         Düzenle
                       </Button>
