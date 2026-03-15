@@ -25,12 +25,15 @@ export default function AdminCategoriesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{ name: string; description: string; order: number; images: string[] }>({
     name: '',
     description: '',
-    order: 0
+    order: 0,
+    images: []
   });
+  const [newImageUrl, setNewImageUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     loadCategories();
