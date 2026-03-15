@@ -179,6 +179,59 @@ export default function AdminCategoriesPage() {
                 required
               />
 
+              {/* Kategori Görselleri - Menü şablonlarında gösterilir */}
+              <div className="p-4 bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg">
+                <label className="block text-sm font-semibold text-gray-800 mb-1">
+                  📷 Kategori Görselleri
+                </label>
+                <p className="text-xs text-gray-600 mb-3">Menü şablonlarında kategorinin üstünde gösterilir (en fazla 4 fotoğraf)</p>
+                <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                  <label className="flex-1 border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-primary-500 hover:bg-white transition-colors text-sm font-medium text-gray-700">
+                    <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={isUploading} />
+                    {isUploading ? '⏳ Yükleniyor...' : '📤 Dosyadan Yükle'}
+                  </label>
+                  <div className="flex gap-2 flex-1">
+                    <Input
+                      type="url"
+                      placeholder="https://... görsel URL'si"
+                      value={newImageUrl}
+                      onChange={(e) => setNewImageUrl(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        const url = newImageUrl.trim();
+                        if (url && (formData.images?.length ?? 0) < 4) {
+                          setFormData((f) => ({ ...f, images: [...(f.images || []), url] }));
+                          setNewImageUrl('');
+                        }
+                      }}
+                    >
+                      URL Ekle
+                    </Button>
+                  </div>
+                </div>
+                {(formData.images?.length ?? 0) > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {(formData.images || []).slice(0, 4).map((url, i) => (
+                      <div key={i} className="relative group">
+                        <img src={getImageUrl(url) || url} alt="" className="w-16 h-16 object-cover rounded-lg border-2 border-gray-200" />
+                        <button
+                          type="button"
+                          onClick={() => setFormData((f) => ({ ...f, images: (f.images || []).filter((_, j) => j !== i) }))}
+                          className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs leading-none hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Açıklama
@@ -190,54 +243,6 @@ export default function AdminCategoriesPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white placeholder:text-gray-400"
                   rows={3}
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Kategori Görselleri</label>
-                <p className="text-xs text-gray-500 mb-2">Menü şablonlarında kategorinin üstünde gösterilir (en fazla 4)</p>
-                <div className="flex gap-2 mb-2">
-                  <label className="flex-1 border-2 border-dashed rounded-lg p-3 text-center cursor-pointer hover:border-primary-500 text-sm text-gray-600">
-                    <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={isUploading} />
-                    {isUploading ? 'Yükleniyor...' : '📷 Görsel Yükle'}
-                  </label>
-                  <Input
-                    type="url"
-                    placeholder="URL ekle"
-                    value={newImageUrl}
-                    onChange={(e) => setNewImageUrl(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => {
-                      const url = newImageUrl.trim();
-                      if (url && (formData.images?.length ?? 0) < 4) {
-                        setFormData((f) => ({ ...f, images: [...(f.images || []), url] }));
-                        setNewImageUrl('');
-                      }
-                    }}
-                  >
-                    Ekle
-                  </Button>
-                </div>
-                {(formData.images?.length ?? 0) > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {(formData.images || []).slice(0, 4).map((url, i) => (
-                      <div key={i} className="relative group">
-                        <img src={getImageUrl(url) || url} alt="" className="w-16 h-16 object-cover rounded-lg border" />
-                        <button
-                          type="button"
-                          onClick={() => setFormData((f) => ({ ...f, images: (f.images || []).filter((_, j) => j !== i) }))}
-                          className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs leading-none opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <Input
