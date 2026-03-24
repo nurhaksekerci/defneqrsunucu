@@ -26,6 +26,7 @@ class HatAdmin(SafeDeleteHistoryAdmin):
         highlight_deleted,
         "name",
         "code",
+        "election_zone",
         "is_coordination_hat",
         "coordination_bucket",
         "coordination_line",
@@ -36,6 +37,7 @@ class HatAdmin(SafeDeleteHistoryAdmin):
     list_display_links = ("name",)
     list_filter = (
         SafeDeleteAdminFilter,
+        "election_zone",
         "is_coordination_hat",
         "coordination_bucket",
         "coordination_line",
@@ -48,10 +50,11 @@ class HatAdmin(SafeDeleteHistoryAdmin):
         (
             _("Koordinasyon"),
             {
-                "fields": ("coordination_bucket", "coordination_line"),
+                "fields": ("coordination_bucket", "coordination_line", "election_zone"),
                 "description": _(
                     "Kol / hat türü (İl Başkanlığı, İlçe Başkanlığı, Komisyon); "
-                    "koordinasyon süzgeçleri için. Kol doluysa hat türünü de seçin."
+                    "koordinasyon süzgeçleri için. Kol doluysa hat türünü de seçin. "
+                    "Ana Kademe İlçe Başkanlığı için seçim bölgesi (1–3) sidebar’da kullanılır."
                 ),
             },
         ),

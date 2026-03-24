@@ -28,8 +28,8 @@ export type MeUser = {
   is_provincial_official: boolean;
   /** Ana Kademe vb. koordinasyon hattı (il/ilçe kapsamı API ile genişler) */
   hat_is_coordination: boolean;
-  /** İstanbul İl Başkanlığı: sidebar’da ilçeler seçim bölgesine göre */
-  show_sidebar_districts_by_election_zone?: boolean;
+  /** İstanbul İl Başkanlığı: sidebar’da 1–3. bölge sekmeleri + Ana Kademe ilçe başkanlıkları */
+  show_sidebar_ilce_baskanliklari?: boolean;
 };
 
 type AuthContextValue = {

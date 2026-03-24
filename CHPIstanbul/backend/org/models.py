@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.text import slugify
 from safedelete.models import SafeDeleteModel
@@ -82,6 +83,16 @@ class Hat(SafeDeleteModel):
         help_text=(
             "Kol seçildiğinde hat süzgecinde: İl Başkanlığı, İlçe Başkanlıkları veya Komisyonlar "
             "grubunda gösterilir. Kol ile birlikte doldurulmalıdır."
+        ),
+    )
+    election_zone = models.PositiveSmallIntegerField(
+        "seçim bölgesi",
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(3)],
+        help_text=(
+            "İstanbul milletvekili seçim bölgesi (1, 2 veya 3). "
+            "Ana Kademe İlçe Başkanlığı hatları için İl Başkanlığı sidebar sekmelerinde kullanılır."
         ),
     )
 

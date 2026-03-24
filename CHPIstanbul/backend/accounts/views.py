@@ -41,7 +41,7 @@ class MeView(APIView):
                 "hat_is_coordination": bool(
                     profile and profile.hat_id and profile.hat.is_coordination_hat,
                 ),
-                "show_sidebar_districts_by_election_zone": _is_istanbul_il_baskanligi_hat(
+                "show_sidebar_ilce_baskanliklari": _is_istanbul_il_baskanligi_hat(
                     profile,
                 ),
             },

@@ -6,6 +6,11 @@ export function electionZoneLabel(zone: number | null | undefined): string {
   return "Diğer";
 }
 
+/** Sidebar sekmeleri: 1. / 2. / 3. Bölge */
+export function bolgeTabLabel(zone: 1 | 2 | 3): string {
+  return `${zone}. Bölge`;
+}
+
 export function groupDistrictsByElectionZone<
   T extends { election_zone?: number | null },
 >(districts: T[]): Map<number | "other", T[]> {
@@ -20,3 +25,4 @@ export function groupDistrictsByElectionZone<
   }
   return m;
 }
+
