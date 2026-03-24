@@ -38,25 +38,54 @@ type ApiHat = {
   coordination_line?: string | null;
 };
 
-function monthRange(ym: string) {
-  const [y, m] = ym.split("-").map(Number);
-  const last = new Date(y, m, 0).getDate();
+type PeriodPreset = "today" | "week" | "month";
+
+/** Pazartesi–Pazar içinde bugün; başlangıç tarihi (starts_at) ile eşleşir. */
+function periodRange(preset: PeriodPreset): { date_from: string; date_to: string } {
+  const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
-  return {
-    date_from: `${y}-${pad(m)}-01`,
-    date_to: `${y}-${pad(m)}-${pad(last)}`,
-  };
+  const ymd = (d: Date) =>
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  if (preset === "today") {
+    const t = ymd(now);
+    return { date_from: t, date_to: t };
+  }
+  if (preset === "month") {
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    const last = new Date(y, m, 0).getDate();
+    return {
+      date_from: `${y}-${pad(m)}-01`,
+      date_to: `${y}-${pad(m)}-${pad(last)}`,
+    };
+  }
+  const day = now.getDay();
+  const diffToMonday = (day + 6) % 7;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - diffToMonday);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  return { date_from: ymd(monday), date_to: ymd(sunday) };
 }
 
-function monthLabel(ym: string) {
-  const [y, m] = ym.split("-").map(Number);
-  const d = new Date(y, (m ?? 1) - 1, 1);
-  return d.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
-}
-
-function defaultMonth() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+function periodShortLabel(preset: PeriodPreset): string {
+  const { date_from, date_to } = periodRange(preset);
+  if (preset === "today") {
+    const d = new Date(`${date_from}T12:00:00`);
+    return d.toLocaleDateString("tr-TR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }
+  if (preset === "month") {
+    const d = new Date(`${date_from}T12:00:00`);
+    return d.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+  }
+  const a = new Date(`${date_from}T12:00:00`);
+  const b = new Date(`${date_to}T12:00:00`);
+  return `${a.toLocaleDateString("tr-TR", { day: "numeric", month: "short" })} – ${b.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}`;
 }
 
 type MetricFilter = "all" | "planned" | "completed" | "report_missing";
@@ -106,7 +135,7 @@ export default function DashboardPage() {
   const ilSidebar = useIlBaskanligiSidebar();
   const showIlceSidebar = Boolean(user?.show_sidebar_ilce_baskanliklari);
   const useSidebarScope = showIlceSidebar && ilSidebar != null;
-  const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
+  const [periodPreset, setPeriodPreset] = useState<PeriodPreset>("month");
   const [filterBucket, setFilterBucket] = useState("");
   const [filterHat, setFilterHat] = useState("");
   const [hatOptions, setHatOptions] = useState<ApiHat[]>([]);
@@ -161,7 +190,7 @@ export default function DashboardPage() {
   }, [filterBucket, hatOptions, filterHat]);
 
   useEffect(() => {
-    const { date_from, date_to } = monthRange(selectedMonth);
+    const { date_from, date_to } = periodRange(periodPreset);
     const qs = new URLSearchParams();
     qs.set("date_from", date_from);
     qs.set("date_to", date_to);
@@ -198,7 +227,7 @@ export default function DashboardPage() {
       cancelled = true;
     };
   }, [
-    selectedMonth,
+    periodPreset,
     filterBucket,
     filterHat,
     showCoordinationFiltersOnPage,
@@ -253,7 +282,7 @@ export default function DashboardPage() {
     const missing = events.filter(
       (e) => e.status === "completed" && !e.has_report,
     ).length;
-    const scopeParts: string[] = [monthLabel(selectedMonth)];
+    const scopeParts: string[] = [periodShortLabel(periodPreset)];
     if (useSidebarScope && ilSidebar) {
       if (ilSidebar.scopeMode === "all") {
         scopeParts.push("Tüm İstanbul");
@@ -274,13 +303,18 @@ export default function DashboardPage() {
       planlanan: String(plan),
       tamamlanan: String(done),
       raporBekleyen: String(missing),
-      hintPlan: "Seçilen ay (başlangıç tarihi)",
+      hintPlan:
+        periodPreset === "today"
+          ? "Bugün — başlangıç tarihine göre"
+          : periodPreset === "week"
+            ? "Bu hafta (Pt–Pz) — başlangıç tarihine göre"
+            : "Bu ay — başlangıç tarihine göre",
       hintTam: scopeParts.join(" · "),
       hintRapor: "Tamamlanan, raporu olmayan",
     };
   }, [
     events,
-    selectedMonth,
+    periodPreset,
     showCoordinationFilters,
     useSidebarScope,
     ilSidebar,
@@ -311,9 +345,6 @@ export default function DashboardPage() {
   );
 
   const tableColCount = (showKolColumn ? 7 : 6) + 1;
-
-  const selectCls =
-    "h-10 min-w-[160px] rounded-xl border border-border/90 bg-background px-3 text-[13px] font-medium shadow-sm outline-none transition-shadow focus:border-chp-navy/25 focus:ring-2 focus:ring-chp-navy/10";
 
   return (
     <div className="mx-auto flex max-w-[1320px] flex-col gap-8 pb-4">
@@ -368,20 +399,36 @@ export default function DashboardPage() {
                 />
               </>
             ) : null}
-            <div className="flex flex-col gap-1">
-              <label
-                htmlFor="dash-month"
-                className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted"
-              >
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
                 Dönem
-              </label>
-              <input
-                id="dash-month"
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className={`${selectCls} min-w-[158px]`}
-              />
+              </span>
+              <div
+                className="flex flex-wrap gap-1 rounded-xl border border-border/80 bg-background p-1 shadow-sm"
+                role="group"
+                aria-label="Dönem süzgeci"
+              >
+                {(
+                  [
+                    { id: "today" as const, label: "Bugün" },
+                    { id: "week" as const, label: "Bu hafta" },
+                    { id: "month" as const, label: "Bu ay" },
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setPeriodPreset(opt.id)}
+                    className={`rounded-lg px-3 py-2 text-[12px] font-semibold transition-colors ${
+                      periodPreset === opt.id
+                        ? "bg-chp-navy text-white shadow-sm"
+                        : "text-foreground hover:bg-slate-100"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -400,7 +447,7 @@ export default function DashboardPage() {
           }
         />
         <StatCard
-          label="Tamamlanan (ay)"
+          label="Tamamlanan"
           value={loading ? "…" : stats.tamamlanan}
           hint={stats.hintTam}
           icon={CheckCircle2}
@@ -445,7 +492,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex flex-wrap items-center gap-2 text-[12px] text-muted">
                 <CalendarRange className="h-3.5 w-3.5 opacity-70" aria-hidden />
-                <span>{monthLabel(selectedMonth)}</span>
+                <span>{periodShortLabel(periodPreset)}</span>
                 {metricFilter !== "all" ? (
                   <span className="text-[11px] text-foreground/80">
                     {metricFilter === "planned"
