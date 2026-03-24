@@ -127,44 +127,46 @@ export function Sidebar() {
         </div>
       </div>
 
-      <div className="px-3 pt-5">
-        <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/40">
-          Menü
-        </p>
-        <nav className="flex flex-col gap-0.5">
-          {nav.map(({ href, label, icon: Icon }) => {
-            const active =
-              href === "/"
-                ? pathname === "/"
-                : pathname === href || pathname.startsWith(`${href}/`);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`group relative flex items-center gap-3 rounded-md py-2 pl-3 pr-3 text-[13px] font-medium transition-colors ${
-                  active
-                    ? "bg-[var(--sidebar-active)] text-white"
-                    : "text-white/70 hover:bg-[var(--sidebar-hover)] hover:text-white"
-                }`}
-              >
-                {active ? (
-                  <span
-                    className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-chp-red"
-                    aria-hidden
-                  />
-                ) : null}
-                <Icon
-                  className={`h-[17px] w-[17px] shrink-0 ${
-                    active ? "text-white" : "text-white/45 group-hover:text-white/75"
+      {!showBolgeSidebar ? (
+        <div className="px-3 pt-5">
+          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/40">
+            Menü
+          </p>
+          <nav className="flex flex-col gap-0.5">
+            {nav.map(({ href, label, icon: Icon }) => {
+              const active =
+                href === "/"
+                  ? pathname === "/"
+                  : pathname === href || pathname.startsWith(`${href}/`);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`group relative flex items-center gap-3 rounded-md py-2 pl-3 pr-3 text-[13px] font-medium transition-colors ${
+                    active
+                      ? "bg-[var(--sidebar-active)] text-white"
+                      : "text-white/70 hover:bg-[var(--sidebar-hover)] hover:text-white"
                   }`}
-                  strokeWidth={1.75}
-                />
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+                >
+                  {active ? (
+                    <span
+                      className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-chp-red"
+                      aria-hidden
+                    />
+                  ) : null}
+                  <Icon
+                    className={`h-[17px] w-[17px] shrink-0 ${
+                      active ? "text-white" : "text-white/45 group-hover:text-white/75"
+                    }`}
+                    strokeWidth={1.75}
+                  />
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      ) : null}
 
       {showBolgeSidebar ? (
         <div className="flex min-h-0 flex-1 flex-col border-t border-white/[0.08]">
