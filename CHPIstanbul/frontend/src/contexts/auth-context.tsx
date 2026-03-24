@@ -22,10 +22,14 @@ export type MeUser = {
   first_name: string;
   last_name: string;
   hat_name: string | null;
+  hat_code?: string | null;
+  hat_coordination_line?: string | null;
   district_name: string | null;
   is_provincial_official: boolean;
   /** Ana Kademe vb. koordinasyon hattı (il/ilçe kapsamı API ile genişler) */
   hat_is_coordination: boolean;
+  /** İstanbul İl Başkanlığı: sidebar’da ilçeler seçim bölgesine göre */
+  show_sidebar_districts_by_election_zone?: boolean;
 };
 
 type AuthContextValue = {

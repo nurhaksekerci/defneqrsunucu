@@ -82,16 +82,17 @@ class DistrictAdmin(SafeDeleteHistoryAdmin):
     list_display = (
         highlight_deleted,
         "name",
+        "election_zone",
         "event_count",
         "user_count",
         FIELD_NAME,
     )
     list_display_links = ("name",)
-    list_filter = (SafeDeleteAdminFilter,)
+    list_filter = (SafeDeleteAdminFilter, "election_zone")
     search_fields = ("name",)
-    ordering = ("id",)
+    ordering = ("election_zone", "name", "id")
 
-    fieldsets = ((None, {"fields": ("name",)}),)
+    fieldsets = ((None, {"fields": ("name", "election_zone")}),)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)

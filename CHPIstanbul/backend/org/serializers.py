@@ -12,4 +12,4 @@ class HatSerializer(serializers.ModelSerializer):
 class DistrictSerializer(serializers.ModelSerializer):
     class Meta:
         model = District
-        fields = ("id", "name")
+        fields = ("id", "name", "election_zone")

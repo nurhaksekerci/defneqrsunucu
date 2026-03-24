@@ -12,6 +12,6 @@ class HatViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class DistrictViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = District.objects.all()
+    queryset = District.objects.all().order_by("election_zone", "name", "id")
     serializer_class = DistrictSerializer
     permission_classes = [IsAuthenticated]

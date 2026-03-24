@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard,
   CalendarRange,
@@ -9,8 +10,14 @@ import {
   Settings,
   LogIn,
   LogOut,
+  MapPinned,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { apiFetch } from "@/lib/api-client";
+import {
+  electionZoneLabel,
+  groupDistrictsByElectionZone,
+} from "@/lib/election-zone-labels";
 
 const nav = [
   { href: "/", label: "Pano", icon: LayoutDashboard },
@@ -19,10 +26,59 @@ const nav = [
   { href: "/ayarlar", label: "Ayarlar", icon: Settings },
 ];
 
+type ApiDistrict = {
+  id: number;
+  name: string;
+  election_zone?: number | null;
+};
+
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const [districts, setDistricts] = useState<ApiDistrict[]>([]);
+  const [districtsLoading, setDistrictsLoading] = useState(false);
+
+  const showIlceList = Boolean(
+    user?.show_sidebar_districts_by_election_zone,
+  );
+
+  useEffect(() => {
+    if (!showIlceList) {
+      setDistricts([]);
+      return;
+    }
+    let cancelled = false;
+    setDistrictsLoading(true);
+    apiFetch<ApiDistrict[]>("/api/org/districts/")
+      .then((data) => {
+        if (!cancelled) setDistricts(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setDistricts([]);
+      })
+      .finally(() => {
+        if (!cancelled) setDistrictsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showIlceList]);
+
+  const districtsByZone = useMemo(() => {
+    if (!districts.length) return [];
+    const grouped = groupDistrictsByElectionZone(districts);
+    const order: Array<1 | 2 | 3 | "other"> = [1, 2, 3, "other"];
+    return order
+      .filter((k) => grouped.has(k))
+      .map((k) => ({
+        key: k,
+        label: typeof k === "number" ? electionZoneLabel(k) : "Diğer",
+        items: (grouped.get(k) ?? []).sort((a, b) =>
+          a.name.localeCompare(b.name, "tr"),
+        ),
+      }));
+  }, [districts]);
 
   const handleLogout = () => {
     logout();
@@ -87,6 +143,39 @@ export function Sidebar() {
           })}
         </nav>
       </div>
+
+      {showIlceList ? (
+        <div className="max-h-[min(42vh,320px)] overflow-y-auto border-t border-white/[0.08] px-3 py-4">
+          <p className="mb-2 flex items-center gap-2 px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/40">
+            <MapPinned className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            İlçeler (seçim bölgesi)
+          </p>
+          {districtsLoading ? (
+            <p className="px-3 text-[12px] text-white/45">Yükleniyor…</p>
+          ) : districtsByZone.length === 0 ? (
+            <p className="px-3 text-[12px] text-white/45">İlçe listesi yok.</p>
+          ) : (
+            <div className="space-y-4">
+              {districtsByZone.map(({ key, label, items }) => (
+                <div key={String(key)}>
+                  <p className="mb-1.5 px-3 text-[11px] font-semibold text-chp-red/90">
+                    {label}
+                  </p>
+                  <ul className="space-y-0.5">
+                    {items.map((d) => (
+                      <li key={d.id}>
+                        <span className="block rounded-md px-3 py-1 text-[12px] leading-snug text-white/75">
+                          {d.name}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
 
       <div className="mt-auto border-t border-white/[0.08] p-3">
         {user ? (

@@ -121,9 +121,18 @@ class District(SafeDeleteModel):
     history = HistoricalRecords()
 
     name = models.CharField("ad", max_length=120)
+    election_zone = models.PositiveSmallIntegerField(
+        "seçim bölgesi",
+        null=True,
+        blank=True,
+        help_text=(
+            "İstanbul milletvekili seçim bölgesi (1, 2 veya 3). "
+            "İl Başkanlığı görünümünde ilçeler bu alana göre gruplanır."
+        ),
+    )
 
     class Meta:
-        ordering = ["id"]
+        ordering = ["election_zone", "name", "id"]
         verbose_name = "İlçe"
         verbose_name_plural = "İlçeler"
 
