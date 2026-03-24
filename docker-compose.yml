@@ -172,6 +172,56 @@ services:
     networks:
       - defneqr-network
 
+  # CHP İstanbul — chp.defneqr.com
+  backend-chp:
+    build:
+      context: ./CHPIstanbul/backend
+      dockerfile: Dockerfile
+    container_name: defneqr-backend-chp
+    environment:
+      DEBUG: "False"
+      SECRET_KEY: ${CHP_SECRET_KEY:-chp-change-me-40-chars-minimum-for-production}
+      ALLOWED_HOSTS: api-chp.defneqr.com,localhost,127.0.0.1
+      CORS_ALLOWED_ORIGINS: https://chp.defneqr.com,http://chp.defneqr.com
+      CSRF_TRUSTED_ORIGINS: https://chp.defneqr.com,https://api-chp.defneqr.com
+      USE_TLS_BEHIND_PROXY: "True"
+      SECURE_SSL_REDIRECT: "False"
+      SERVE_MEDIA: "True"
+      DATABASE_ENGINE: django.db.backends.postgresql
+      DATABASE_NAME: chpistanbul
+      DATABASE_USER: ${DB_USER:-defneqr}
+      DATABASE_PASSWORD: ${DB_PASSWORD}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+      PYTHONUTF8: "1"
+    volumes:
+      - chp_media:/app/media
+    ports:
+      - "127.0.0.1:8005:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - defneqr-network
+
+  frontend-chp:
+    build:
+      context: ./CHPIstanbul/frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${CHP_API_URL:-https://api-chp.defneqr.com}
+    container_name: defneqr-frontend-chp
+    ports:
+      - "127.0.0.1:3010:3000"
+    depends_on:
+      - backend-chp
+    restart: unless-stopped
+    networks:
+      - defneqr-network
+
   nginx:
     image: nginx:alpine
     container_name: defneqr-nginx
@@ -187,16 +237,20 @@ services:
       - frontend
       - frontend-randevu
       - frontend-admin
+      - frontend-chp
       - backend-common
       - backend-qr
       - backend-randevu
       - backend-admin
+      - backend-chp
     restart: unless-stopped
     networks:
       - defneqr-network
 
 volumes:
   postgres_data:
+    driver: local
+  chp_media:
     driver: local
 
 networks:
