@@ -26,6 +26,7 @@ class EventListSerializer(serializers.ModelSerializer):
     coordination_kolu = serializers.SerializerMethodField()
     has_report = serializers.SerializerMethodField()
     report_id = serializers.SerializerMethodField()
+    report_image_urls = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
@@ -44,6 +45,7 @@ class EventListSerializer(serializers.ModelSerializer):
             "longitude",
             "has_report",
             "report_id",
+            "report_image_urls",
             "completed_at",
             "created_at",
         )
@@ -63,6 +65,22 @@ class EventListSerializer(serializers.ModelSerializer):
             .values_list("pk", flat=True)
             .first()
         )
+
+    def get_report_image_urls(self, obj: Event) -> list[str]:
+        if obj.status != Event.Status.COMPLETED:
+            return []
+        request = self.context.get("request")
+        try:
+            r = obj.report
+        except EventReport.DoesNotExist:
+            return []
+        out: list[str] = []
+        for img in r.images.all()[:8]:
+            url = img.image.url
+            if request:
+                url = request.build_absolute_uri(url)
+            out.append(url)
+        return out
 
 
 class EventCreateSerializer(serializers.ModelSerializer):

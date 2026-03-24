@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from django.db import transaction
-from django.db.models import QuerySet
+from django.db.models import Prefetch, QuerySet
 from django.utils import timezone
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -206,7 +206,15 @@ class EventViewSet(
         qs = super().get_queryset()
         params = self.request.query_params
         qs = filter_events_for_list(qs, self.request.user, params)
-        return _filter_events_by_date_and_status(qs, params)
+        qs = _filter_events_by_date_and_status(qs, params)
+        if self.action in ("list", "retrieve"):
+            qs = qs.prefetch_related(
+                Prefetch(
+                    "report__images",
+                    queryset=ReportImage.objects.order_by("sort_order", "id"),
+                ),
+            )
+        return qs
 
     def perform_create(self, serializer):
         user = self.request.user
