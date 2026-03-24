@@ -7,9 +7,13 @@ import { SectionCard } from "@/components/crm/section-card";
 import { Modal } from "@/components/ui/modal";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useAuth } from "@/contexts/auth-context";
+import { useIlBaskanligiSidebar } from "@/contexts/il-baskanligi-sidebar-context";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { COORDINATION_BUCKET_OPTIONS } from "@/lib/coordination-buckets";
-import { appendEventListFilters } from "@/lib/event-list-filters";
+import {
+  appendEventListFilters,
+  appendIlBaskanligiSidebarHatFilter,
+} from "@/lib/event-list-filters";
 import {
   hatSelectGroupsForKol,
   hatsVisibleUnderKol,
@@ -109,8 +113,13 @@ function RaporlarPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  const ilSidebar = useIlBaskanligiSidebar();
+  const showIlceSidebar = Boolean(user?.show_sidebar_ilce_baskanliklari);
+  const useSidebarScope = showIlceSidebar && ilSidebar != null;
   const showDistrictFilter = Boolean(user?.is_provincial_official);
   const showCoordinationFilters = Boolean(user?.hat_is_coordination);
+  const showCoordinationFiltersOnPage =
+    showCoordinationFilters && !useSidebarScope;
   const [filterDistrict, setFilterDistrict] = useState("");
   const [filterBucket, setFilterBucket] = useState("");
   const [filterHat, setFilterHat] = useState("");
@@ -157,7 +166,7 @@ function RaporlarPageContent() {
   }, [showDistrictFilter]);
 
   useEffect(() => {
-    if (!showCoordinationFilters) return;
+    if (!showCoordinationFiltersOnPage) return;
     let cancelled = false;
     setHatsLoading(true);
     apiFetch<ApiHat[]>("/api/org/hats/")
@@ -176,7 +185,7 @@ function RaporlarPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [showCoordinationFilters]);
+  }, [showCoordinationFiltersOnPage]);
 
   const hatOptionGroups = useMemo(() => {
     if (!filterBucket) return null;
@@ -199,8 +208,15 @@ function RaporlarPageContent() {
       const qs = new URLSearchParams();
       appendEventListFilters(qs, {
         district: showDistrictFilter ? filterDistrict : undefined,
-        coordinationBucket: showCoordinationFilters ? filterBucket : undefined,
-        hat: showCoordinationFilters ? filterHat : undefined,
+        coordinationBucket: showCoordinationFiltersOnPage
+          ? filterBucket
+          : undefined,
+        hat: showCoordinationFiltersOnPage ? filterHat : undefined,
+      });
+      appendIlBaskanligiSidebarHatFilter(qs, {
+        enabled: useSidebarScope,
+        scopeMode: ilSidebar?.scopeMode ?? "all",
+        hatId: ilSidebar?.selectedHatId ?? null,
       });
       const q = qs.toString();
       const path = q ? `/api/reports/?${q}` : "/api/reports/";
@@ -218,9 +234,12 @@ function RaporlarPageContent() {
   }, [
     showDistrictFilter,
     filterDistrict,
-    showCoordinationFilters,
+    showCoordinationFiltersOnPage,
     filterBucket,
     filterHat,
+    useSidebarScope,
+    ilSidebar?.scopeMode,
+    ilSidebar?.selectedHatId,
   ]);
 
   useEffect(() => {
@@ -395,7 +414,7 @@ function RaporlarPageContent() {
         title="Etkinlik raporları"
         action={
           <div className="flex flex-wrap items-end justify-end gap-2">
-            {showCoordinationFilters ? (
+            {showCoordinationFiltersOnPage ? (
               <>
                 <SearchableSelect
                   id="rapor-bucket"

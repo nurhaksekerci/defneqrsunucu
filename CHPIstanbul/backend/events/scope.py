@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from django.db.models import QuerySet
 
+from accounts.il_baskanligi import is_istanbul_il_baskanligi_hat
 from org.models import Hat
 
 
@@ -45,12 +46,15 @@ def apply_event_list_scope(
 def apply_coordination_list_filters(qs: QuerySet, user, query_params) -> QuerySet:
     """
     Koordinasyon hattı kullanıcıları: ?coordination_bucket= & ?hat= ile süzülür.
+    İstanbul İl Başkanlığı (sidebar): koordinasyon hattı olmasa da ?hat= / ?coordination_bucket= uygulanır.
     Diğer kullanıcılar için sorgu parametreleri yok sayılır.
     """
     profile = getattr(user, "profile", None)
     if not profile or not profile.hat_id:
         return qs
-    if not profile.hat.is_coordination_hat:
+    if not profile.hat.is_coordination_hat and not is_istanbul_il_baskanligi_hat(
+        profile,
+    ):
         return qs
 
     bucket = query_params.get("coordination_bucket")

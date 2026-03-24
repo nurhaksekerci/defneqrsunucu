@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { IlBaskanligiSidebarProvider } from "@/contexts/il-baskanligi-sidebar-context";
 import { AuthGate } from "./auth-gate";
 import { AppShell } from "./app-shell";
 
@@ -41,9 +42,11 @@ export function DashboardFrame({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthGate>
-      <AppShell title={title} description={description}>
-        {children}
-      </AppShell>
+      <IlBaskanligiSidebarProvider>
+        <AppShell title={title} description={description}>
+          {children}
+        </AppShell>
+      </IlBaskanligiSidebarProvider>
     </AuthGate>
   );
 }

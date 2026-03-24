@@ -2,18 +2,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from org.models import Hat
-
-
-def _is_istanbul_il_baskanligi_hat(profile) -> bool:
-    """İl yetkilisi + İl Başkanlığı hattı (İstanbul)."""
-    if not profile or not profile.hat_id or not profile.is_provincial_official:
-        return False
-    h = profile.hat
-    if h.coordination_line != Hat.CoordinationLine.IL_BASKANLIGI:
-        return False
-    name = (h.name or "").strip()
-    return "İstanbul" in name and "İl Başkanlığı" in name
+from .il_baskanligi import is_istanbul_il_baskanligi_hat
 
 
 class MeView(APIView):
@@ -41,7 +30,7 @@ class MeView(APIView):
                 "hat_is_coordination": bool(
                     profile and profile.hat_id and profile.hat.is_coordination_hat,
                 ),
-                "show_sidebar_ilce_baskanliklari": _is_istanbul_il_baskanligi_hat(
+                "show_sidebar_ilce_baskanliklari": is_istanbul_il_baskanligi_hat(
                     profile,
                 ),
             },

@@ -7,9 +7,13 @@ import { SectionCard } from "@/components/crm/section-card";
 import { Modal } from "@/components/ui/modal";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useAuth } from "@/contexts/auth-context";
+import { useIlBaskanligiSidebar } from "@/contexts/il-baskanligi-sidebar-context";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { COORDINATION_BUCKET_OPTIONS } from "@/lib/coordination-buckets";
-import { appendEventListFilters } from "@/lib/event-list-filters";
+import {
+  appendEventListFilters,
+  appendIlBaskanligiSidebarHatFilter,
+} from "@/lib/event-list-filters";
 import {
   hatSelectGroupsForKol,
   hatsVisibleUnderKol,
@@ -89,6 +93,9 @@ const emptyNewForm = () => ({
 
 export default function EtkinliklerPage() {
   const { user } = useAuth();
+  const ilSidebar = useIlBaskanligiSidebar();
+  const showIlceSidebar = Boolean(user?.show_sidebar_ilce_baskanliklari);
+  const useSidebarScope = showIlceSidebar && ilSidebar != null;
   const [tab, setTab] = useState<"planlanan" | "tamamlanan">("planlanan");
   const [rows, setRows] = useState<ApiEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,6 +131,8 @@ export default function EtkinliklerPage() {
   );
   const showDistrictFilter = Boolean(user?.is_provincial_official);
   const showCoordinationFilters = Boolean(user?.hat_is_coordination);
+  const showCoordinationFiltersOnPage =
+    showCoordinationFilters && !useSidebarScope;
 
   useEffect(() => {
     if (!user?.is_provincial_official) return;
@@ -148,7 +157,7 @@ export default function EtkinliklerPage() {
   }, [user?.is_provincial_official]);
 
   useEffect(() => {
-    if (!showCoordinationFilters) return;
+    if (!showCoordinationFiltersOnPage) return;
     let cancelled = false;
     setHatsLoading(true);
     apiFetch<ApiHat[]>("/api/org/hats/")
@@ -167,7 +176,7 @@ export default function EtkinliklerPage() {
     return () => {
       cancelled = true;
     };
-  }, [showCoordinationFilters]);
+  }, [showCoordinationFiltersOnPage]);
 
   const hatOptionGroups = useMemo(() => {
     if (!filterBucket) return null;
@@ -192,8 +201,13 @@ export default function EtkinliklerPage() {
     if (dateTo) qs.set("date_to", dateTo);
     appendEventListFilters(qs, {
       district: showDistrictFilter ? filterDistrict : undefined,
-      coordinationBucket: showCoordinationFilters ? filterBucket : undefined,
-      hat: showCoordinationFilters ? filterHat : undefined,
+      coordinationBucket: showCoordinationFiltersOnPage ? filterBucket : undefined,
+      hat: showCoordinationFiltersOnPage ? filterHat : undefined,
+    });
+    appendIlBaskanligiSidebarHatFilter(qs, {
+      enabled: useSidebarScope,
+      scopeMode: ilSidebar?.scopeMode ?? "all",
+      hatId: ilSidebar?.selectedHatId ?? null,
     });
     try {
       const data = await apiFetch<ApiEvent[]>(`/api/events/?${qs.toString()}`);
@@ -212,9 +226,12 @@ export default function EtkinliklerPage() {
     dateTo,
     showDistrictFilter,
     filterDistrict,
-    showCoordinationFilters,
+    showCoordinationFiltersOnPage,
     filterBucket,
     filterHat,
+    useSidebarScope,
+    ilSidebar?.scopeMode,
+    ilSidebar?.selectedHatId,
   ]);
 
   useEffect(() => {
@@ -458,7 +475,7 @@ export default function EtkinliklerPage() {
                 className={`${field} mt-1 h-9 w-[148px]`}
               />
             </div>
-            {showCoordinationFilters ? (
+            {showCoordinationFiltersOnPage ? (
               <>
                 <SearchableSelect
                   id="evt-bucket"

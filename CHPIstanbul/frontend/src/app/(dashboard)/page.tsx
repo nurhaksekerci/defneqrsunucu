@@ -6,9 +6,13 @@ import { StatCard } from "@/components/crm/stat-card";
 import { SectionCard } from "@/components/crm/section-card";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useAuth } from "@/contexts/auth-context";
+import { useIlBaskanligiSidebar } from "@/contexts/il-baskanligi-sidebar-context";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { COORDINATION_BUCKET_OPTIONS } from "@/lib/coordination-buckets";
-import { appendEventListFilters } from "@/lib/event-list-filters";
+import {
+  appendEventListFilters,
+  appendIlBaskanligiSidebarHatFilter,
+} from "@/lib/event-list-filters";
 import {
   hatSelectGroupsForKol,
   hatsVisibleUnderKol,
@@ -84,6 +88,9 @@ function scopeDescription(user: MeUser): string {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const ilSidebar = useIlBaskanligiSidebar();
+  const showIlceSidebar = Boolean(user?.show_sidebar_ilce_baskanliklari);
+  const useSidebarScope = showIlceSidebar && ilSidebar != null;
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [filterDistrict, setFilterDistrict] = useState("");
   const [districtOptions, setDistrictOptions] = useState<ApiDistrict[]>([]);
@@ -97,6 +104,8 @@ export default function DashboardPage() {
 
   const showDistrictFilter = Boolean(user?.is_provincial_official);
   const showCoordinationFilters = Boolean(user?.hat_is_coordination);
+  const showCoordinationFiltersOnPage =
+    showCoordinationFilters && !useSidebarScope;
 
   useEffect(() => {
     if (!showDistrictFilter) return;
@@ -121,7 +130,7 @@ export default function DashboardPage() {
   }, [showDistrictFilter]);
 
   useEffect(() => {
-    if (!showCoordinationFilters) return;
+    if (!showCoordinationFiltersOnPage) return;
     let cancelled = false;
     setHatsLoading(true);
     apiFetch<ApiHat[]>("/api/org/hats/")
@@ -140,7 +149,7 @@ export default function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [showCoordinationFilters]);
+  }, [showCoordinationFiltersOnPage]);
 
   const hatOptionGroups = useMemo(() => {
     if (!filterBucket) return null;
@@ -164,8 +173,13 @@ export default function DashboardPage() {
     qs.set("date_to", date_to);
     appendEventListFilters(qs, {
       district: showDistrictFilter ? filterDistrict : undefined,
-      coordinationBucket: showCoordinationFilters ? filterBucket : undefined,
-      hat: showCoordinationFilters ? filterHat : undefined,
+      coordinationBucket: showCoordinationFiltersOnPage ? filterBucket : undefined,
+      hat: showCoordinationFiltersOnPage ? filterHat : undefined,
+    });
+    appendIlBaskanligiSidebarHatFilter(qs, {
+      enabled: useSidebarScope,
+      scopeMode: ilSidebar?.scopeMode ?? "all",
+      hatId: ilSidebar?.selectedHatId ?? null,
     });
     let cancelled = false;
     setLoading(true);
@@ -214,7 +228,13 @@ export default function DashboardPage() {
           ? "Tüm ilçeler"
           : monthLabel(selectedMonth);
     const scopeParts: string[] = [distHint];
-    if (showCoordinationFilters) {
+    if (useSidebarScope && ilSidebar) {
+      if (ilSidebar.scopeMode === "all") {
+        scopeParts.push("Tüm İstanbul");
+      } else {
+        scopeParts.push(ilSidebar.selectedHatName ?? "Seçilen hat");
+      }
+    } else if (showCoordinationFilters) {
       if (filterBucket) {
         const b = COORDINATION_BUCKET_OPTIONS.find((x) => x.value === filterBucket);
         scopeParts.push(b?.label ?? filterBucket);
@@ -240,6 +260,8 @@ export default function DashboardPage() {
     showDistrictFilter,
     filterDistrict,
     showCoordinationFilters,
+    useSidebarScope,
+    ilSidebar,
     filterBucket,
     filterHat,
     hatOptions,
@@ -285,7 +307,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
-          {showCoordinationFilters ? (
+          {showCoordinationFiltersOnPage ? (
             <>
               <SearchableSelect
                 id="dash-bucket"

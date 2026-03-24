@@ -15,3 +15,18 @@ export function appendEventListFilters(
   }
   if (opts.hat) qs.set("hat", opts.hat);
 }
+
+/** İl Başkanlığı sidebar: tek hat veya tüm İstanbul (hat parametresi yok). */
+export function appendIlBaskanligiSidebarHatFilter(
+  qs: URLSearchParams,
+  opts: {
+    enabled: boolean;
+    scopeMode: "all" | "hat";
+    hatId: number | null;
+  },
+): void {
+  if (!opts.enabled) return;
+  if (opts.scopeMode === "hat" && opts.hatId != null) {
+    qs.set("hat", String(opts.hatId));
+  }
+}

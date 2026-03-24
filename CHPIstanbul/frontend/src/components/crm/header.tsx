@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { useIlBaskanligiSidebar } from "@/contexts/il-baskanligi-sidebar-context";
 import { NotificationDropdown } from "./notification-dropdown";
 
 type HeaderProps = {
@@ -16,6 +17,7 @@ export function CrmHeader({ title, description }: HeaderProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  const ilSidebar = useIlBaskanligiSidebar();
   const [query, setQuery] = useState("");
 
   const displayName =
@@ -52,6 +54,13 @@ export function CrmHeader({ title, description }: HeaderProps) {
           {description ? (
             <p className="hidden truncate text-[12px] text-muted lg:block">
               {description}
+            </p>
+          ) : null}
+          {user?.show_sidebar_ilce_baskanliklari && ilSidebar ? (
+            <p className="mt-0.5 hidden max-w-full truncate text-[12px] font-medium text-chp-red/95 lg:block">
+              {ilSidebar.scopeMode === "all"
+                ? "Görünüm: Tüm İstanbul"
+                : `Görünüm: ${ilSidebar.selectedHatName ?? "İlçe başkanlığı"}`}
             </p>
           ) : null}
         </div>

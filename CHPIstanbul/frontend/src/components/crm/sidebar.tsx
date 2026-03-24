@@ -17,6 +17,7 @@ import {
   LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { useIlBaskanligiSidebar } from "@/contexts/il-baskanligi-sidebar-context";
 import { apiFetch } from "@/lib/api-client";
 import {
   bolgeTabLabel,
@@ -47,17 +48,20 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const ilScope = useIlBaskanligiSidebar();
   const [hats, setHats] = useState<ApiHatSidebar[]>([]);
   const [hatsLoading, setHatsLoading] = useState(false);
   const [zoneTab, setZoneTab] = useState<(typeof ZONE_TABS)[number]>(1);
-  const [selectedHatId, setSelectedHatId] = useState<number | null>(null);
 
   const showBolgeSidebar = Boolean(user?.show_sidebar_ilce_baskanliklari);
+  const sidebarScope = showBolgeSidebar ? ilScope : null;
+  const scopeMode = sidebarScope?.scopeMode ?? "all";
+  const selectedHatId = sidebarScope?.selectedHatId ?? null;
 
   useEffect(() => {
     if (!showBolgeSidebar) {
       setHats([]);
-      setSelectedHatId(null);
+      ilScope?.setAllIstanbul();
       return;
     }
     let cancelled = false;
@@ -79,7 +83,7 @@ export function Sidebar() {
     return () => {
       cancelled = true;
     };
-  }, [showBolgeSidebar]);
+  }, [showBolgeSidebar, ilScope]);
 
   const hatsInActiveZone = useMemo(() => {
     return hats
@@ -94,13 +98,14 @@ export function Sidebar() {
 
   useEffect(() => {
     if (
+      scopeMode === "hat" &&
       selectedHatId != null &&
       selectedHat &&
       selectedHat.election_zone !== zoneTab
     ) {
-      setSelectedHatId(null);
+      sidebarScope?.setAllIstanbul();
     }
-  }, [zoneTab, selectedHatId, selectedHat]);
+  }, [zoneTab, selectedHatId, selectedHat, scopeMode, sidebarScope]);
 
   const handleLogout = () => {
     logout();
@@ -168,13 +173,24 @@ export function Sidebar() {
         </div>
       ) : null}
 
-      {showBolgeSidebar ? (
+      {showBolgeSidebar && sidebarScope ? (
         <div className="flex min-h-0 flex-1 flex-col border-t border-white/[0.08]">
           <div className="shrink-0 px-3 pt-4">
             <p className="mb-2 flex items-center gap-2 px-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/40">
               <MapPinned className="h-3.5 w-3.5 shrink-0" aria-hidden />
               Ana Kademe · İlçe başkanlıkları
             </p>
+            <button
+              type="button"
+              onClick={() => sidebarScope.setAllIstanbul()}
+              className={`mb-3 w-full rounded-md border px-3 py-2 text-left text-[12px] font-semibold transition-colors ${
+                scopeMode === "all"
+                  ? "border-chp-red bg-chp-red text-white shadow-sm"
+                  : "border-white/15 bg-white/[0.05] text-white/85 hover:bg-white/[0.08]"
+              }`}
+            >
+              Tüm İstanbul
+            </button>
             <div
               className="flex rounded-md border border-white/10 bg-white/[0.04] p-0.5"
               role="tablist"
@@ -214,14 +230,19 @@ export function Sidebar() {
             ) : (
               <ul className="space-y-0.5">
                 {hatsInActiveZone.map((h) => {
-                  const sel = selectedHatId === h.id;
+                  const sel =
+                    scopeMode === "hat" && selectedHatId === h.id;
                   return (
                     <li key={h.id}>
                       <button
                         type="button"
-                        onClick={() =>
-                          setSelectedHatId(sel ? null : h.id)
-                        }
+                        onClick={() => {
+                          if (sel) {
+                            sidebarScope.setAllIstanbul();
+                          } else {
+                            sidebarScope.selectHat(h.id, h.name);
+                          }
+                        }}
                         className={`w-full rounded-md px-2 py-1.5 text-left text-[12px] leading-snug transition-colors ${
                           sel
                             ? "bg-[var(--sidebar-active)] text-white"
@@ -237,7 +258,7 @@ export function Sidebar() {
             )}
           </div>
 
-          {selectedHat ? (
+          {scopeMode === "hat" && selectedHatId != null ? (
             <div className="shrink-0 border-t border-white/[0.08] bg-black/20 p-3">
               <div className="mb-2 flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -245,15 +266,15 @@ export function Sidebar() {
                     Özet
                   </p>
                   <p className="truncate text-[13px] font-semibold text-white">
-                    {selectedHat.name}
+                    {selectedHat?.name ?? sidebarScope.selectedHatName ?? "—"}
                   </p>
                   <p className="text-[11px] text-white/50">
-                    {electionZoneLabel(selectedHat.election_zone)}
+                    {electionZoneLabel(selectedHat?.election_zone)}
                   </p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setSelectedHatId(null)}
+                  onClick={() => sidebarScope.setAllIstanbul()}
                   className="shrink-0 rounded p-1 text-white/45 hover:bg-white/10 hover:text-white"
                   aria-label="Özeti kapat"
                 >
@@ -268,7 +289,7 @@ export function Sidebar() {
                     </span>
                   </dt>
                   <dd className="truncate font-mono text-white/90">
-                    {selectedHat.code || "—"}
+                    {selectedHat?.code || "—"}
                   </dd>
                 </div>
                 <div className="flex items-center justify-between gap-2">
@@ -277,7 +298,7 @@ export function Sidebar() {
                     Etkinlik
                   </dt>
                   <dd className="tabular-nums text-white/90">
-                    {selectedHat.event_count ?? 0}
+                    {selectedHat?.event_count ?? 0}
                   </dd>
                 </div>
                 <div className="flex items-center justify-between gap-2">
@@ -286,7 +307,7 @@ export function Sidebar() {
                     Profil
                   </dt>
                   <dd className="tabular-nums text-white/90">
-                    {selectedHat.profile_count ?? 0}
+                    {selectedHat?.profile_count ?? 0}
                   </dd>
                 </div>
               </dl>
