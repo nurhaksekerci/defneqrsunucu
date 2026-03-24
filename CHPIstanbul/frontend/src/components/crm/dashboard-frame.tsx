@@ -32,7 +32,7 @@ function metaForPath(pathname: string): { title: string; description?: string } 
   }
   return {
     title: "Pano",
-    description: "Özet metrikler ve son hareketler.",
+    description: "Dönem özeti ve son etkinlik hareketleri.",
   };
 }
 

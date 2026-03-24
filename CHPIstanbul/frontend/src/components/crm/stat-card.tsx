@@ -6,6 +6,7 @@ type StatCardProps = {
   hint?: string;
   icon: LucideIcon;
   accent?: "red" | "navy" | "success" | "warning";
+  className?: string;
 };
 
 const leftBorder = {
@@ -28,27 +29,28 @@ export function StatCard({
   hint,
   icon: Icon,
   accent = "navy",
+  className = "",
 }: StatCardProps) {
   return (
     <div
-      className={`rounded-lg border border-border bg-surface shadow-crm-sm ${leftBorder[accent]} border-l-[3px]`}
+      className={`rounded-2xl border border-border/80 bg-surface/95 shadow-sm ring-1 ring-black/[0.03] backdrop-blur-sm transition-shadow hover:shadow-md ${leftBorder[accent]} border-l-[3px] ${className}`}
     >
-      <div className="flex items-start justify-between gap-4 p-5">
+      <div className="flex items-start justify-between gap-4 p-5 sm:p-6">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
             {label}
           </p>
-          <p className="mt-2 tabular-nums text-[28px] font-semibold leading-none tracking-tight text-foreground">
+          <p className="mt-2.5 tabular-nums text-[30px] font-semibold leading-none tracking-tight text-foreground">
             {value}
           </p>
           {hint ? (
-            <p className="mt-2 text-[12px] font-medium text-muted">{hint}</p>
+            <p className="mt-2.5 text-[12px] leading-snug text-muted">{hint}</p>
           ) : null}
         </div>
         <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${iconStyle[accent]}`}
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconStyle[accent]}`}
         >
-          <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          <Icon className="h-[19px] w-[19px]" strokeWidth={1.75} />
         </div>
       </div>
     </div>

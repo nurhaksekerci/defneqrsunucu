@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { StatCard } from "@/components/crm/stat-card";
-import { SectionCard } from "@/components/crm/section-card";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useAuth } from "@/contexts/auth-context";
 import { useIlBaskanligiSidebar } from "@/contexts/il-baskanligi-sidebar-context";
@@ -20,14 +19,15 @@ import {
 import type { MeUser } from "@/contexts/auth-context";
 import type { ApiEvent } from "@/lib/types/api";
 import {
+  ArrowRight,
   CalendarClock,
+  CalendarRange,
   CheckCircle2,
   FileWarning,
+  LayoutDashboard,
   TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
-
-type ApiDistrict = { id: number; name: string };
 
 type ApiHat = {
   id: number;
@@ -66,9 +66,9 @@ function activityStatus(e: ApiEvent): string {
 
 const badge = (durum: string) => {
   const base =
-    "inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold tracking-tight";
+    "inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-tight";
   if (durum === "Planlandı")
-    return `${base} bg-slate-100 text-chp-navy ring-1 ring-slate-200/80`;
+    return `${base} bg-slate-100/90 text-chp-navy ring-1 ring-slate-200/70`;
   if (durum === "Tamamlandı")
     return `${base} bg-emerald-50 text-emerald-900 ring-1 ring-emerald-100`;
   return `${base} bg-chp-red-subtle text-chp-red ring-1 ring-chp-red/15`;
@@ -78,8 +78,8 @@ function scopeDescription(user: MeUser): string {
   if (!user) return "";
   if (user.is_provincial_official) {
     if (user.hat_is_coordination)
-      return "İl yetkilisi (Ana Kademe): tüm hatlar. Kol, hat ve ilçe süzgeci kullanılabilir.";
-    return `İl yetkilisi: yalnızca “${user.hat_name ?? "—"}” hattı, tüm ilçeler. İsteğe bağlı ilçe süzgeci.`;
+      return "İl yetkilisi (Ana Kademe): tüm hatlar; kol ve hat süzgeci kullanılabilir.";
+    return `İl yetkilisi: yalnızca “${user.hat_name ?? "—"}” hattı, tüm ilçeler.`;
   }
   if (user.hat_is_coordination)
     return `İlçe koordinasyonu: ${user.district_name ?? "ilçeniz"} kapsamında tüm hatlar; kol ve hat süzgeci kullanılabilir.`;
@@ -92,9 +92,6 @@ export default function DashboardPage() {
   const showIlceSidebar = Boolean(user?.show_sidebar_ilce_baskanliklari);
   const useSidebarScope = showIlceSidebar && ilSidebar != null;
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
-  const [filterDistrict, setFilterDistrict] = useState("");
-  const [districtOptions, setDistrictOptions] = useState<ApiDistrict[]>([]);
-  const [districtsLoading, setDistrictsLoading] = useState(false);
   const [filterBucket, setFilterBucket] = useState("");
   const [filterHat, setFilterHat] = useState("");
   const [hatOptions, setHatOptions] = useState<ApiHat[]>([]);
@@ -102,32 +99,10 @@ export default function DashboardPage() {
   const [events, setEvents] = useState<ApiEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const showDistrictFilter = Boolean(user?.is_provincial_official);
   const showCoordinationFilters = Boolean(user?.hat_is_coordination);
   const showCoordinationFiltersOnPage =
     showCoordinationFilters && !useSidebarScope;
-
-  useEffect(() => {
-    if (!showDistrictFilter) return;
-    let cancelled = false;
-    setDistrictsLoading(true);
-    apiFetch<ApiDistrict[]>("/api/org/districts/")
-      .then((data) => {
-        if (!cancelled) setDistrictOptions(Array.isArray(data) ? data : []);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setDistrictOptions([]);
-          toast.error("İlçe listesi alınamadı");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setDistrictsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [showDistrictFilter]);
+  const showKolColumn = Boolean(user?.is_provincial_official);
 
   useEffect(() => {
     if (!showCoordinationFiltersOnPage) return;
@@ -172,7 +147,6 @@ export default function DashboardPage() {
     qs.set("date_from", date_from);
     qs.set("date_to", date_to);
     appendEventListFilters(qs, {
-      district: showDistrictFilter ? filterDistrict : undefined,
       coordinationBucket: showCoordinationFiltersOnPage ? filterBucket : undefined,
       hat: showCoordinationFiltersOnPage ? filterHat : undefined,
     });
@@ -206,8 +180,6 @@ export default function DashboardPage() {
     };
   }, [
     selectedMonth,
-    filterDistrict,
-    showDistrictFilter,
     filterBucket,
     filterHat,
     showCoordinationFiltersOnPage,
@@ -224,13 +196,7 @@ export default function DashboardPage() {
     ).length;
     const hats = new Set(events.map((e) => e.hat_name)).size;
     const avg = hats > 0 ? (done / hats).toFixed(1) : "—";
-    const distHint =
-      showDistrictFilter && filterDistrict
-        ? "Seçilen ilçe"
-        : showDistrictFilter
-          ? "Tüm ilçeler"
-          : monthLabel(selectedMonth);
-    const scopeParts: string[] = [distHint];
+    const scopeParts: string[] = [monthLabel(selectedMonth)];
     if (useSidebarScope && ilSidebar) {
       if (ilSidebar.scopeMode === "all") {
         scopeParts.push("Tüm İstanbul");
@@ -260,8 +226,6 @@ export default function DashboardPage() {
   }, [
     events,
     selectedMonth,
-    showDistrictFilter,
-    filterDistrict,
     showCoordinationFilters,
     useSidebarScope,
     ilSidebar,
@@ -274,8 +238,9 @@ export default function DashboardPage() {
     () =>
       events.map((e) => ({
         key: e.id,
+        /** Örgüt hattı adı (ilçe başkanlığı hatları için doğrudan eşleşir) */
+        ilceBaskanligi: e.hat_name,
         what: e.title,
-        hat: e.hat_name,
         kol: e.coordination_kolu ?? "—",
         ilce: e.district_name,
         where:
@@ -292,87 +257,84 @@ export default function DashboardPage() {
     [events],
   );
 
-  const showKolColumn = showDistrictFilter;
   const tableColCount = showKolColumn ? 7 : 6;
 
   const selectCls =
-    "h-9 min-w-[160px] rounded-md border border-border bg-background px-3 text-[13px] font-medium outline-none focus:border-border-strong focus:ring-1 focus:ring-chp-navy/12";
+    "h-10 min-w-[160px] rounded-xl border border-border/90 bg-background px-3 text-[13px] font-medium shadow-sm outline-none transition-shadow focus:border-chp-navy/25 focus:ring-2 focus:ring-chp-navy/10";
 
   return (
-    <div className="mx-auto flex max-w-[1280px] flex-col gap-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
-            Raporlama dönemi
-          </p>
-          <p className="text-[13px] text-muted-fg">
-            {user ? scopeDescription(user) : "Yükleniyor…"}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-end gap-3">
-          {showCoordinationFiltersOnPage ? (
-            <>
-              <SearchableSelect
-                id="dash-bucket"
-                label="Kol"
-                options={COORDINATION_BUCKET_OPTIONS}
-                value={filterBucket}
-                onChange={setFilterBucket}
-                emptyLabel="Tüm kollar"
-                disabled={false}
-                minWidthClass="min-w-[200px]"
+    <div className="mx-auto flex max-w-[1320px] flex-col gap-8 pb-4">
+      <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-slate-50/95 via-white to-slate-50/80 p-6 shadow-sm ring-1 ring-black/[0.04] sm:p-8">
+        <div
+          className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-chp-red/[0.07] blur-3xl"
+          aria-hidden
+        />
+        <div className="pointer-events-none absolute -bottom-24 -left-12 h-48 w-48 rounded-full bg-chp-navy/[0.04] blur-3xl" aria-hidden />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-xl">
+            <div className="flex items-center gap-2 text-chp-red/90">
+              <LayoutDashboard className="h-4 w-4" strokeWidth={2} aria-hidden />
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]">
+                Pano
+              </p>
+            </div>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight text-foreground sm:text-[1.85rem]">
+              Etkinlik özeti
+            </h1>
+            <p className="mt-2 text-[14px] leading-relaxed text-muted">
+              {user ? scopeDescription(user) : "Yükleniyor…"}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border/60 bg-white/70 p-3 shadow-sm backdrop-blur-sm">
+            {showCoordinationFiltersOnPage ? (
+              <>
+                <SearchableSelect
+                  id="dash-bucket"
+                  label="Kol"
+                  options={COORDINATION_BUCKET_OPTIONS}
+                  value={filterBucket}
+                  onChange={setFilterBucket}
+                  emptyLabel="Tüm kollar"
+                  disabled={false}
+                  minWidthClass="min-w-[200px]"
+                />
+                <SearchableSelect
+                  id="dash-hat"
+                  label="Hat"
+                  options={
+                    hatOptionGroups != null
+                      ? []
+                      : hatOptions.map((h) => ({
+                          value: String(h.id),
+                          label: h.name,
+                        }))
+                  }
+                  optionGroups={hatOptionGroups}
+                  value={filterHat}
+                  onChange={setFilterHat}
+                  emptyLabel={
+                    filterBucket ? "Koldaki tüm hatlar" : "Tüm hatlar"
+                  }
+                  disabled={hatsLoading}
+                  minWidthClass="min-w-[220px]"
+                />
+              </>
+            ) : null}
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor="dash-month"
+                className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted"
+              >
+                Dönem
+              </label>
+              <input
+                id="dash-month"
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className={`${selectCls} min-w-[158px]`}
               />
-              <SearchableSelect
-                id="dash-hat"
-                label="Hat"
-                options={
-                  hatOptionGroups != null
-                    ? []
-                    : hatOptions.map((h) => ({
-                        value: String(h.id),
-                        label: h.name,
-                      }))
-                }
-                optionGroups={hatOptionGroups}
-                value={filterHat}
-                onChange={setFilterHat}
-                emptyLabel={
-                  filterBucket ? "Koldaki tüm hatlar" : "Tüm hatlar"
-                }
-                disabled={hatsLoading}
-                minWidthClass="min-w-[220px]"
-              />
-            </>
-          ) : null}
-          {showDistrictFilter ? (
-            <SearchableSelect
-              id="dash-district"
-              label="İlçe süzgeci"
-              options={districtOptions.map((d) => ({
-                value: String(d.id),
-                label: d.name,
-              }))}
-              value={filterDistrict}
-              onChange={setFilterDistrict}
-              emptyLabel={districtsLoading ? "İlçeler…" : "Tüm ilçeler"}
-              disabled={districtsLoading}
-              minWidthClass="min-w-[200px]"
-            />
-          ) : null}
-          <div className="flex flex-col gap-0.5">
-            <label
-              htmlFor="dash-month"
-              className="text-[10px] font-semibold uppercase tracking-wider text-muted"
-            >
-              Ay
-            </label>
-            <input
-              id="dash-month"
-              type="month"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className={`${selectCls} min-w-[148px]`}
-            />
+            </div>
           </div>
         </div>
       </div>
@@ -408,58 +370,63 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <SectionCard
-            title={`Özet hareketler — ${monthLabel(selectedMonth)}`}
-            action={
-              <span className="text-[11px] font-medium text-muted">
-                {loading ? "Yükleniyor…" : `${rows.length} kayıt`}
-              </span>
-            }
-          >
+          <section className="overflow-hidden rounded-2xl border border-border/80 bg-surface shadow-sm ring-1 ring-black/[0.03]">
+            <div className="flex flex-col gap-1 border-b border-border/80 bg-slate-50/90 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
+                Özet hareketler
+              </h2>
+              <div className="flex items-center gap-2 text-[12px] text-muted">
+                <CalendarRange className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                <span>{monthLabel(selectedMonth)}</span>
+                <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-foreground">
+                  {loading ? "…" : rows.length}
+                </span>
+              </div>
+            </div>
             <div className="overflow-x-auto">
               {!loading && rows.length === 0 ? (
-                <p className="px-5 py-8 text-center text-[13px] text-muted">
-                  Bu ay için etkinlik yok.
+                <p className="px-6 py-14 text-center text-[14px] text-muted">
+                  Bu dönem için kayıt yok.
                 </p>
               ) : (
                 <table
                   className={`w-full text-left text-[13px] ${showKolColumn ? "min-w-[640px]" : "min-w-[560px]"}`}
                 >
                   <thead>
-                    <tr className="border-b border-border bg-slate-50/80">
-                      <th className="px-5 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted">
+                    <tr className="border-b border-border/80 bg-white">
+                      <th className="min-w-[140px] px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-muted sm:px-6">
+                        İlçe başkanlığı
+                      </th>
+                      <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted sm:px-6">
                         Etkinlik
                       </th>
-                      <th className="px-5 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted">
-                        Hat
-                      </th>
                       {showKolColumn ? (
-                        <th className="px-5 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted">
-                          Koordinasyon kolu
+                        <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted sm:px-6">
+                          Kol
                         </th>
                       ) : null}
-                      <th className="px-5 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted">
+                      <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted sm:px-6">
                         İlçe
                       </th>
-                      <th className="px-5 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted">
+                      <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted sm:px-6">
                         Yer
                       </th>
-                      <th className="px-5 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted">
+                      <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted sm:px-6">
                         Durum
                       </th>
-                      <th className="px-5 py-2.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted">
+                      <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-muted sm:px-6">
                         Tarih
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="bg-white">
                     {loading ? (
                       <tr>
                         <td
                           colSpan={tableColCount}
-                          className="px-5 py-8 text-center text-muted"
+                          className="px-6 py-12 text-center text-[13px] text-muted"
                         >
                           Yükleniyor…
                         </td>
@@ -468,21 +435,29 @@ export default function DashboardPage() {
                       rows.map((row) => (
                         <tr
                           key={row.key}
-                          className="border-b border-border/90 transition-colors last:border-0 hover:bg-slate-50/60"
+                          className="border-b border-border/60 transition-colors last:border-0 hover:bg-slate-50/80"
                         >
-                          <td className="px-5 py-3 font-medium text-foreground">
+                          <td className="max-w-[220px] px-5 py-3.5 text-[13px] font-medium text-foreground sm:px-6">
+                            {row.ilceBaskanligi}
+                          </td>
+                          <td className="px-5 py-3.5 font-medium text-foreground sm:px-6">
                             {row.what}
                           </td>
-                          <td className="px-5 py-3 text-muted">{row.hat}</td>
                           {showKolColumn ? (
-                            <td className="px-5 py-3 text-muted">{row.kol}</td>
+                            <td className="px-5 py-3.5 text-muted sm:px-6">
+                              {row.kol}
+                            </td>
                           ) : null}
-                          <td className="px-5 py-3 text-muted">{row.ilce}</td>
-                          <td className="px-5 py-3 text-muted">{row.where}</td>
-                          <td className="px-5 py-3">
+                          <td className="px-5 py-3.5 text-muted sm:px-6">
+                            {row.ilce}
+                          </td>
+                          <td className="max-w-[200px] truncate px-5 py-3.5 text-muted sm:px-6">
+                            {row.where}
+                          </td>
+                          <td className="px-5 py-3.5 sm:px-6">
                             <span className={badge(row.durum)}>{row.durum}</span>
                           </td>
-                          <td className="px-5 py-3 text-right tabular-nums text-muted">
+                          <td className="px-5 py-3.5 text-right tabular-nums text-muted sm:px-6">
                             {row.tarih}
                           </td>
                         </tr>
@@ -492,28 +467,49 @@ export default function DashboardPage() {
                 </table>
               )}
             </div>
-          </SectionCard>
+          </section>
         </div>
 
         <div className="flex flex-col gap-6">
-          <SectionCard title="Hızlı işlemler">
-            <ul className="divide-y divide-border">
+          <section className="overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-b from-white to-slate-50/90 shadow-sm ring-1 ring-black/[0.03]">
+            <div className="border-b border-border/70 px-5 py-4">
+              <h2 className="text-[14px] font-semibold tracking-tight text-foreground">
+                Hızlı işlemler
+              </h2>
+              <p className="mt-1 text-[12px] text-muted">
+                Sık kullanılan sayfalar
+              </p>
+            </div>
+            <ul className="divide-y divide-border/70 p-2">
               {[
-                { label: "Yeni etkinlik oluştur", href: "/etkinlikler" },
-                { label: "Raporları görüntüle", href: "/raporlar" },
+                {
+                  label: "Etkinlikler",
+                  hint: "Planla veya tamamla",
+                  href: "/etkinlikler",
+                },
+                {
+                  label: "Raporlar",
+                  hint: "Etkinlik sonrası raporlar",
+                  href: "/raporlar",
+                },
               ].map((item) => (
                 <li key={item.label}>
                   <Link
                     href={item.href}
-                    className="flex w-full items-center justify-between px-5 py-3 text-left text-[13px] font-medium text-foreground transition-colors hover:bg-slate-50"
+                    className="group flex items-center justify-between gap-3 rounded-xl px-3 py-3.5 text-left transition-colors hover:bg-white"
                   >
-                    {item.label}
-                    <span className="text-muted">→</span>
+                    <div>
+                      <p className="text-[13px] font-semibold text-foreground">
+                        {item.label}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-muted">{item.hint}</p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-muted opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
                   </Link>
                 </li>
               ))}
             </ul>
-          </SectionCard>
+          </section>
         </div>
       </div>
     </div>
