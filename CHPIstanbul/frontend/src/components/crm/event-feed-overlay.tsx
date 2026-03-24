@@ -98,7 +98,7 @@ export function EventFeedOverlay({
         <p className="text-[13px] font-semibold text-foreground">
           Etkinlikler
           <span className="ml-2 font-normal text-muted">
-            ({events.length}) — aşağı kaydırarak sonrakine geçin
+            ({events.length}) — görselleri sağa/sola; sonraki etkinlik için yukarı/aşağı
           </span>
         </p>
         <button
@@ -119,13 +119,13 @@ export function EventFeedOverlay({
           <article
             key={ev.id}
             id={`feed-event-${ev.id}`}
-            className="flex min-h-[100dvh] snap-start flex-col border-b border-border md:flex-row md:items-stretch"
+            className="flex min-h-[100dvh] snap-start flex-col border-b border-border md:h-[100dvh] md:flex-row md:items-stretch"
           >
-            <div className="relative flex min-h-[42vh] w-full shrink-0 flex-col bg-black md:min-h-[100dvh] md:w-[52%] lg:w-[50%]">
+            <div className="relative flex h-[70vh] min-h-0 w-full shrink-0 flex-col bg-black md:h-auto md:min-h-0 md:w-[70%] md:flex-[0_0_70%]">
               <FeedImages event={ev} detail={cache[ev.id]} />
             </div>
 
-            <div className="flex w-full flex-col gap-5 bg-surface p-5 md:w-[48%] md:min-h-[100dvh] md:max-w-none md:overflow-y-auto md:border-l md:border-border lg:w-[50%]">
+            <div className="flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto bg-surface p-4 md:h-full md:w-[30%] md:flex-[0_0_30%] md:flex-none md:min-h-0 md:border-l md:border-border md:p-5">
               <FeedCopy event={ev} detail={cache[ev.id]} />
             </div>
           </article>
@@ -157,7 +157,7 @@ function FeedImages({
 
   if (urls.length === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center text-white/70">
+      <div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center gap-3 p-8 text-center text-white/70">
         <ImageOff className="h-12 w-12 opacity-60" strokeWidth={1.25} />
         <p className="text-[13px]">Bu etkinlik için görsel yok</p>
       </div>
@@ -165,16 +165,19 @@ function FeedImages({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col gap-0 overflow-y-auto">
+    <div
+      className="flex h-full min-h-0 w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden [-webkit-overflow-scrolling:touch]"
+      aria-label="Görseller — yatay kaydırın"
+    >
       {urls.map((url, i) => (
         <div
           key={`${event.id}-img-${i}`}
-          className="flex min-h-0 w-full flex-1 items-center justify-center border-b border-white/10 last:border-b-0"
+          className="flex h-full w-full shrink-0 snap-center snap-always flex-[0_0_100%] flex-col items-center justify-center bg-black"
         >
           <img
             src={url}
             alt=""
-            className="max-h-[min(85vh,920px)] w-full object-contain md:max-h-[min(92vh,980px)]"
+            className="h-full max-h-full w-full max-w-full object-contain"
           />
         </div>
       ))}
