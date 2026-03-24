@@ -43,12 +43,23 @@ docker compose exec backend-chp python manage.py createsuperuser
 
 ## Veritabanı
 
-- **chpistanbul** veritabanı DefneQr Postgres konteynerinde otomatik oluşturulur.
-- İlk defa çalıştırmada `init-multiple-databases.sh` scripti çalışır.
-- **Not**: Mevcut DefneQr Postgres varsa, `chpistanbul` manuel eklenebilir:
-  ```sql
-  CREATE DATABASE chpistanbul;
-  ```
+- **chpistanbul** veritabanı, Postgres **ilk kurulumda** (boş volume) `init-multiple-databases.sh` ile oluşturulur.
+- **Mevcut sunucuda** (Postgres zaten çalışıyorsa) `chpistanbul` yoktur — aşağıdaki komutu **bir kez** çalıştırın:
+
+```bash
+cd /opt/defneqr   # proje kökü
+docker compose exec postgres psql -U defneqr -d postgres -c "CREATE DATABASE chpistanbul;"
+```
+
+`defneqr` yerine `.env` içindeki `DB_USER` değerini kullanın. Şifre sormaz (konteyner içi bağlantı).
+
+Ardından:
+
+```bash
+docker compose exec backend-chp python manage.py migrate
+```
+
+Veritabanı zaten varsa: `ERROR: database "chpistanbul" already exists` — bu durumda doğrudan `migrate` çalıştırın.
 
 ## Yapılan Değişiklikler
 
