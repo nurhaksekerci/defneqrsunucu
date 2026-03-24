@@ -210,7 +210,10 @@ export default function DashboardPage() {
     showDistrictFilter,
     filterBucket,
     filterHat,
-    showCoordinationFilters,
+    showCoordinationFiltersOnPage,
+    useSidebarScope,
+    ilSidebar?.scopeMode,
+    ilSidebar?.selectedHatId,
   ]);
 
   const stats = useMemo(() => {
