@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { EventFeedOverlay } from "@/components/crm/event-feed-overlay";
 import { StatCard } from "@/components/crm/stat-card";
-import { Modal } from "@/components/ui/modal";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useAuth } from "@/contexts/auth-context";
 import { useIlBaskanligiSidebar } from "@/contexts/il-baskanligi-sidebar-context";
@@ -17,7 +17,7 @@ import {
   hatsVisibleUnderKol,
 } from "@/lib/filter-hats-by-bucket";
 import type { MeUser } from "@/contexts/auth-context";
-import type { ApiEvent, ApiEventDetail } from "@/lib/types/api";
+import type { ApiEvent } from "@/lib/types/api";
 import {
   CalendarClock,
   CalendarRange,
@@ -90,12 +90,6 @@ function periodShortLabel(preset: PeriodPreset): string {
 
 type MetricFilter = "all" | "planned" | "completed" | "report_missing";
 
-const REPORT_STATUS_LABEL: Record<string, string> = {
-  draft: "Taslak",
-  review: "İncelemede",
-  published: "Yayında",
-};
-
 function activityStatus(e: ApiEvent): string {
   if (e.status === "planned") return "Planlandı";
   if (e.status === "completed" && !e.has_report) return "Rapor eksik";
@@ -143,9 +137,10 @@ export default function DashboardPage() {
   const [events, setEvents] = useState<ApiEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [metricFilter, setMetricFilter] = useState<MetricFilter>("all");
-  const [detailEventId, setDetailEventId] = useState<number | null>(null);
-  const [detail, setDetail] = useState<ApiEventDetail | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [feedOpen, setFeedOpen] = useState(false);
+  const [feedAnchorId, setFeedAnchorId] = useState<number | null>(null);
+  /** Feed açılırken sabitlenen liste (pano süzgeci değişince akışın sıçramaması için) */
+  const [feedEvents, setFeedEvents] = useState<ApiEvent[]>([]);
 
   const showCoordinationFilters = Boolean(user?.hat_is_coordination);
   const showCoordinationFiltersOnPage =
@@ -235,35 +230,6 @@ export default function DashboardPage() {
     ilSidebar?.scopeMode,
     ilSidebar?.selectedHatId,
   ]);
-
-  useEffect(() => {
-    if (detailEventId == null) {
-      setDetail(null);
-      return;
-    }
-    let cancelled = false;
-    setDetailLoading(true);
-    setDetail(null);
-    apiFetch<ApiEventDetail>(`/api/events/${detailEventId}/`)
-      .then((d) => {
-        if (!cancelled) setDetail(d);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          toast.error("Etkinlik detayı alınamadı", {
-            description:
-              err instanceof ApiError ? `Sunucu ${err.status}` : undefined,
-          });
-          setDetailEventId(null);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setDetailLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [detailEventId]);
 
   const filteredEvents = useMemo(() => {
     if (metricFilter === "all") return events;
@@ -539,7 +505,11 @@ export default function DashboardPage() {
                       <button
                         key={e.id}
                         type="button"
-                        onClick={() => setDetailEventId(e.id)}
+                        onClick={() => {
+                          setFeedEvents(filteredEvents);
+                          setFeedAnchorId(e.id);
+                          setFeedOpen(true);
+                        }}
                         className={`group relative aspect-square overflow-hidden rounded-md border border-border/70 text-left shadow-sm outline-none transition focus-visible:ring-2 focus-visible:ring-chp-navy/30 ${
                           cover ? "bg-slate-100" : "bg-slate-50"
                         }`}
@@ -672,7 +642,11 @@ export default function DashboardPage() {
                                   <button
                                     key={`${row.key}-t-${i}`}
                                     type="button"
-                                    onClick={() => setDetailEventId(row.key)}
+                                    onClick={() => {
+                                      setFeedEvents(filteredEvents);
+                                      setFeedAnchorId(row.key);
+                                      setFeedOpen(true);
+                                    }}
                                     className="h-9 w-9 shrink-0 overflow-hidden rounded-md border border-border/80 bg-slate-100 ring-offset-2 transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chp-navy/30"
                                     title="Raporu aç"
                                   >
@@ -703,103 +677,16 @@ export default function DashboardPage() {
             </div>
       </section>
 
-      <Modal
-        open={detailEventId != null}
+      <EventFeedOverlay
+        open={feedOpen}
         onClose={() => {
-          setDetailEventId(null);
-          setDetail(null);
+          setFeedOpen(false);
+          setFeedAnchorId(null);
+          setFeedEvents([]);
         }}
-        title={detail?.title ?? "Etkinlik"}
-        description={
-          detail
-            ? `${new Date(detail.starts_at).toLocaleString("tr-TR", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })} · ${detail.hat_name} · ${detail.district_name}`
-            : undefined
-        }
-        size="xl"
-        ariaLabel="Etkinlik planı ve rapor"
-      >
-        {detailLoading ? (
-          <div className="flex items-center justify-center gap-2 py-14 text-[13px] text-muted">
-            <Loader2 className="h-5 w-5 animate-spin" strokeWidth={2} />
-            Yükleniyor…
-          </div>
-        ) : detail ? (
-          <div className="space-y-8">
-            <section className="space-y-3">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
-                Etkinlik planı
-              </h3>
-              <dl className="grid gap-2 text-[13px] sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <dt className="text-[11px] font-medium text-muted">Durum</dt>
-                  <dd className="mt-0.5 font-medium text-foreground">
-                    {detail.status === "planned" ? "Planlandı" : "Tamamlandı"}
-                  </dd>
-                </div>
-                <div className="sm:col-span-2">
-                  <dt className="text-[11px] font-medium text-muted">Açıklama</dt>
-                  <dd className="mt-0.5 whitespace-pre-wrap text-foreground">
-                    {detail.description || "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-[11px] font-medium text-muted">Konum</dt>
-                  <dd className="mt-0.5 text-foreground">
-                    {eventWhereLabel(detail)}
-                  </dd>
-                </div>
-              </dl>
-            </section>
-
-            <section className="space-y-3 border-t border-border pt-6">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
-                Rapor
-              </h3>
-              {detail.report ? (
-                <div className="space-y-4">
-                  <p className="text-[12px] text-muted">
-                    Durum:{" "}
-                    <span className="font-medium text-foreground">
-                      {REPORT_STATUS_LABEL[detail.report.status] ??
-                        detail.report.status}
-                    </span>
-                  </p>
-                  <div className="whitespace-pre-wrap text-[13px] text-foreground">
-                    {detail.report.body || "—"}
-                  </div>
-                  {detail.report.images.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                      {detail.report.images.map((img) => (
-                        <a
-                          key={img.id}
-                          href={img.image}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block overflow-hidden rounded-lg border border-border bg-slate-100"
-                        >
-                          <img
-                            src={img.image}
-                            alt=""
-                            className="aspect-auto max-h-48 w-full object-contain"
-                          />
-                        </a>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              ) : (
-                <p className="text-[13px] text-muted">Bu etkinlik için rapor yok.</p>
-              )}
-            </section>
-          </div>
-        ) : null}
-      </Modal>
+        events={feedEvents}
+        anchorEventId={feedAnchorId}
+      />
     </div>
   );
 }
