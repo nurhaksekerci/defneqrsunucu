@@ -23,6 +23,8 @@ import {
   CalendarRange,
   CheckCircle2,
   FileWarning,
+  ImageOff,
+  Images,
   LayoutDashboard,
   Loader2,
 } from "lucide-react";
@@ -427,7 +429,9 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-2 border-b border-border/80 bg-slate-50/90 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
-                  Özet hareketler
+                  {metricFilter === "completed"
+                    ? "Tamamlanan etkinlikler"
+                    : "Özet hareketler"}
                 </h2>
                 {metricFilter !== "all" ? (
                   <button
@@ -452,18 +456,102 @@ export default function DashboardPage() {
                   </span>
                 ) : null}
                 <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-foreground">
-                  {loading ? "…" : rows.length}
+                  {loading
+                    ? "…"
+                    : metricFilter === "completed"
+                      ? filteredEvents.length
+                      : rows.length}
                 </span>
               </div>
             </div>
-            <div className="overflow-x-auto">
-              {!loading && rows.length === 0 ? (
+            <div
+              className={
+                metricFilter === "completed" ? "" : "overflow-x-auto"
+              }
+            >
+              {loading && metricFilter === "completed" ? (
+                <div className="flex items-center justify-center gap-2 py-16 text-[13px] text-muted">
+                  <Loader2 className="h-5 w-5 animate-spin" strokeWidth={2} />
+                  Yükleniyor…
+                </div>
+              ) : !loading &&
+                metricFilter === "completed" &&
+                filteredEvents.length === 0 ? (
                 <p className="px-6 py-14 text-center text-[14px] text-muted">
                   {events.length === 0
                     ? "Bu dönem için kayıt yok."
                     : "Bu süzgeç için kayıt yok. Tümünü göstermek için üstteki “Tümü”ye veya kartı yeniden tıklayın."}
                 </p>
-              ) : (
+              ) : !loading && metricFilter === "completed" ? (
+                <div className="grid grid-cols-2 gap-1.5 p-2 sm:grid-cols-3 sm:gap-2 sm:p-4 md:grid-cols-4 md:gap-2">
+                  {filteredEvents.map((e) => {
+                    const urls = e.report_image_urls ?? [];
+                    const cover = urls[0];
+                    const hasMore = urls.length > 1;
+                    return (
+                      <button
+                        key={e.id}
+                        type="button"
+                        onClick={() => setDetailEventId(e.id)}
+                        className={`group relative aspect-square overflow-hidden rounded-md border border-border/70 text-left shadow-sm outline-none transition focus-visible:ring-2 focus-visible:ring-chp-navy/30 ${
+                          cover ? "bg-slate-100" : "bg-slate-50"
+                        }`}
+                        title={e.title}
+                      >
+                        {cover ? (
+                          <>
+                            <img
+                              src={cover}
+                              alt=""
+                              className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                            />
+                            <div
+                              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent opacity-80 transition-opacity group-hover:opacity-100"
+                              aria-hidden
+                            />
+                            {hasMore ? (
+                              <div className="absolute right-2 top-2 rounded bg-black/45 p-1 text-white backdrop-blur-[2px]">
+                                <Images
+                                  className="h-3.5 w-3.5"
+                                  strokeWidth={2}
+                                />
+                              </div>
+                            ) : null}
+                            <div className="absolute inset-x-0 bottom-0 p-2.5 pt-8">
+                              <p className="line-clamp-2 text-[11px] font-semibold leading-snug text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)]">
+                                {e.title}
+                              </p>
+                              <p className="mt-0.5 line-clamp-1 text-[10px] text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                                {e.hat_name} · {e.district_name}
+                              </p>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-3 text-center">
+                            <ImageOff
+                              className="h-9 w-9 shrink-0 text-muted"
+                              strokeWidth={1.5}
+                              aria-hidden
+                            />
+                            <span className="line-clamp-3 text-[11px] font-semibold leading-snug text-foreground">
+                              {e.title}
+                            </span>
+                            <span className="line-clamp-2 text-[10px] text-muted">
+                              {e.hat_name} · {e.district_name}
+                            </span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : !loading && rows.length === 0 ? (
+                <p className="px-6 py-14 text-center text-[14px] text-muted">
+                  {events.length === 0
+                    ? "Bu dönem için kayıt yok."
+                    : "Bu süzgeç için kayıt yok. Tümünü göstermek için üstteki “Tümü”ye veya kartı yeniden tıklayın."}
+                </p>
+              ) : metricFilter !== "completed" ? (
                 <table
                   className={`w-full text-left text-[13px] ${showKolColumn ? "min-w-[720px]" : "min-w-[640px]"}`}
                 >
@@ -564,7 +652,7 @@ export default function DashboardPage() {
                     )}
                   </tbody>
                 </table>
-              )}
+              ) : null}
             </div>
       </section>
 
