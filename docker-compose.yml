@@ -172,6 +172,34 @@ services:
     networks:
       - defneqr-network
 
+  # CHP İstanbul mobil API — api-chp.defneqr.com (ayrı veritabanı: defneqr_chp)
+  backend-chp:
+    build:
+      context: ./backend-chp
+      dockerfile: Dockerfile
+    container_name: defneqr-backend-chp
+    environment:
+      DJANGO_SECRET_KEY: ${CHP_DJANGO_SECRET_KEY:-change-me-use-openssl-rand-hex-32}
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: api-chp.defneqr.com,localhost,127.0.0.1,backend-chp
+      POSTGRES_DB: defneqr_chp
+      POSTGRES_USER: ${DB_USER:-defneqr}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      CORS_ALLOWED_ORIGINS: ${CHP_CORS_ALLOWED_ORIGINS:-https://chp.defneqr.com,https://api-chp.defneqr.com}
+      CSRF_TRUSTED_ORIGINS: ${CHP_CSRF_TRUSTED_ORIGINS:-https://api-chp.defneqr.com}
+    volumes:
+      - chp_backend_media:/app/media
+    ports:
+      - "127.0.0.1:8005:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - defneqr-network
+
   nginx:
     image: nginx:alpine
     container_name: defneqr-nginx
@@ -191,12 +219,15 @@ services:
       - backend-qr
       - backend-randevu
       - backend-admin
+      - backend-chp
     restart: unless-stopped
     networks:
       - defneqr-network
 
 volumes:
   postgres_data:
+    driver: local
+  chp_backend_media:
     driver: local
 
 networks:
