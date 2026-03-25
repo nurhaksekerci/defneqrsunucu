@@ -17,4 +17,8 @@ _serve_media = os.environ.get("SERVE_MEDIA", "False").lower() in (
 )
 
 if settings.DEBUG or _serve_media:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(
+        settings.MEDIA_URL,
+        document_root=str(settings.MEDIA_ROOT),
+        insecure=True,  # Prod ortamında /media/ akışı için (Nginx arkasında) sorun çıkarmasın.
+    )
