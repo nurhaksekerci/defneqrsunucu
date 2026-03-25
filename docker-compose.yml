@@ -178,8 +178,9 @@ services:
       context: ./backend-chp
       dockerfile: Dockerfile
     container_name: defneqr-backend-chp
+    env_file:
+      - ./backend-chp/.env
     environment:
-      DJANGO_SECRET_KEY: ${CHP_DJANGO_SECRET_KEY:-change-me-use-openssl-rand-hex-32}
       DJANGO_DEBUG: "False"
       DJANGO_ALLOWED_HOSTS: api-chp.defneqr.com,localhost,127.0.0.1,backend-chp
       POSTGRES_DB: defneqr_chp
