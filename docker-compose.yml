@@ -209,6 +209,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./backend/uploads:/var/www/uploads:ro
+      - chp_backend_media:/var/www/chp_media:ro
       - ./nginx/certbot/www:/var/www/certbot:ro
     ports:
       - "80:80"
