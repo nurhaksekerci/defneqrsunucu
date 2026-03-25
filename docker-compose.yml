@@ -182,6 +182,7 @@ services:
       - ./backend-chp/.env
     environment:
       DJANGO_DEBUG: "False"
+      SERVE_MEDIA: "True"
       DJANGO_ALLOWED_HOSTS: api-chp.defneqr.com,localhost,127.0.0.1,backend-chp
       POSTGRES_DB: defneqr_chp
       POSTGRES_USER: ${DB_USER:-defneqr}
