@@ -20,5 +20,5 @@ if settings.DEBUG or _serve_media:
     urlpatterns += static(
         settings.MEDIA_URL,
         document_root=str(settings.MEDIA_ROOT),
-        insecure=True,  # Prod ortamında /media/ akışı için (Nginx arkasında) sorun çıkarmasın.
+        insecure=True,
     )
