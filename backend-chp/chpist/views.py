@@ -9,6 +9,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticate
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 
 from .models import (
     BranchKind,
@@ -38,6 +39,14 @@ from .serializers import (
     PostUpdateSerializer,
     apply_like_toggle,
 )
+
+
+class PlannedListPagination(PageNumberPagination):
+    """Rapor ve listeler: client page_size=100 geçerli olsun; üst sınır 500."""
+
+    page_size = 100
+    page_size_query_param = 'page_size'
+    max_page_size = 500
 
 
 class FeedListView(generics.ListAPIView):
@@ -180,6 +189,7 @@ class PlannedDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class PlannedListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = PlannedListPagination
 
     def get_queryset(self):
         qs = PlannedEvent.objects.select_related('org_unit')
@@ -437,6 +447,7 @@ EVENT_CATEGORIES = [
     {'id': 'miting', 'label': 'Miting / açık alan etkinliği'},
     {'id': 'egitim', 'label': 'Eğitim / seminer'},
     {'id': 'kampanya', 'label': 'Kampanya / tanıtım'},
+    {'id': 'ziyaret', 'label': 'Ziyaret'},
     {'id': 'diger', 'label': 'Diğer'},
 ]
 

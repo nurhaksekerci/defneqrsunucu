@@ -3,6 +3,7 @@ from django.utils.timesince import timesince
 from rest_framework import serializers
 
 from .models import (
+    BranchKind,
     Notification,
     OrgMembership,
     OrgUnit,
@@ -154,14 +155,10 @@ class PlannedEventSerializer(serializers.ModelSerializer):
     def get_orgUnitId(self, obj: PlannedEvent) -> str:
         return str(obj.org_unit_id)
 
-    def get_commissionId(self, obj: PlannedEvent):
-        """
-        Kol komisyon değilse null, komisyon ise org_unit.commission_id.
-        OrgUnit.clean bu tutarlılığı zaten garanti eder; burada sadece FK'yı yansıtıyoruz.
-        """
-        ou = obj.org_unit
-        cid = getattr(ou, "commission_id", None)
-        return cid or None
+    def get_commissionId(self, obj: PlannedEvent) -> int | None:
+        if obj.org_unit.branch != BranchKind.KOMISYON:
+            return None
+        return obj.org_unit.commission_id
 
     def get_branch(self, obj: PlannedEvent) -> str:
         return obj.org_unit.branch
