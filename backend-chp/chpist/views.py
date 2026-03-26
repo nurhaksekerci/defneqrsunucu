@@ -28,6 +28,7 @@ from .visibility import (
     org_unit_scope_q_for_user,
     primary_org_unit_for_user,
 )
+from .planned_queryset import planned_events_list_queryset
 from .serializers import (
     NotificationSerializer,
     OrgUnitSelectSerializer,
@@ -192,27 +193,9 @@ class PlannedListCreateView(generics.ListCreateAPIView):
     pagination_class = PlannedListPagination
 
     def get_queryset(self):
-        qs = PlannedEvent.objects.select_related('org_unit')
         if self.request.method != 'GET':
-            return qs.none()
-        scope = org_unit_scope_q_for_user(self.request.user)
-        if scope is not None:
-            qs = qs.filter(scope)
-        user = self.request.user
-        if user.is_authenticated:
-            qs = qs.annotate(
-                user_is_mine=Case(
-                    When(created_by_id=user.id, then=True),
-                    default=False,
-                    output_field=BooleanField(),
-                )
-            )
-        st = self.request.query_params.get('status', 'planned')
-        if st == 'completed':
-            return qs.filter(status=PlannedEventStatus.COMPLETED).order_by('-start_at')
-        if st == 'all':
-            return qs.order_by('-start_at')
-        return qs.filter(status=PlannedEventStatus.PLANNED).order_by('start_at')
+            return PlannedEvent.objects.none()
+        return planned_events_list_queryset(self.request)
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
