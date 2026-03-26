@@ -123,6 +123,8 @@ class PlannedEventSerializer(serializers.ModelSerializer):
     startLabel = serializers.SerializerMethodField()
     orgUnitId = serializers.SerializerMethodField()
     commissionId = serializers.SerializerMethodField()
+    # Mobil / rapor: snake_case ile aynı değer (tip: int | null); commissionId ile çift anahtar.
+    commission_id = serializers.SerializerMethodField()
     startAt = serializers.DateTimeField(source='start_at', read_only=True)
     eventCategoryId = serializers.CharField(source='event_category_id', read_only=True)
     isMine = serializers.SerializerMethodField()
@@ -143,8 +145,19 @@ class PlannedEventSerializer(serializers.ModelSerializer):
             'location',
             'eventCategoryId',
             'commissionId',
+            'commission_id',
             'isMine',
         ]
+
+    def _planned_commission_pk(self, obj: PlannedEvent) -> int | None:
+        """Komisyon kolu değilse null; aksi halde her zaman JSON sayısı (int), string üretilmez."""
+        ou = obj.org_unit
+        if ou.branch != BranchKind.KOMISYON:
+            return None
+        cid = ou.commission_id
+        if cid is None:
+            return None
+        return int(cid)
 
     def get_id(self, obj: PlannedEvent) -> str:
         return str(obj.pk)
@@ -156,9 +169,10 @@ class PlannedEventSerializer(serializers.ModelSerializer):
         return str(obj.org_unit_id)
 
     def get_commissionId(self, obj: PlannedEvent) -> int | None:
-        if obj.org_unit.branch != BranchKind.KOMISYON:
-            return None
-        return obj.org_unit.commission_id
+        return self._planned_commission_pk(obj)
+
+    def get_commission_id(self, obj: PlannedEvent) -> int | None:
+        return self._planned_commission_pk(obj)
 
     def get_branch(self, obj: PlannedEvent) -> str:
         return obj.org_unit.branch
