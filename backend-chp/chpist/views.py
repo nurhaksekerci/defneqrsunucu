@@ -26,6 +26,7 @@ from .visibility import (
     apply_feed_list_filters,
     feed_explore_scope_q_for_user,
     org_unit_scope_q_for_user,
+    planned_events_scope_q_for_user,
     primary_org_unit_for_user,
 )
 from .planned_queryset import planned_events_list_queryset
@@ -134,7 +135,7 @@ class PlannedDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         qs = PlannedEvent.objects.select_related('org_unit')
-        scope = org_unit_scope_q_for_user(self.request.user)
+        scope = planned_events_scope_q_for_user(self.request.user)
         if scope is not None:
             qs = qs.filter(scope)
         user = self.request.user

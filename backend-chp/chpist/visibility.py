@@ -102,6 +102,21 @@ def org_unit_scope_q_for_user(user) -> Q | None:
     return q
 
 
+def planned_events_scope_q_for_user(user) -> Q | None:
+    """
+    Planlı etkinlik listesi / detay: `feed_explore_scope_q_for_user` ile aynı il + alt
+    coğrafya kapsamı; tüm kollar (Ana Kademe, Gençlik, Kadın, Komisyon) dahil.
+
+    `org_unit_scope_q_for_user` ise üyeliği kol + (gerekirse) komisyon ile sıkı sınırladığı
+    için rapor ekranında diğer kollardan gelen planlar API’de yok sayılıyordu.
+
+    Anonim: `org_unit_scope_q_for_user` ile uyumlu (filtre yok, herkese açık liste).
+    """
+    if not user.is_authenticated:
+        return org_unit_scope_q_for_user(user)
+    return feed_explore_scope_q_for_user(user)
+
+
 _BRANCH_VALUES = frozenset(c[0] for c in BranchKind.choices)
 
 
