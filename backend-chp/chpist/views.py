@@ -29,7 +29,8 @@ from .visibility import (
     planned_events_scope_q_for_user,
     primary_org_unit_for_user,
 )
-from .planned_queryset import planned_events_list_queryset
+from .event_categories import EVENT_CATEGORIES
+from .planned_queryset import planned_category_breakdown, planned_events_list_queryset
 from .serializers import (
     NotificationSerializer,
     OrgUnitSelectSerializer,
@@ -197,6 +198,14 @@ class PlannedListCreateView(generics.ListCreateAPIView):
         if self.request.method != 'GET':
             return PlannedEvent.objects.none()
         return planned_events_list_queryset(self.request)
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        if request.method == 'GET' and isinstance(response.data, dict):
+            bd = planned_category_breakdown(request, EVENT_CATEGORIES)
+            response.data['tamamlanan'] = bd['tamamlanan']
+            response.data['planlanan'] = bd['planlanan']
+        return response
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -422,18 +431,6 @@ class CommissionListView(APIView):
         return Response(
             [{'id': c.pk, 'name': c.name, 'slug': c.slug} for c in rows]
         )
-
-
-# Planlama formu — mobil ile aynı kimlikler (Post/PlannedEvent.event_category_id)
-EVENT_CATEGORIES = [
-    {'id': 'mahalle_saha', 'label': 'Mahalle / saha çalışması'},
-    {'id': 'toplanti', 'label': 'Toplantı / örgüt'},
-    {'id': 'miting', 'label': 'Miting / açık alan etkinliği'},
-    {'id': 'egitim', 'label': 'Eğitim / seminer'},
-    {'id': 'kampanya', 'label': 'Kampanya / tanıtım'},
-    {'id': 'ziyaret', 'label': 'Ziyaret'},
-    {'id': 'diger', 'label': 'Diğer'},
-]
 
 
 class EventCategoriesView(APIView):
