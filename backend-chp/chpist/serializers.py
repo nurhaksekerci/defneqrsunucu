@@ -121,6 +121,7 @@ class PlannedEventSerializer(serializers.ModelSerializer):
     branchLabel = serializers.SerializerMethodField()
     startLabel = serializers.SerializerMethodField()
     orgUnitId = serializers.SerializerMethodField()
+    commissionId = serializers.SerializerMethodField()
     startAt = serializers.DateTimeField(source='start_at', read_only=True)
     eventCategoryId = serializers.CharField(source='event_category_id', read_only=True)
     isMine = serializers.SerializerMethodField()
@@ -140,6 +141,7 @@ class PlannedEventSerializer(serializers.ModelSerializer):
             'startAt',
             'location',
             'eventCategoryId',
+            'commissionId',
             'isMine',
         ]
 
@@ -151,6 +153,15 @@ class PlannedEventSerializer(serializers.ModelSerializer):
 
     def get_orgUnitId(self, obj: PlannedEvent) -> str:
         return str(obj.org_unit_id)
+
+    def get_commissionId(self, obj: PlannedEvent):
+        """
+        Kol komisyon değilse null, komisyon ise org_unit.commission_id.
+        OrgUnit.clean bu tutarlılığı zaten garanti eder; burada sadece FK'yı yansıtıyoruz.
+        """
+        ou = obj.org_unit
+        cid = getattr(ou, "commission_id", None)
+        return cid or None
 
     def get_branch(self, obj: PlannedEvent) -> str:
         return obj.org_unit.branch
