@@ -174,7 +174,7 @@ def apply_feed_list_filters(qs, user, request: HttpRequest):
     Akış listesi: kol/komisyon (varsayılan birincil üyelik; branch=all hepsi) +
     ilçe ve kategori (çoklu).
     """
-    params = request.query_params
+    params = getattr(request, 'query_params', request.GET)
     branch_raw = (params.get('branch') or '').strip()
 
     primary = primary_org_unit_for_user(user)

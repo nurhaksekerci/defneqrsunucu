@@ -1,6 +1,9 @@
 """GET /api/planned/ listesi — `PlannedListCreateView` ile aynı queryset (tek kaynak).
 
 Kapsam: `planned_events_scope_q_for_user` (akış ile aynı il/alt coğrafya, tüm kollar).
+
+Süzgeçler (akış /feed/ ile aynı query parametreleri): ``branch`` (``all`` = tüm kollar),
+``commission``, ``district`` / ``districts``, ``category`` / ``categories``.
 """
 
 from __future__ import annotations
@@ -8,16 +11,16 @@ from __future__ import annotations
 from django.db.models import BooleanField, Case, Count, QuerySet, When
 
 from .models import PlannedEvent, PlannedEventStatus
-from .visibility import planned_events_scope_q_for_user
+from .visibility import apply_feed_list_filters, planned_events_scope_q_for_user
 
 
 def planned_events_base_queryset(request) -> QuerySet[PlannedEvent]:
-    """Durum filtresi yok; liste ile aynı org kapsamı (kategori sayımları için)."""
+    """Durum filtresi yok; org kapsamı + kol/ilçe/kategori süzgeçleri (liste ve kırılım ile aynı)."""
     qs = PlannedEvent.objects.select_related('org_unit')
     scope = planned_events_scope_q_for_user(request.user)
     if scope is not None:
         qs = qs.filter(scope)
-    return qs
+    return apply_feed_list_filters(qs, request.user, request)
 
 
 def _bucket_event_category_id(raw: str | None, known_ids: set[str]) -> str:
