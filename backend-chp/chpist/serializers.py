@@ -1,4 +1,4 @@
-from django.utils import translation
+from django.utils import timezone, translation
 from django.utils.timesince import timesince
 from rest_framework import serializers
 
@@ -101,7 +101,7 @@ class PostDetailSerializer(PostListSerializer):
 
 
 class PostUpdateSerializer(serializers.ModelSerializer):
-    """Gönderi sahibinin metin alanlarını güncellemesi (görsel/org değişmez)."""
+    """GÃ¶nderi sahibinin metin alanlarÄ±nÄ± gÃ¼ncellemesi (gÃ¶rsel/org deÄŸiÅŸmez)."""
 
     eventTitle = serializers.CharField(
         source='event_title', required=False, allow_blank=True, max_length=300
@@ -123,7 +123,7 @@ class PlannedEventSerializer(serializers.ModelSerializer):
     startLabel = serializers.SerializerMethodField()
     orgUnitId = serializers.SerializerMethodField()
     commissionId = serializers.SerializerMethodField()
-    # Mobil / rapor: snake_case ile aynı değer (tip: int | null); commissionId ile çift anahtar.
+    # Mobil / rapor: snake_case ile aynÄ± deÄŸer (tip: int | null); commissionId ile Ã§ift anahtar.
     commission_id = serializers.SerializerMethodField()
     startAt = serializers.DateTimeField(source='start_at', read_only=True)
     eventCategoryId = serializers.CharField(source='event_category_id', read_only=True)
@@ -150,7 +150,7 @@ class PlannedEventSerializer(serializers.ModelSerializer):
         ]
 
     def _planned_commission_pk(self, obj: PlannedEvent) -> int | None:
-        """Komisyon kolu değilse null; aksi halde her zaman JSON sayısı (int), string üretilmez."""
+        """Komisyon kolu deÄŸilse null; aksi halde her zaman JSON sayÄ±sÄ± (int), string Ã¼retilmez."""
         ou = obj.org_unit
         if ou.branch != BranchKind.KOMISYON:
             return None
@@ -191,26 +191,26 @@ class PlannedEventSerializer(serializers.ModelSerializer):
         return obj.created_by_id == user.id
 
     def get_startLabel(self, obj: PlannedEvent) -> str:
-        dt = obj.start_at
+        dt = timezone.localtime(obj.start_at)
         aylar = (
             'Ocak',
-            'Şubat',
+            'Åubat',
             'Mart',
             'Nisan',
-            'Mayıs',
+            'MayÄ±s',
             'Haziran',
             'Temmuz',
-            'Ağustos',
-            'Eylül',
+            'AÄŸustos',
+            'EylÃ¼l',
             'Ekim',
-            'Kasım',
-            'Aralık',
+            'KasÄ±m',
+            'AralÄ±k',
         )
         return f'{dt.day} {aylar[dt.month - 1]} {dt.year}, {dt.strftime("%H:%M")}'
 
 
 class PlannedEventUpdateSerializer(serializers.ModelSerializer):
-    """Plan sahibi: planlanan için tüm alanlar; tamamlanan için yalnızca başlık/açıklama."""
+    """Plan sahibi: planlanan iÃ§in tÃ¼m alanlar; tamamlanan iÃ§in yalnÄ±zca baÅŸlÄ±k/aÃ§Ä±klama."""
 
     orgUnitId = serializers.PrimaryKeyRelatedField(
         queryset=OrgUnit.objects.select_related('geographic_node', 'commission'),
@@ -241,7 +241,7 @@ class PlannedEventUpdateSerializer(serializers.ModelSerializer):
             if bad:
                 raise serializers.ValidationError(
                     {
-                        'detail': 'Tamamlanan etkinlikte yalnızca başlık ve açıklama güncellenebilir.'
+                        'detail': 'Tamamlanan etkinlikte yalnÄ±zca baÅŸlÄ±k ve aÃ§Ä±klama gÃ¼ncellenebilir.'
                     }
                 )
         return attrs
@@ -254,7 +254,7 @@ class PlannedEventUpdateSerializer(serializers.ModelSerializer):
             return value
         if not OrgMembership.objects.filter(user=request.user, org_unit=value).exists():
             raise serializers.ValidationError(
-                'Bu organizasyon birimi için üyelik / yetki tanımlı değil.'
+                'Bu organizasyon birimi iÃ§in Ã¼yelik / yetki tanÄ±mlÄ± deÄŸil.'
             )
         return value
 
@@ -284,7 +284,7 @@ class PlannedEventCreateSerializer(serializers.ModelSerializer):
             return value
         if not OrgMembership.objects.filter(user=request.user, org_unit=value).exists():
             raise serializers.ValidationError(
-                'Bu organizasyon birimi için üyelik / yetki tanımlı değil.'
+                'Bu organizasyon birimi iÃ§in Ã¼yelik / yetki tanÄ±mlÄ± deÄŸil.'
             )
         return value
 
@@ -359,3 +359,4 @@ def apply_like_toggle(post: Post, user, liked: bool) -> tuple[bool, int]:
     post.refresh_from_db(fields=['like_count'])
     is_liked = PostLike.objects.filter(post=post, user=user).exists()
     return is_liked, post.like_count
+

@@ -69,3 +69,7 @@ nginx/ssl/
 *.backup
 *.old*
 get-docker.sh
+
+
+#mobile app
+mobile-chp/
