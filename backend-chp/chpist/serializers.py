@@ -17,6 +17,7 @@ from .models import (
 class PostListSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField()
     orgPath = serializers.SerializerMethodField()
+    orgUnitId = serializers.SerializerMethodField()
     branch = serializers.SerializerMethodField()
     authorLabel = serializers.CharField(source='author_label')
     branchLabel = serializers.SerializerMethodField()
@@ -36,6 +37,7 @@ class PostListSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'orgPath',
+            'orgUnitId',
             'branch',
             'branchLabel',
             'authorLabel',
@@ -56,6 +58,9 @@ class PostListSerializer(serializers.ModelSerializer):
 
     def get_orgPath(self, obj: Post) -> str:
         return obj.org_unit.label_path()
+
+    def get_orgUnitId(self, obj: Post) -> str:
+        return str(obj.org_unit_id)
 
     def get_branch(self, obj: Post) -> str:
         return obj.org_unit.branch
@@ -101,7 +106,7 @@ class PostDetailSerializer(PostListSerializer):
 
 
 class PostUpdateSerializer(serializers.ModelSerializer):
-    """GÃ¶nderi sahibinin metin alanlarÄ±nÄ± gÃ¼ncellemesi (gÃ¶rsel/org deÄŸiÅŸmez)."""
+    """Gönderi sahibinin alan güncellemesi (metin + etkinlik alanları + org birimi)."""
 
     eventTitle = serializers.CharField(
         source='event_title', required=False, allow_blank=True, max_length=300
@@ -109,10 +114,30 @@ class PostUpdateSerializer(serializers.ModelSerializer):
     eventDescription = serializers.CharField(
         source='event_description', required=False, allow_blank=True
     )
+    eventCategoryId = serializers.CharField(
+        source='event_category_id', required=False, allow_blank=True, max_length=64
+    )
+    orgUnitId = serializers.PrimaryKeyRelatedField(
+        queryset=OrgUnit.objects.select_related('geographic_node', 'commission'),
+        source='org_unit',
+        required=False,
+    )
 
     class Meta:
         model = Post
-        fields = ['caption', 'eventTitle', 'eventDescription']
+        fields = ['caption', 'eventTitle', 'eventDescription', 'eventCategoryId', 'orgUnitId']
+
+    def validate_org_unit(self, value: OrgUnit) -> OrgUnit:
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            raise serializers.ValidationError('Oturum gerekli.')
+        if request.user.is_staff:
+            return value
+        if not OrgMembership.objects.filter(user=request.user, org_unit=value).exists():
+            raise serializers.ValidationError(
+                'Bu organizasyon birimi için üyelik / yetki tanımlı değil.'
+            )
+        return value
 
 
 class PlannedEventSerializer(serializers.ModelSerializer):

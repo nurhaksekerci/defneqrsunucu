@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate, get_user_model
+from django.db import transaction
 from django.db.models import BooleanField, Case, Exists, OuterRef, Value, When
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
@@ -20,6 +21,7 @@ from .models import (
     PlannedEvent,
     PlannedEventStatus,
     Post,
+    PostImage,
     PostLike,
 )
 from .visibility import (
@@ -108,7 +110,23 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
             )
         serializer = self.get_serializer(post, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        with transaction.atomic():
+            serializer.save()
+
+            # Görselleri değiştirme: multipart ile images[] gönderilirse komple değiştir.
+            images = request.FILES.getlist('images')
+            clear_images = str(request.data.get('clear_images') or '').lower() in (
+                '1',
+                'true',
+                'yes',
+            )
+            if images:
+                PostImage.objects.filter(post=post).delete()
+                for i, f in enumerate(images):
+                    PostImage.objects.create(post=post, image=f, sort_order=i)
+            elif clear_images:
+                PostImage.objects.filter(post=post).delete()
+
         post.refresh_from_db()
         return Response(
             PostDetailSerializer(post, context={'request': request}).data
