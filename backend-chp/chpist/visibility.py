@@ -14,7 +14,25 @@ from __future__ import annotations
 from django.db.models import Q
 from django.http import HttpRequest
 
-from .models import BranchKind, GeographicLevel, GeographicNode, OrgMembership, OrgUnit
+from .models import (
+    BranchKind,
+    GeographicLevel,
+    GeographicNode,
+    MembershipRole,
+    OrgMembership,
+    OrgUnit,
+    Post,
+)
+
+# Gönderi düzenle/sil: yazar, staff veya aynı kol+ilçe (+ komisyonda aynı komisyon) üzerinde
+# Başkan / Koordinatör / Temsilci rolü.
+_POST_MANAGE_ROLES = frozenset(
+    {
+        MembershipRole.CHAIR,
+        MembershipRole.COORDINATOR,
+        MembershipRole.DELEGATE,
+    }
+)
 
 
 # İl veya seçim bölgesi kökünde: altındaki tüm ilçe/mahalle birimleri görünür.
@@ -167,6 +185,47 @@ def primary_org_unit_for_user(user) -> OrgUnit | None:
     if not m:
         m = OrgMembership.objects.filter(user=user).select_related('org_unit').first()
     return m.org_unit if m else None
+
+
+def user_can_manage_post(user, post: Post) -> bool:
+    """
+    Post düzenleme/silme yetkisi.
+
+    - Yazar veya staff/superuser: evet.
+    - Aksi halde: gönderinin org birimi ile aynı kol + ilçe kodu (+ komisyon kolunda aynı commission)
+      ve kullanıcının üyeliğinde rol Başkan, Koordinatör veya Temsilci olmalı.
+    Gönderi ilçe kodu boşsa (il düzeyi vb.) moderatör yolu devreye girmez; yalnızca yazar/staff.
+    """
+    if not user.is_authenticated:
+        return False
+    if getattr(user, 'is_staff', False) or getattr(user, 'is_superuser', False):
+        return True
+    if post.author_id == user.id:
+        return True
+
+    ou_p = post.org_unit
+    p_ilce = (ou_p.ilce_code or '').strip()
+    if not p_ilce:
+        return False
+
+    p_branch = ou_p.branch
+    p_comm = ou_p.commission_id if p_branch == BranchKind.KOMISYON else None
+
+    memberships = OrgMembership.objects.filter(
+        user=user, role__in=_POST_MANAGE_ROLES
+    ).select_related('org_unit', 'org_unit__commission')
+
+    for m in memberships:
+        ou_m = m.org_unit
+        if ou_m.branch != p_branch:
+            continue
+        if (ou_m.ilce_code or '').strip() != p_ilce:
+            continue
+        if p_branch == BranchKind.KOMISYON and p_comm:
+            if ou_m.commission_id != p_comm:
+                continue
+        return True
+    return False
 
 
 def apply_feed_list_filters(qs, user, request: HttpRequest):

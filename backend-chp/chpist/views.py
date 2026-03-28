@@ -30,6 +30,7 @@ from .visibility import (
     org_unit_scope_q_for_user,
     planned_events_scope_q_for_user,
     primary_org_unit_for_user,
+    user_can_manage_post,
 )
 from .event_categories import EVENT_CATEGORIES
 from .planned_queryset import planned_category_breakdown, planned_events_list_queryset
@@ -103,9 +104,9 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
         post = self.get_object()
-        if post.author_id != request.user.id:
+        if not user_can_manage_post(request.user, post):
             return Response(
-                {'detail': 'Bu gönderiyi sadece sahibi düzenleyebilir.'},
+                {'detail': 'Bu gönderiyi düzenleme yetkiniz yok.'},
                 status=status.HTTP_403_FORBIDDEN,
             )
         serializer = self.get_serializer(post, data=request.data, partial=True)
@@ -139,9 +140,9 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
         post = self.get_object()
-        if post.author_id != request.user.id:
+        if not user_can_manage_post(request.user, post):
             return Response(
-                {'detail': 'Bu gönderiyi sadece sahibi silebilir.'},
+                {'detail': 'Bu gönderiyi silme yetkiniz yok.'},
                 status=status.HTTP_403_FORBIDDEN,
             )
         return super().destroy(request, *args, **kwargs)

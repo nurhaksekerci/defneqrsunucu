@@ -12,6 +12,7 @@ from .models import (
     Post,
     PostLike,
 )
+from .visibility import user_can_manage_post
 
 
 class PostListSerializer(serializers.ModelSerializer):
@@ -31,6 +32,7 @@ class PostListSerializer(serializers.ModelSerializer):
     eventTitle = serializers.CharField(source='event_title', allow_blank=True)
     eventDescription = serializers.CharField(source='event_description', allow_blank=True)
     isMine = serializers.SerializerMethodField()
+    canManage = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -48,6 +50,7 @@ class PostListSerializer(serializers.ModelSerializer):
             'likes',
             'liked',
             'isMine',
+            'canManage',
             'timeLabel',
             'districtId',
             'eventCategoryId',
@@ -84,6 +87,13 @@ class PostListSerializer(serializers.ModelSerializer):
         if not user or not user.is_authenticated:
             return False
         return obj.author_id == user.id
+
+    def get_canManage(self, obj: Post) -> bool:
+        request = self.context.get('request')
+        user = getattr(request, 'user', None) if request else None
+        if not user or not user.is_authenticated:
+            return False
+        return user_can_manage_post(user, obj)
 
     def get_liked(self, obj: Post) -> bool:
         annotated = getattr(obj, 'user_liked', None)
