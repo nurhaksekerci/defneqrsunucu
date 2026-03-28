@@ -31,6 +31,11 @@ class PostListSerializer(serializers.ModelSerializer):
 
     eventTitle = serializers.CharField(source='event_title', allow_blank=True)
     eventDescription = serializers.CharField(source='event_description', allow_blank=True)
+    eventLocation = serializers.CharField(source='event_location', allow_blank=True)
+    eventStartAt = serializers.DateTimeField(
+        source='event_start_at', read_only=True, allow_null=True
+    )
+    postImages = serializers.SerializerMethodField()
     isMine = serializers.SerializerMethodField()
     canManage = serializers.SerializerMethodField()
 
@@ -45,8 +50,11 @@ class PostListSerializer(serializers.ModelSerializer):
             'authorLabel',
             'eventTitle',
             'eventDescription',
+            'eventLocation',
+            'eventStartAt',
             'caption',
             'imageUrls',
+            'postImages',
             'likes',
             'liked',
             'isMine',
@@ -80,6 +88,16 @@ class PostListSerializer(serializers.ModelSerializer):
                 url = request.build_absolute_uri(url)
             urls.append(url)
         return urls
+
+    def get_postImages(self, obj: Post) -> list[dict[str, str]]:
+        request = self.context.get('request')
+        out: list[dict[str, str]] = []
+        for im in obj.images.all():
+            url = im.image.url
+            if request:
+                url = request.build_absolute_uri(url)
+            out.append({'id': str(im.pk), 'url': url})
+        return out
 
     def get_isMine(self, obj: Post) -> bool:
         request = self.context.get('request')
@@ -127,6 +145,12 @@ class PostUpdateSerializer(serializers.ModelSerializer):
     eventCategoryId = serializers.CharField(
         source='event_category_id', required=False, allow_blank=True, max_length=64
     )
+    eventLocation = serializers.CharField(
+        source='event_location', required=False, allow_blank=True
+    )
+    eventStartAt = serializers.DateTimeField(
+        source='event_start_at', required=False, allow_null=True
+    )
     orgUnitId = serializers.PrimaryKeyRelatedField(
         queryset=OrgUnit.objects.select_related('geographic_node', 'commission'),
         source='org_unit',
@@ -135,7 +159,15 @@ class PostUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['caption', 'eventTitle', 'eventDescription', 'eventCategoryId', 'orgUnitId']
+        fields = [
+            'caption',
+            'eventTitle',
+            'eventDescription',
+            'eventLocation',
+            'eventStartAt',
+            'eventCategoryId',
+            'orgUnitId',
+        ]
 
     def validate_org_unit(self, value: OrgUnit) -> OrgUnit:
         request = self.context.get('request')

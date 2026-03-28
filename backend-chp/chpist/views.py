@@ -114,19 +114,43 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
         with transaction.atomic():
             serializer.save()
 
-            # Görselleri değiştirme: multipart ile images[] gönderilirse komple değiştir.
-            images = request.FILES.getlist('images')
+            # Görseller: clear_images; tam değişim (yalnızca yeni dosyalar);
+            # veya existing_image_ids + isteğe bağlı yeni dosyalar (silme / ekleme / sıra).
+            new_files = request.FILES.getlist('images')
             clear_images = str(request.data.get('clear_images') or '').lower() in (
                 '1',
                 'true',
                 'yes',
             )
-            if images:
+            has_existing_key = 'existing_image_ids' in request.data
+
+            if clear_images:
                 PostImage.objects.filter(post=post).delete()
-                for i, f in enumerate(images):
+                for i, f in enumerate(new_files):
                     PostImage.objects.create(post=post, image=f, sort_order=i)
-            elif clear_images:
+            elif new_files and not has_existing_key:
                 PostImage.objects.filter(post=post).delete()
+                for i, f in enumerate(new_files):
+                    PostImage.objects.create(post=post, image=f, sort_order=i)
+            elif has_existing_key:
+                ids_str = str(request.data.get('existing_image_ids') or '').strip()
+                keep_ids = (
+                    [int(x) for x in ids_str.split(',') if x.strip()] if ids_str else []
+                )
+                current_ids = set(
+                    PostImage.objects.filter(post=post).values_list('pk', flat=True)
+                )
+                if not current_ids.issuperset(keep_ids):
+                    return Response(
+                        {'detail': 'Geçersiz görsel kimliği veya sıra.'},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                PostImage.objects.filter(post=post).exclude(pk__in=keep_ids).delete()
+                for i, pk in enumerate(keep_ids):
+                    PostImage.objects.filter(pk=pk, post=post).update(sort_order=i)
+                base = len(keep_ids)
+                for j, f in enumerate(new_files):
+                    PostImage.objects.create(post=post, image=f, sort_order=base + j)
 
         post.refresh_from_db()
         return Response(
@@ -354,6 +378,8 @@ def planned_complete(request: Request, pk: int):
         org_unit=ev.org_unit,
         event_title=ev.title,
         event_description=ev.description,
+        event_location=ev.location,
+        event_start_at=ev.start_at,
         caption=caption,
         event_category_id=event_category_id,
     )

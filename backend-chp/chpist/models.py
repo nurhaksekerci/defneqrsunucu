@@ -229,6 +229,16 @@ class Post(models.Model):
         blank=True,
         help_text='Kaynak planlanan etkinliğin açıklaması.',
     )
+    event_location = models.TextField(
+        blank=True,
+        help_text='Etkinlik yeri (planlama / tamamlama anından kopyalanır, düzenlenebilir).',
+    )
+    event_start_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text='Planlanan etkinlik başlangıcı (tamamlanan gönderilerde gösterim / düzenleme).',
+    )
     caption = models.TextField(blank=True)
     event_category_id = models.CharField(max_length=64, db_index=True)
     like_count = models.PositiveIntegerField(default=0)
