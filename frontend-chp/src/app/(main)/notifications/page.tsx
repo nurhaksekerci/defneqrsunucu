@@ -9,7 +9,6 @@ import {
   parseApiErrorMessage,
 } from '@/lib/api';
 import type { NotificationItem } from '@/lib/types';
-import clsx from 'clsx';
 
 export default function NotificationsPage() {
   const [items, setItems] = useState<NotificationItem[]>([]);
@@ -54,43 +53,51 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="chp-page-title">Bildirimler</h1>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="chp-page-title">Bildirimler</h1>
+          <p className="chp-page-sub">Örgüt ve sistem bildirimleri</p>
+        </div>
         {items.some((n) => n.unread) ? (
           <button
             type="button"
             onClick={() => void onReadAll()}
-            className="text-sm font-semibold text-chp-red underline decoration-chp-borderStrong underline-offset-4 hover:text-chp-redDark">
+            className="chp-btn-secondary !py-2 text-sm">
             Tümünü okundu işaretle
           </button>
         ) : null}
       </div>
 
-      {err ? <p className="text-sm font-medium text-amber-800">{err}</p> : null}
+      {err ? <div className="chp-alert font-medium">{err}</div> : null}
       {loading ? (
-        <p className="text-sm font-medium text-chp-inkMuted">Yükleniyor…</p>
+        <div className="flex flex-col items-center justify-center gap-3 py-12">
+          <div
+            className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-chp-red"
+            aria-hidden
+          />
+          <p className="text-sm font-medium text-slate-600">Yükleniyor…</p>
+        </div>
       ) : null}
 
       <ul className="space-y-3">
         {items.map((n) => (
           <li
             key={n.id}
-            className={clsx(
-              'rounded-2xl border p-5 transition-shadow',
+            className={
               n.unread
-                ? 'border-chp-red/20 bg-white shadow-chp ring-1 ring-chp-red/10'
-                : 'chp-card'
-            )}>
-            <p className="font-bold text-chp-ink">{n.title}</p>
-            <p className="mt-1.5 text-sm leading-relaxed text-chp-inkMuted">{n.body}</p>
-            <div className="mt-3 flex items-center justify-between gap-2">
-              <span className="text-xs font-medium text-chp-inkMuted">{n.timeLabel}</span>
+                ? 'chp-card border-l-4 border-l-chp-red p-5'
+                : 'chp-card bg-slate-50/50 p-5 opacity-95'
+            }>
+            <p className="font-semibold text-slate-900">{n.title}</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">{n.body}</p>
+            <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+              <span className="text-xs font-medium text-slate-500">{n.timeLabel}</span>
               {n.unread ? (
                 <button
                   type="button"
                   onClick={() => void onRead(n.id)}
                   className="text-xs font-semibold text-chp-red hover:text-chp-redDark">
-                  Okundu
+                  Okundu işaretle
                 </button>
               ) : null}
             </div>
@@ -99,9 +106,7 @@ export default function NotificationsPage() {
       </ul>
 
       {!loading && items.length === 0 ? (
-        <div className="chp-card rounded-2xl px-6 py-12 text-center">
-          <p className="text-sm font-medium text-chp-inkMuted">Bildirim yok.</p>
-        </div>
+        <div className="chp-card py-14 text-center text-slate-600">Bildirim yok.</div>
       ) : null}
     </div>
   );

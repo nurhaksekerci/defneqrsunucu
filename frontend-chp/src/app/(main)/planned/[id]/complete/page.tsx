@@ -64,53 +64,59 @@ export default function PlannedCompletePage() {
     }
   };
 
-  if (loading) return <p className="text-neutral-500">Yükleniyor…</p>;
-  if (err && !ev) return <p className="text-amber-800">{err}</p>;
-  if (!ev) return <p className="text-neutral-500">Bulunamadı.</p>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-20">
+        <div
+          className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-chp-red"
+          aria-hidden
+        />
+        <p className="text-sm font-medium text-slate-600">Yükleniyor…</p>
+      </div>
+    );
+  }
+  if (err && !ev) return <div className="chp-alert font-medium">{err}</div>;
+  if (!ev) return <div className="chp-card py-12 text-center text-slate-600">Bulunamadı.</div>;
   if (!ev.isMine) {
     return (
-      <p className="text-amber-800">
+      <div className="chp-alert">
         Bu plan size ait değil.{' '}
-        <Link href={`/planned/${id}`} className="font-bold text-chp-red underline">
+        <Link href={`/planned/${id}`} className="chp-link">
           Detaya dön
         </Link>
-      </p>
+      </div>
     );
   }
   if (ev.status === 'completed') {
     return (
-      <p className="text-neutral-600">
+      <div className="chp-card p-6 text-slate-700">
         Bu etkinlik zaten tamamlanmış.{' '}
-        <Link href={`/planned/${id}`} className="font-bold text-chp-red underline">
+        <Link href={`/planned/${id}`} className="chp-link">
           Detaya dön
         </Link>
-      </p>
+      </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
-      <Link href={`/planned/${id}`} className="text-sm font-bold text-chp-red hover:underline">
+    <div className="mx-auto max-w-lg space-y-8">
+      <Link href={`/planned/${id}`} className="chp-back-link">
         ← Detay
       </Link>
       <div>
-        <h1 className="font-display text-3xl font-bold text-neutral-900">Etkinliği tamamla</h1>
-        <p className="mt-1 text-sm text-neutral-600">
-          Görselleri yükleyin; gönderi akışta görünecek.
-        </p>
-        <p className="mt-2 font-semibold text-neutral-800">{ev.title}</p>
+        <h1 className="chp-page-title">Etkinliği tamamla</h1>
+        <p className="chp-page-sub">Görselleri yükleyin; gönderi akışta görünecek.</p>
+        <p className="mt-3 font-semibold text-slate-900">{ev.title}</p>
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-6">
+      <form onSubmit={onSubmit} className="chp-card space-y-5 p-6 sm:p-8">
         <div>
-          <label className="mb-1 block text-xs font-bold uppercase text-neutral-500">
-            Görseller
-          </label>
+          <label className="chp-section-label !mb-1.5">Görseller</label>
           <input
             type="file"
             accept="image/*"
             multiple
-            className="w-full text-sm"
+            className="w-full rounded-xl border border-dashed border-slate-300 bg-slate-50/50 px-3 py-6 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-chp-red file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
             onChange={(e) => {
               const list = e.target.files;
               setFiles(list ? Array.from(list) : []);
@@ -118,22 +124,20 @@ export default function PlannedCompletePage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-bold uppercase text-neutral-500">
-            Gönderi metni
-          </label>
+          <label className="chp-section-label !mb-1.5">Gönderi metni</label>
           <textarea
-            className="w-full rounded-xl border px-3 py-2"
+            className="chp-input"
             rows={4}
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
           />
         </div>
-        {err ? <p className="text-sm font-semibold text-amber-800">{err}</p> : null}
+        {err ? <p className="chp-alert text-sm font-medium">{err}</p> : null}
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-xl bg-chp-red py-3 font-bold text-white disabled:opacity-50">
-          {busy ? '…' : 'Tamamla ve paylaş'}
+          className="chp-btn-primary w-full py-3.5 disabled:opacity-50">
+          {busy ? 'Gönderiliyor…' : 'Tamamla ve paylaş'}
         </button>
       </form>
     </div>

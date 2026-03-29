@@ -144,11 +144,10 @@ export default function FeedPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="chp-page-title">Akış</h1>
-          <p className="chp-page-desc">Etkinlik paylaşımları ve örgüt haberleri</p>
+          <p className="chp-page-sub">Etkinlik paylaşımları ve örgüt duyuruları</p>
           {filtersActive ? (
-            <p className="mt-3 inline-flex items-center gap-2 rounded-lg bg-chp-muted px-3 py-1 text-sm font-semibold text-chp-redDark">
-              <span className="h-1.5 w-1.5 rounded-full bg-chp-red" aria-hidden />
-              Filtre aktif
+            <p className="mt-3 inline-flex items-center rounded-lg bg-red-50 px-3 py-1 text-xs font-semibold text-chp-redDark ring-1 ring-chp-red/15">
+              Filtre uygulanıyor
             </p>
           ) : null}
         </div>
@@ -163,25 +162,23 @@ export default function FeedPage() {
             setFilterOpen(true);
           }}
           className="chp-btn-secondary shrink-0">
-          Filtreler
+          Filtrele
         </button>
       </div>
 
       {err ? (
-        <div className="rounded-2xl border border-amber-200/90 bg-amber-50/90 p-5 text-sm text-amber-950 shadow-chp-sm">
-          {err}
-          <span className="mt-2 block text-xs font-medium text-amber-800/80">
-            API: {API_BASE_URL}
-          </span>
+        <div className="chp-alert">
+          <p className="font-medium">{err}</p>
+          <span className="mt-2 block text-xs text-amber-800/80">API: {API_BASE_URL}</span>
         </div>
       ) : null}
 
       {filterOpen ? (
-        <div className="chp-card-elevated p-5 sm:p-6">
-          <h3 className="font-display text-lg font-bold text-chp-ink">Akış filtresi</h3>
-          <p className="mt-1 text-sm text-chp-inkMuted">Kol, ilçe ve etkinlik kategorisi</p>
+        <div className="chp-card p-5 sm:p-6">
+          <h3 className="font-display text-lg font-bold text-slate-900">Akış filtresi</h3>
+          <p className="chp-page-sub !mt-1 !mb-5">Kol, ilçe ve etkinlik kategorisi seçin</p>
 
-          <p className="chp-section-label mt-6">Kol</p>
+          <p className="chp-section-label">Kol</p>
           <div className="mb-4 flex flex-wrap gap-2">
             {(
               [
@@ -197,10 +194,7 @@ export default function FeedPage() {
                   setDraftBranchMode(id);
                   if (id !== 'explicit') setDraftBranch(null);
                 }}
-                className={clsx(
-                  'chp-chip',
-                  draftBranchMode === id && 'chp-chip-active'
-                )}>
+                className={clsx('chp-chip', draftBranchMode === id && 'chp-chip-active')}>
                 {label}
               </button>
             ))}
@@ -214,10 +208,7 @@ export default function FeedPage() {
                     key={b.id}
                     type="button"
                     onClick={() => setDraftBranch(b.id)}
-                    className={clsx(
-                      'chp-chip',
-                      draftBranch === b.id && 'chp-chip-active'
-                    )}>
+                    className={clsx('chp-chip', draftBranch === b.id && 'chp-chip-active')}>
                     {b.label}
                   </button>
                 ))}
@@ -278,7 +269,7 @@ export default function FeedPage() {
             ))}
           </div>
 
-          <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <button type="button" onClick={clearFilters} className="chp-btn-secondary flex-1">
               Temizle
             </button>
@@ -290,7 +281,13 @@ export default function FeedPage() {
       ) : null}
 
       {loading ? (
-        <p className="text-center text-sm font-medium text-chp-inkMuted">Yükleniyor…</p>
+        <div className="flex flex-col items-center justify-center gap-3 py-16">
+          <div
+            className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-chp-red"
+            aria-hidden
+          />
+          <p className="text-sm font-medium text-slate-600">Gönderiler yükleniyor…</p>
+        </div>
       ) : null}
 
       <div className="space-y-5">
@@ -299,20 +296,18 @@ export default function FeedPage() {
           return (
             <article
               key={post.id}
-              className="chp-card-elevated overflow-hidden transition-shadow hover:shadow-chp-lg">
-              <div className="flex items-start justify-between gap-3 border-b border-chp-border/80 bg-slate-50/50 px-5 py-4">
-                <div className="min-w-0 space-y-1.5">
+              className="chp-card-interactive overflow-hidden">
+              <div className="flex items-start justify-between gap-3 border-b border-slate-100 p-4 sm:p-5">
+                <div className="min-w-0 space-y-2">
                   <BranchBadge kind={post.branch} label={post.branchLabel} />
-                  <p className="text-xs font-medium text-chp-inkMuted">{post.orgPath}</p>
-                  <p className="font-semibold text-chp-ink">{post.authorLabel}</p>
+                  <p className="text-xs font-medium text-slate-500">{post.orgPath}</p>
+                  <p className="font-semibold text-slate-900">{post.authorLabel}</p>
                 </div>
-                <Link
-                  href={`/post/${post.id}`}
-                  className="shrink-0 text-sm font-semibold text-chp-red transition-colors hover:text-chp-redDark">
+                <Link href={`/post/${post.id}`} className="chp-link shrink-0">
                   Detay →
                 </Link>
               </div>
-              <div className="relative aspect-[4/3] bg-slate-200/80">
+              <div className="relative aspect-[4/3] bg-slate-100">
                 {post.imageUrls[0] ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -323,33 +318,33 @@ export default function FeedPage() {
                 ) : null}
               </div>
               {(post.eventTitle || post.eventDescription || when) && (
-                <div className="space-y-2 border-b border-chp-border/80 px-5 py-4">
+                <div className="space-y-2 border-b border-slate-100 p-4 sm:p-5">
                   {post.eventTitle ? (
-                    <h2 className="font-display text-lg font-bold leading-snug text-chp-ink">
+                    <h2 className="font-display text-lg font-bold text-slate-900">
                       {post.eventTitle}
                     </h2>
                   ) : null}
                   {when ? (
-                    <p className="text-sm font-semibold text-chp-inkMuted">{when}</p>
+                    <p className="text-sm font-semibold text-slate-600">{when}</p>
                   ) : null}
                   {post.eventDescription ? (
-                    <p className="text-sm leading-relaxed text-chp-inkMuted line-clamp-4">
+                    <p className="text-sm leading-relaxed text-slate-600 line-clamp-4">
                       {post.eventDescription}
                     </p>
                   ) : null}
                 </div>
               )}
-              <div className="flex items-center justify-between px-5 py-4">
+              <div className="flex items-center justify-between px-4 py-3 sm:px-5">
                 <button
                   type="button"
                   onClick={() => onLike(post)}
-                  className="text-sm font-semibold text-chp-ink transition-colors hover:text-chp-red">
+                  className="text-sm font-semibold text-slate-800 transition hover:text-chp-red">
                   {post.liked ? '♥ Beğenildi' : '♡ Beğen'} · {post.likes}
                 </button>
-                <span className="text-xs font-medium text-chp-inkMuted">{post.timeLabel}</span>
+                <span className="text-xs font-medium text-slate-500">{post.timeLabel}</span>
               </div>
               {post.caption ? (
-                <p className="border-t border-chp-border/80 bg-slate-50/40 px-5 py-3.5 text-sm leading-relaxed text-chp-ink">
+                <p className="border-t border-slate-100 bg-slate-50/60 px-4 py-3 text-sm leading-relaxed text-slate-800 sm:px-5">
                   {post.caption}
                 </p>
               ) : null}
@@ -359,8 +354,9 @@ export default function FeedPage() {
       </div>
 
       {!loading && posts.length === 0 ? (
-        <div className="chp-card rounded-2xl px-6 py-12 text-center">
-          <p className="text-sm font-medium text-chp-inkMuted">Henüz gönderi yok.</p>
+        <div className="chp-card py-16 text-center">
+          <p className="font-medium text-slate-600">Bu filtrelerle gösterilecek gönderi yok.</p>
+          <p className="mt-2 text-sm text-slate-500">Filtreleri temizleyerek tekrar deneyin.</p>
         </div>
       ) : null}
     </div>

@@ -82,19 +82,27 @@ export default function PlanPage() {
   };
 
   if (user && hasPresidentMembershipRole(user)) {
-    return <p className="text-sm font-medium text-chp-inkMuted">Yönlendiriliyor…</p>;
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-20">
+        <div
+          className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-chp-red"
+          aria-hidden
+        />
+        <p className="text-sm font-medium text-slate-600">Yönlendiriliyor…</p>
+      </div>
+    );
   }
 
   return (
     <div className="mx-auto max-w-lg space-y-8">
       <div>
         <h1 className="chp-page-title">Etkinlik planla</h1>
-        <p className="chp-page-desc">Yeni planlanan etkinlik oluşturun.</p>
+        <p className="chp-page-sub">Yeni planlanan etkinlik kaydı oluşturun.</p>
       </div>
 
-      <form onSubmit={onSubmit} className="chp-card-elevated space-y-5 p-6 sm:p-8">
+      <form onSubmit={onSubmit} className="chp-card space-y-5 p-6 sm:p-8">
         <div>
-          <label className="chp-section-label">Başlık</label>
+          <label className="chp-section-label !mb-1.5">Başlık</label>
           <input
             required
             className="chp-input"
@@ -103,16 +111,11 @@ export default function PlanPage() {
           />
         </div>
         <div>
-          <label className="chp-section-label">Açıklama</label>
-          <textarea
-            className="chp-input min-h-[5rem]"
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
+          <label className="chp-section-label !mb-1.5">Açıklama</label>
+          <textarea className="chp-input" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
         </div>
         <div>
-          <label className="chp-section-label">Birim</label>
+          <label className="chp-section-label !mb-1.5">Birim</label>
           <select
             className="chp-input"
             value={orgUnitId}
@@ -125,7 +128,7 @@ export default function PlanPage() {
           </select>
         </div>
         <div>
-          <label className="chp-section-label">Kategori</label>
+          <label className="chp-section-label !mb-1.5">Kategori</label>
           <select
             className="chp-input"
             value={categoryId}
@@ -138,7 +141,7 @@ export default function PlanPage() {
           </select>
         </div>
         <div>
-          <label className="chp-section-label">Başlangıç</label>
+          <label className="chp-section-label !mb-1.5">Başlangıç</label>
           <input
             type="datetime-local"
             required
@@ -148,21 +151,17 @@ export default function PlanPage() {
           />
         </div>
         <div>
-          <label className="chp-section-label">Konum</label>
+          <label className="chp-section-label !mb-1.5">Konum</label>
           <textarea
             required
-            className="chp-input min-h-[4rem]"
+            className="chp-input"
             rows={2}
             value={location}
             onChange={(e) => setLocation(e.target.value)}
           />
         </div>
-        {err ? (
-          <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-            {err}
-          </p>
-        ) : null}
-        <button type="submit" disabled={busy} className="chp-btn-primary w-full">
+        {err ? <p className="chp-alert text-sm font-medium">{err}</p> : null}
+        <button type="submit" disabled={busy} className="chp-btn-primary w-full py-3.5">
           {busy ? 'Kaydediliyor…' : 'Planı oluştur'}
         </button>
       </form>

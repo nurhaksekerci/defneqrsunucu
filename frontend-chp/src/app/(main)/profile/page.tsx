@@ -7,32 +7,35 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-lg space-y-8">
-      <h1 className="chp-page-title">Profil</h1>
+      <div>
+        <h1 className="chp-page-title">Profil</h1>
+        <p className="chp-page-sub">Hesap bilgileriniz ve örgüt üyelikleriniz</p>
+      </div>
       {user ? (
-        <div className="chp-card-elevated space-y-4 p-6 sm:p-8">
+        <div className="chp-card space-y-5 p-6 sm:p-8">
           <div>
-            <p className="chp-section-label">Görünen ad</p>
-            <p className="text-lg font-bold text-chp-ink">{user.displayName}</p>
+            <p className="chp-section-label !mb-1">Görünen ad</p>
+            <p className="text-lg font-bold text-slate-900">{user.displayName}</p>
           </div>
           <div>
-            <p className="chp-section-label">Kullanıcı adı</p>
-            <p className="font-semibold text-chp-ink">{user.username}</p>
+            <p className="chp-section-label !mb-1">Kullanıcı adı</p>
+            <p className="font-semibold text-slate-800">{user.username}</p>
           </div>
           {user.email ? (
             <div>
-              <p className="chp-section-label">E-posta</p>
-              <p className="font-semibold text-chp-ink">{user.email}</p>
+              <p className="chp-section-label !mb-1">E-posta</p>
+              <p className="font-semibold text-slate-800">{user.email}</p>
             </div>
           ) : null}
-          <div className="border-t border-chp-border pt-5">
-            <p className="chp-section-label mb-3">Üyelikler</p>
+          <div className="border-t border-slate-100 pt-5">
+            <p className="chp-section-label !mb-3">Üyelikler</p>
             <ul className="space-y-2 text-sm">
               {(user.memberships ?? []).map((m) => (
                 <li
                   key={m.orgUnitId}
-                  className="rounded-xl border border-chp-border/80 bg-slate-50/80 p-4">
-                  <p className="font-semibold text-chp-ink">{m.label}</p>
-                  <p className="mt-0.5 text-chp-inkMuted">
+                  className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+                  <p className="font-semibold text-slate-900">{m.label}</p>
+                  <p className="mt-1 text-slate-600">
                     {m.roleLabel}
                     {m.isPrimary ? ' · Birincil' : ''}
                   </p>
@@ -42,15 +45,15 @@ export default function ProfilePage() {
           </div>
         </div>
       ) : (
-        <p className="text-sm font-medium text-chp-inkMuted">Profil yüklenemedi.</p>
+        <div className="chp-card py-12 text-center text-slate-600">Profil yüklenemedi.</div>
       )}
       <button
         type="button"
         onClick={() => void refreshUser()}
-        className="chp-btn-secondary w-full">
+        className="chp-btn-secondary w-full py-3">
         Bilgileri yenile
       </button>
-      <button type="button" onClick={() => logout()} className="chp-btn-primary w-full">
+      <button type="button" onClick={() => logout()} className="chp-btn-primary w-full py-3">
         Çıkış yap
       </button>
     </div>

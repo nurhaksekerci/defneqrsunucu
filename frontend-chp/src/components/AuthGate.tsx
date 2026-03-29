@@ -17,8 +17,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   if (!ready) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center font-sans text-chp-red">
-        Yükleniyor…
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4">
+        <div
+          className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-chp-red"
+          aria-hidden
+        />
+        <p className="text-sm font-medium text-slate-600">Oturum doğrulanıyor…</p>
       </div>
     );
   }

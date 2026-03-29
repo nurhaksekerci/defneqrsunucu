@@ -121,46 +121,61 @@ export default function PostDetailPage() {
       );
   };
 
-  if (loading) return <p className="text-sm font-medium text-chp-inkMuted">Yükleniyor…</p>;
-  if (err || !post)
-    return <p className="text-sm font-medium text-amber-800">{err ?? 'Bulunamadı'}</p>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-20">
+        <div
+          className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-chp-red"
+          aria-hidden
+        />
+        <p className="text-sm font-medium text-slate-600">Yükleniyor…</p>
+      </div>
+    );
+  }
+  if (err || !post) {
+    return (
+      <div className="chp-alert">
+        {err ?? 'Gönderi bulunamadı.'}
+      </div>
+    );
+  }
 
   const urls = post.imageUrls;
   const when = formatWhen(post.eventStartAt);
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Link
-          href="/feed"
-          className="text-sm font-semibold text-chp-red transition-colors hover:text-chp-redDark">
-          ← Akış
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link href="/feed" className="chp-back-link">
+          ← Akışa dön
         </Link>
         {canManage ? (
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setEditOpen(true)}
-              className="rounded-xl bg-chp-muted px-4 py-2 text-sm font-semibold text-chp-redDark ring-1 ring-chp-red/10">
+              className="chp-btn-secondary !py-2 text-sm">
               Düzenle
             </button>
             <button
               type="button"
               onClick={onDelete}
-              className="rounded-xl border border-amber-300/90 bg-amber-50/50 px-4 py-2 text-sm font-semibold text-amber-900">
+              className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-100">
               Sil
             </button>
           </div>
         ) : null}
       </div>
 
-      <BranchBadge kind={post.branch} label={post.branchLabel} />
-      <p className="text-sm font-medium text-chp-inkMuted">{post.orgPath}</p>
-      <h1 className="font-display text-2xl font-bold tracking-tight text-chp-ink">
-        {post.authorLabel}
-      </h1>
+      <div className="space-y-2">
+        <BranchBadge kind={post.branch} label={post.branchLabel} />
+        <p className="text-sm font-medium text-slate-600">{post.orgPath}</p>
+        <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          {post.authorLabel}
+        </h1>
+      </div>
 
-      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-200/80 shadow-chp-sm ring-1 ring-chp-border/60">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200/80">
         {urls[imgIdx] ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={urls[imgIdx]} alt="" className="h-full w-full object-cover" />
@@ -174,7 +189,7 @@ export default function PostDetailPage() {
               type="button"
               onClick={() => setImgIdx(i)}
               className={
-                i === imgIdx ? 'ring-2 ring-chp-red ring-offset-2 rounded-lg' : ''
+                i === imgIdx ? 'rounded-lg ring-2 ring-chp-red ring-offset-2' : 'rounded-lg'
               }>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={u} alt="" className="h-16 w-16 rounded-lg object-cover" />
@@ -184,23 +199,21 @@ export default function PostDetailPage() {
       ) : null}
 
       {(post.eventTitle || when || post.eventLocation || post.eventDescription) && (
-        <div className="chp-card-elevated space-y-2 p-5">
+        <div className="chp-card space-y-3 p-5 sm:p-6">
           {post.eventTitle ? (
-            <h2 className="font-display text-xl font-bold text-chp-ink">{post.eventTitle}</h2>
+            <h2 className="font-display text-xl font-bold text-slate-900">{post.eventTitle}</h2>
           ) : null}
-          {when ? (
-            <p className="text-sm font-semibold text-chp-inkMuted">{when}</p>
-          ) : null}
+          {when ? <p className="text-sm font-semibold text-slate-600">{when}</p> : null}
           {post.eventLocation ? (
-            <p className="text-sm text-chp-inkMuted">{post.eventLocation}</p>
+            <p className="text-sm text-slate-600">{post.eventLocation}</p>
           ) : null}
           {post.eventDescription ? (
-            <p className="text-sm leading-relaxed text-chp-ink">{post.eventDescription}</p>
+            <p className="text-sm leading-relaxed text-slate-700">{post.eventDescription}</p>
           ) : null}
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
         <button
           type="button"
           onClick={async () => {
@@ -213,46 +226,48 @@ export default function PostDetailPage() {
               /* */
             }
           }}
-          className="text-sm font-semibold text-chp-red">
+          className="text-sm font-semibold text-chp-red hover:text-chp-redDark">
           {post.liked ? '♥ Beğenildi' : '♡ Beğen'} · {post.likes}
         </button>
-        <span className="text-sm font-medium text-chp-inkMuted">{post.timeLabel}</span>
+        <span className="text-sm font-medium text-slate-500">{post.timeLabel}</span>
       </div>
 
       {post.caption ? (
-        <p className="leading-relaxed text-chp-ink">{post.caption}</p>
+        <p className="text-sm leading-relaxed text-slate-800">{post.caption}</p>
       ) : null}
 
       {editOpen ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-chp-ink/50 p-4 backdrop-blur-[2px] sm:items-center">
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-chp-border bg-white p-6 shadow-chp-lg">
-            <h3 className="mb-5 font-display text-xl font-bold text-chp-ink">
-              Gönderiyi düzenle
-            </h3>
-            <label className="chp-section-label">Başlık</label>
-            <input className="chp-input mb-4" value={title} onChange={(e) => setTitle(e.target.value)} />
-            <label className="chp-section-label">Açıklama</label>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 backdrop-blur-[2px] sm:items-center">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-lift ring-1 ring-slate-200/80">
+            <h3 className="mb-5 font-display text-xl font-bold text-slate-900">Gönderiyi düzenle</h3>
+            <label className="chp-section-label !mb-1.5">Başlık</label>
+            <input
+              className="chp-input mb-4"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+            <label className="chp-section-label !mb-1.5">Açıklama</label>
             <textarea
               className="chp-input mb-4"
               rows={3}
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
             />
-            <label className="chp-section-label">Konum</label>
+            <label className="chp-section-label !mb-1.5">Konum</label>
             <textarea
               className="chp-input mb-4"
               rows={2}
               value={loc}
               onChange={(e) => setLoc(e.target.value)}
             />
-            <label className="chp-section-label">Başlangıç (yerel)</label>
+            <label className="chp-section-label !mb-1.5">Başlangıç (yerel)</label>
             <input
               type="datetime-local"
               className="chp-input mb-4"
               value={startAt}
               onChange={(e) => setStartAt(e.target.value)}
             />
-            <label className="chp-section-label">Birim</label>
+            <label className="chp-section-label !mb-1.5">Birim</label>
             <select
               className="chp-input mb-4"
               value={orgId}
@@ -264,7 +279,7 @@ export default function PostDetailPage() {
                 </option>
               ))}
             </select>
-            <label className="chp-section-label">Kategori</label>
+            <label className="chp-section-label !mb-1.5">Kategori</label>
             <select
               className="chp-input mb-4"
               value={catId}
@@ -275,7 +290,7 @@ export default function PostDetailPage() {
                 </option>
               ))}
             </select>
-            <p className="mb-5 text-xs text-chp-inkMuted">
+            <p className="mb-5 text-xs leading-relaxed text-slate-500">
               Görsel değişiklikleri için mobil uygulamayı kullanabilirsiniz.
             </p>
             <div className="flex gap-2">

@@ -137,11 +137,10 @@ export default function ReportPage() {
     <div className="space-y-8">
       <div>
         <h1 className="chp-page-title">Rapor</h1>
-        <p className="chp-page-desc font-semibold">{scopeSubtitle}</p>
+        <p className="chp-page-sub font-semibold text-slate-700">{scopeSubtitle}</p>
         {filtersActive ? (
-          <p className="mt-3 inline-flex items-center gap-2 rounded-lg bg-chp-muted px-3 py-1 text-sm font-semibold text-chp-redDark">
-            <span className="h-1.5 w-1.5 rounded-full bg-chp-red" aria-hidden />
-            Filtre aktif
+          <p className="mt-3 inline-flex items-center rounded-lg bg-red-50 px-3 py-1 text-xs font-semibold text-chp-redDark ring-1 ring-chp-red/15">
+            Filtre uygulanıyor
           </p>
         ) : null}
       </div>
@@ -154,27 +153,35 @@ export default function ReportPage() {
         title="Rapor filtresi"
       />
 
-      {err ? <p className="text-sm font-medium text-amber-800">{err}</p> : null}
+      {err ? <div className="chp-alert font-medium">{err}</div> : null}
       {loading ? (
-        <p className="text-sm font-medium text-chp-inkMuted">Yükleniyor…</p>
+        <div className="flex flex-col items-center justify-center gap-3 py-12">
+          <div
+            className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-chp-red"
+            aria-hidden
+          />
+          <p className="text-sm font-medium text-slate-600">Rapor yükleniyor…</p>
+        </div>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="chp-card-elevated p-6 ring-1 ring-chp-red/5">
-          <p className="chp-section-label">Tamamlanan</p>
-          <p className="mt-1 font-display text-4xl font-bold tracking-tight text-chp-red">
-            {sum(tam)}
+        <div className="chp-card border-t-4 border-t-chp-red p-6">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Tamamlanan
           </p>
+          <p className="mt-2 font-display text-4xl font-bold text-chp-red">{sum(tam)}</p>
+          <p className="mt-2 text-xs text-slate-500">Etkinlik sayısı</p>
         </div>
-        <div className="chp-card-elevated p-6">
-          <p className="chp-section-label">Planlanan</p>
-          <p className="mt-1 font-display text-4xl font-bold tracking-tight text-chp-red">
-            {sum(plan)}
+        <div className="chp-card border-t-4 border-t-slate-400 p-6">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Planlanan
           </p>
+          <p className="mt-2 font-display text-4xl font-bold text-slate-800">{sum(plan)}</p>
+          <p className="mt-2 text-xs text-slate-500">Etkinlik sayısı</p>
         </div>
       </div>
 
-      <p className="text-center text-xs font-medium text-chp-inkMuted">
+      <p className="text-center text-xs leading-relaxed text-slate-500">
         Sayılar etkinlik başlangıç tarihine göre; sunucu kategori kırılımı ile uyumludur.
       </p>
 
@@ -193,17 +200,15 @@ function Breakdown({
 }) {
   return (
     <div>
-      <h2 className="mb-3 font-display text-lg font-bold text-chp-ink">{title}</h2>
-      <div className="chp-card overflow-hidden">
+      <h2 className="mb-3 font-display text-lg font-bold text-slate-900">{title}</h2>
+      <div className="chp-card overflow-hidden p-0">
         {rows.map((row, i) => (
           <div
             key={row.eventCategoryId}
-            className={i < rows.length - 1 ? 'border-b border-chp-border/80' : ''}>
-            <div className="flex items-center justify-between px-4 py-3.5">
-              <span className="font-semibold text-chp-ink">{row.label}</span>
-              <span className="font-display text-lg font-bold text-chp-redDark">
-                {row.count}
-              </span>
+            className={i < rows.length - 1 ? 'border-b border-slate-100' : ''}>
+            <div className="flex items-center justify-between px-5 py-3.5">
+              <span className="font-semibold text-slate-800">{row.label}</span>
+              <span className="font-display text-lg font-bold text-chp-redDark">{row.count}</span>
             </div>
           </div>
         ))}

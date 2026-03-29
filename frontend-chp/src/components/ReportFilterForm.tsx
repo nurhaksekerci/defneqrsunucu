@@ -1,7 +1,6 @@
 'use client';
 
 import type { CommissionOption } from '@/lib/api';
-import type { BranchKind } from '@/lib/types';
 import {
   PLANNED_LIST_DEFAULT_FILTERS,
   REPORT_TIME_RANGES,
@@ -38,9 +37,9 @@ export function ReportFilterForm({
   );
 
   return (
-    <div className="chp-card-elevated p-5 sm:p-6">
-      <h3 className="font-display text-lg font-bold text-chp-ink">{title}</h3>
-      <p className="chp-section-label mt-4">Zaman aralığı</p>
+    <div className="chp-card p-5 sm:p-6">
+      <h3 className="mb-5 font-display text-lg font-bold text-slate-900">{title}</h3>
+      <p className="chp-section-label">Zaman aralığı</p>
       <div className="mb-5 flex flex-wrap gap-2">
         {REPORT_TIME_RANGES.map((t) => (
           <button
@@ -107,7 +106,7 @@ export function ReportFilterForm({
       <button
         type="button"
         onClick={() => onChange({ ...defaultsForClear })}
-        className="text-sm font-semibold text-chp-inkMuted underline decoration-chp-borderStrong underline-offset-4 transition-colors hover:text-chp-red">
+        className="text-sm font-semibold text-slate-600 underline decoration-slate-300 underline-offset-2 transition hover:text-chp-red hover:decoration-chp-red/40">
         Filtreyi sıfırla
       </button>
     </div>

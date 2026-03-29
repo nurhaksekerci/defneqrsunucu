@@ -3,66 +3,98 @@
 @tailwind utilities;
 
 :root {
-  --background: #f4f6f9;
-  --foreground: #0c1222;
-  --chp-red: #e30a17;
-  --ring: rgba(227, 10, 23, 0.35);
+  --background: #eef2f7;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --border-subtle: rgba(15, 23, 42, 0.08);
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     color: var(--foreground);
-    background-color: var(--background);
+    background: var(--background);
     background-image:
-      radial-gradient(ellipse 120% 80% at 100% -20%, rgba(227, 10, 23, 0.07), transparent 50%),
-      radial-gradient(ellipse 80% 60% at 0% 100%, rgba(12, 18, 34, 0.04), transparent 45%);
-    background-attachment: fixed;
+      radial-gradient(ellipse 120% 80% at 50% -40%, rgba(227, 10, 23, 0.06), transparent),
+      linear-gradient(180deg, #eef2f7 0%, #e8ecf3 100%);
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background: rgba(227, 10, 23, 0.18);
+    color: #0f172a;
   }
 }
 
 @layer components {
   .chp-card {
-    @apply rounded-2xl border border-chp-border bg-chp-surface shadow-chp-sm;
+    @apply rounded-2xl border border-slate-200/90 bg-white shadow-card;
   }
 
-  .chp-card-elevated {
-    @apply rounded-2xl border border-chp-border bg-chp-surface shadow-chp;
-  }
-
-  .chp-section-label {
-    @apply mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-chp-inkMuted;
-  }
-
-  .chp-input {
-    @apply w-full rounded-xl border border-chp-border bg-white px-4 py-3 text-chp-ink outline-none transition-shadow placeholder:text-slate-400;
-    @apply focus:border-chp-red focus:ring-2 focus:ring-[var(--ring)];
-  }
-
-  .chp-btn-primary {
-    @apply inline-flex items-center justify-center rounded-xl bg-chp-red px-5 py-3 text-sm font-semibold text-white shadow-chp-sm transition-colors;
-    @apply hover:bg-chp-redHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-chp-red;
-    @apply disabled:pointer-events-none disabled:opacity-50;
-  }
-
-  .chp-btn-secondary {
-    @apply inline-flex items-center justify-center rounded-xl border border-chp-border bg-white px-5 py-3 text-sm font-semibold text-chp-ink transition-colors;
-    @apply hover:border-chp-borderStrong hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-chp-red;
-  }
-
-  .chp-chip {
-    @apply rounded-lg border border-chp-border bg-white px-3 py-1.5 text-sm font-medium text-chp-ink transition-colors;
-    @apply hover:border-chp-borderStrong;
-  }
-
-  .chp-chip-active {
-    @apply border-chp-red bg-chp-mutedStrong text-chp-redDark ring-1 ring-chp-red/20;
+  .chp-card-interactive {
+    @apply chp-card transition-shadow duration-200 hover:border-slate-300/90 hover:shadow-lift;
   }
 
   .chp-page-title {
-    @apply font-display text-2xl font-bold tracking-tight text-chp-ink sm:text-3xl;
+    @apply font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl;
   }
 
-  .chp-page-desc {
-    @apply mt-1 text-sm text-chp-inkMuted;
+  .chp-page-sub {
+    @apply mt-1 text-sm leading-relaxed text-slate-600;
+  }
+
+  .chp-section-label {
+    @apply mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500;
+  }
+
+  .chp-input {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition-all;
+    @apply placeholder:text-slate-400 focus:border-chp-red focus:ring-2 focus:ring-red-100;
+  }
+
+  .chp-btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl bg-chp-red px-4 py-3 text-sm font-semibold text-white shadow-sm transition;
+    @apply hover:bg-chp-redDark hover:shadow-md disabled:pointer-events-none disabled:opacity-55;
+  }
+
+  .chp-btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700;
+    @apply transition hover:border-slate-300 hover:bg-slate-50;
+  }
+
+  .chp-chip {
+    @apply rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors;
+    @apply hover:border-slate-300 hover:bg-slate-50;
+  }
+
+  .chp-chip-active {
+    @apply border-chp-red/35 bg-red-50/90 font-semibold text-chp-redDark ring-1 ring-chp-red/15;
+  }
+
+  .chp-tab {
+    @apply rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors;
+  }
+
+  .chp-tab-active {
+    @apply bg-chp-red text-white shadow-sm;
+  }
+
+  .chp-tab-inactive {
+    @apply border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50;
+  }
+
+  .chp-link {
+    @apply text-sm font-semibold text-chp-red transition hover:text-chp-redDark;
+  }
+
+  .chp-alert {
+    @apply rounded-xl border border-amber-200/90 bg-amber-50/95 p-4 text-sm text-amber-950;
+  }
+
+  .chp-back-link {
+    @apply chp-link inline-flex items-center gap-1;
   }
 }
