@@ -123,16 +123,17 @@ export default function PlannedPage() {
   const list = tab === 'upcoming' ? upcoming : completed;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="font-display text-3xl font-bold text-neutral-900">
-          Planlanan etkinlikler
-        </h1>
-        <p className="mt-1 text-sm text-neutral-600">
+        <h1 className="chp-page-title">Planlanan etkinlikler</h1>
+        <p className="chp-page-desc">
           Tamamlananlar akışta; burada plan ve geçmiş kayıtlar.
         </p>
         {filtersActive ? (
-          <p className="mt-2 text-sm font-semibold text-chp-red">Filtre aktif</p>
+          <p className="mt-3 inline-flex items-center gap-2 rounded-lg bg-chp-muted px-3 py-1 text-sm font-semibold text-chp-redDark">
+            <span className="h-1.5 w-1.5 rounded-full bg-chp-red" aria-hidden />
+            Filtre aktif
+          </p>
         ) : null}
       </div>
 
@@ -144,31 +145,35 @@ export default function PlannedPage() {
         title="Planlanan filtre"
       />
 
-      <div className="flex gap-2">
+      <div className="inline-flex rounded-xl border border-chp-border bg-white p-1 shadow-chp-sm">
         <button
           type="button"
           onClick={() => setTab('upcoming')}
-          className={
+          className={clsx(
+            'rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
             tab === 'upcoming'
-              ? 'rounded-full bg-chp-red px-4 py-2 text-sm font-bold text-white'
-              : 'rounded-full border border-neutral-200 px-4 py-2 text-sm font-bold'
-          }>
+              ? 'bg-chp-red text-white shadow-chp-sm'
+              : 'text-chp-inkMuted hover:bg-slate-50 hover:text-chp-ink'
+          )}>
           Yaklaşan ({upcoming.length})
         </button>
         <button
           type="button"
           onClick={() => setTab('completed')}
-          className={
+          className={clsx(
+            'rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
             tab === 'completed'
-              ? 'rounded-full bg-chp-red px-4 py-2 text-sm font-bold text-white'
-              : 'rounded-full border border-neutral-200 px-4 py-2 text-sm font-bold'
-          }>
+              ? 'bg-chp-red text-white shadow-chp-sm'
+              : 'text-chp-inkMuted hover:bg-slate-50 hover:text-chp-ink'
+          )}>
           Tamamlanan ({completed.length})
         </button>
       </div>
 
-      {err ? <p className="text-amber-800">{err}</p> : null}
-      {loading ? <p className="text-neutral-500">Yükleniyor…</p> : null}
+      {err ? <p className="text-sm font-medium text-amber-800">{err}</p> : null}
+      {loading ? (
+        <p className="text-sm font-medium text-chp-inkMuted">Yükleniyor…</p>
+      ) : null}
 
       <div className="space-y-4">
         {list.map((ev) => {
@@ -177,40 +182,40 @@ export default function PlannedPage() {
             <div
               key={ev.id}
               className={clsx(
-                'rounded-2xl border bg-white p-4 shadow-sm',
-                done ? 'border-neutral-300 opacity-90' : 'border-neutral-200'
+                'chp-card-elevated p-5 transition-shadow hover:shadow-chp',
+                done && 'opacity-95 ring-1 ring-chp-borderStrong/60'
               )}>
-              <div className="mb-2 flex flex-wrap items-center gap-2">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
                 <BranchBadge kind={ev.branch} label={ev.branchLabel} />
                 {done ? (
-                  <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-bold">
+                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-chp-inkMuted ring-1 ring-chp-border">
                     Tamamlandı
                   </span>
                 ) : null}
               </div>
-              <h2 className="font-display text-lg font-bold text-neutral-900">{ev.title}</h2>
+              <h2 className="font-display text-lg font-bold text-chp-ink">{ev.title}</h2>
               {ev.description ? (
-                <p className="mt-1 text-sm text-neutral-600">{ev.description}</p>
+                <p className="mt-1 text-sm leading-relaxed text-chp-inkMuted">{ev.description}</p>
               ) : null}
-              <p className="mt-2 text-xs text-neutral-500">{ev.orgPath}</p>
-              <p className="text-sm text-neutral-700">📅 {ev.startLabel}</p>
-              <p className="text-sm text-neutral-700">📍 {ev.location}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
+              <p className="mt-2 text-xs font-medium text-chp-inkMuted">{ev.orgPath}</p>
+              <p className="text-sm font-medium text-chp-ink">📅 {ev.startLabel}</p>
+              <p className="text-sm font-medium text-chp-ink">📍 {ev.location}</p>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
                 <Link
                   href={`/planned/${ev.id}`}
-                  className="text-sm font-bold text-chp-red hover:underline">
+                  className="text-sm font-semibold text-chp-red hover:text-chp-redDark">
                   Detay
                 </Link>
                 {ev.isMine && !done ? (
                   <>
                     <Link
                       href={`/planned/${ev.id}/edit`}
-                      className="text-sm font-bold text-chp-red hover:underline">
+                      className="text-sm font-semibold text-chp-red hover:text-chp-redDark">
                       Düzenle
                     </Link>
                     <Link
                       href={`/planned/${ev.id}/complete`}
-                      className="rounded-lg bg-chp-red px-3 py-1 text-sm font-bold text-white">
+                      className="rounded-lg bg-chp-red px-3 py-1.5 text-sm font-semibold text-white shadow-chp-sm hover:bg-chp-redHover">
                       Tamamla
                     </Link>
                   </>
@@ -222,7 +227,9 @@ export default function PlannedPage() {
       </div>
 
       {!loading && list.length === 0 ? (
-        <p className="text-neutral-500">Kayıt yok.</p>
+        <div className="chp-card rounded-2xl px-6 py-10 text-center">
+          <p className="text-sm font-medium text-chp-inkMuted">Kayıt yok.</p>
+        </div>
       ) : null}
     </div>
   );

@@ -134,12 +134,15 @@ export default function ReportPage() {
   }, [filters, commissions]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="font-display text-3xl font-bold text-neutral-900">Rapor</h1>
-        <p className="mt-1 text-sm font-semibold text-neutral-700">{scopeSubtitle}</p>
+        <h1 className="chp-page-title">Rapor</h1>
+        <p className="chp-page-desc font-semibold">{scopeSubtitle}</p>
         {filtersActive ? (
-          <p className="mt-2 text-sm font-semibold text-chp-red">Filtre aktif</p>
+          <p className="mt-3 inline-flex items-center gap-2 rounded-lg bg-chp-muted px-3 py-1 text-sm font-semibold text-chp-redDark">
+            <span className="h-1.5 w-1.5 rounded-full bg-chp-red" aria-hidden />
+            Filtre aktif
+          </p>
         ) : null}
       </div>
 
@@ -151,21 +154,27 @@ export default function ReportPage() {
         title="Rapor filtresi"
       />
 
-      {err ? <p className="text-amber-800">{err}</p> : null}
-      {loading ? <p className="text-neutral-500">Yükleniyor…</p> : null}
+      {err ? <p className="text-sm font-medium text-amber-800">{err}</p> : null}
+      {loading ? (
+        <p className="text-sm font-medium text-chp-inkMuted">Yükleniyor…</p>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-neutral-200 bg-white p-6">
-          <p className="text-sm font-bold text-neutral-500">Tamamlanan</p>
-          <p className="font-display text-4xl font-bold text-chp-red">{sum(tam)}</p>
+        <div className="chp-card-elevated p-6 ring-1 ring-chp-red/5">
+          <p className="chp-section-label">Tamamlanan</p>
+          <p className="mt-1 font-display text-4xl font-bold tracking-tight text-chp-red">
+            {sum(tam)}
+          </p>
         </div>
-        <div className="rounded-2xl border border-neutral-200 bg-white p-6">
-          <p className="text-sm font-bold text-neutral-500">Planlanan</p>
-          <p className="font-display text-4xl font-bold text-chp-red">{sum(plan)}</p>
+        <div className="chp-card-elevated p-6">
+          <p className="chp-section-label">Planlanan</p>
+          <p className="mt-1 font-display text-4xl font-bold tracking-tight text-chp-red">
+            {sum(plan)}
+          </p>
         </div>
       </div>
 
-      <p className="text-center text-xs text-neutral-500">
+      <p className="text-center text-xs font-medium text-chp-inkMuted">
         Sayılar etkinlik başlangıç tarihine göre; sunucu kategori kırılımı ile uyumludur.
       </p>
 
@@ -184,16 +193,14 @@ function Breakdown({
 }) {
   return (
     <div>
-      <h2 className="mb-2 font-display text-lg font-bold text-neutral-900">{title}</h2>
-      <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
+      <h2 className="mb-3 font-display text-lg font-bold text-chp-ink">{title}</h2>
+      <div className="chp-card overflow-hidden">
         {rows.map((row, i) => (
           <div
             key={row.eventCategoryId}
-            className={
-              i < rows.length - 1 ? 'border-b border-neutral-100' : ''
-            }>
-            <div className="flex items-center justify-between px-4 py-3">
-              <span className="font-semibold text-neutral-800">{row.label}</span>
+            className={i < rows.length - 1 ? 'border-b border-chp-border/80' : ''}>
+            <div className="flex items-center justify-between px-4 py-3.5">
+              <span className="font-semibold text-chp-ink">{row.label}</span>
               <span className="font-display text-lg font-bold text-chp-redDark">
                 {row.count}
               </span>

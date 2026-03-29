@@ -3,11 +3,66 @@
 @tailwind utilities;
 
 :root {
-  --background: #fafafa;
-  --foreground: #1a1a1a;
+  --background: #f4f6f9;
+  --foreground: #0c1222;
+  --chp-red: #e30a17;
+  --ring: rgba(227, 10, 23, 0.35);
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
+@layer base {
+  body {
+    color: var(--foreground);
+    background-color: var(--background);
+    background-image:
+      radial-gradient(ellipse 120% 80% at 100% -20%, rgba(227, 10, 23, 0.07), transparent 50%),
+      radial-gradient(ellipse 80% 60% at 0% 100%, rgba(12, 18, 34, 0.04), transparent 45%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  .chp-card {
+    @apply rounded-2xl border border-chp-border bg-chp-surface shadow-chp-sm;
+  }
+
+  .chp-card-elevated {
+    @apply rounded-2xl border border-chp-border bg-chp-surface shadow-chp;
+  }
+
+  .chp-section-label {
+    @apply mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-chp-inkMuted;
+  }
+
+  .chp-input {
+    @apply w-full rounded-xl border border-chp-border bg-white px-4 py-3 text-chp-ink outline-none transition-shadow placeholder:text-slate-400;
+    @apply focus:border-chp-red focus:ring-2 focus:ring-[var(--ring)];
+  }
+
+  .chp-btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl bg-chp-red px-5 py-3 text-sm font-semibold text-white shadow-chp-sm transition-colors;
+    @apply hover:bg-chp-redHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-chp-red;
+    @apply disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .chp-btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl border border-chp-border bg-white px-5 py-3 text-sm font-semibold text-chp-ink transition-colors;
+    @apply hover:border-chp-borderStrong hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-chp-red;
+  }
+
+  .chp-chip {
+    @apply rounded-lg border border-chp-border bg-white px-3 py-1.5 text-sm font-medium text-chp-ink transition-colors;
+    @apply hover:border-chp-borderStrong;
+  }
+
+  .chp-chip-active {
+    @apply border-chp-red bg-chp-mutedStrong text-chp-redDark ring-1 ring-chp-red/20;
+  }
+
+  .chp-page-title {
+    @apply font-display text-2xl font-bold tracking-tight text-chp-ink sm:text-3xl;
+  }
+
+  .chp-page-desc {
+    @apply mt-1 text-sm text-chp-inkMuted;
+  }
 }

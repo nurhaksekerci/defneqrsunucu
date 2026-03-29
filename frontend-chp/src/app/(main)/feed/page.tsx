@@ -140,13 +140,16 @@ export default function FeedPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold text-neutral-900">Akış</h1>
-          <p className="mt-1 text-sm text-neutral-600">Etkinlik paylaşımları</p>
+          <h1 className="chp-page-title">Akış</h1>
+          <p className="chp-page-desc">Etkinlik paylaşımları ve örgüt haberleri</p>
           {filtersActive ? (
-            <p className="mt-2 text-sm font-semibold text-chp-red">Filtre aktif</p>
+            <p className="mt-3 inline-flex items-center gap-2 rounded-lg bg-chp-muted px-3 py-1 text-sm font-semibold text-chp-redDark">
+              <span className="h-1.5 w-1.5 rounded-full bg-chp-red" aria-hidden />
+              Filtre aktif
+            </p>
           ) : null}
         </div>
         <button
@@ -159,24 +162,26 @@ export default function FeedPage() {
             setDraftCommissionId(query.commissionId ?? null);
             setFilterOpen(true);
           }}
-          className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-bold text-neutral-800 hover:border-chp-red hover:text-chp-red">
-          Filtre
+          className="chp-btn-secondary shrink-0">
+          Filtreler
         </button>
       </div>
 
       {err ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="rounded-2xl border border-amber-200/90 bg-amber-50/90 p-5 text-sm text-amber-950 shadow-chp-sm">
           {err}
-          <span className="mt-2 block text-xs text-neutral-600">API: {API_BASE_URL}</span>
-        </p>
+          <span className="mt-2 block text-xs font-medium text-amber-800/80">
+            API: {API_BASE_URL}
+          </span>
+        </div>
       ) : null}
 
       {filterOpen ? (
-        <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-3 font-bold text-neutral-900">Akış filtresi</h3>
-          <p className="mb-4 text-sm text-neutral-600">Kol, ilçe ve etkinlik kategorisi</p>
+        <div className="chp-card-elevated p-5 sm:p-6">
+          <h3 className="font-display text-lg font-bold text-chp-ink">Akış filtresi</h3>
+          <p className="mt-1 text-sm text-chp-inkMuted">Kol, ilçe ve etkinlik kategorisi</p>
 
-          <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Kol</p>
+          <p className="chp-section-label mt-6">Kol</p>
           <div className="mb-4 flex flex-wrap gap-2">
             {(
               [
@@ -193,10 +198,8 @@ export default function FeedPage() {
                   if (id !== 'explicit') setDraftBranch(null);
                 }}
                 className={clsx(
-                  'rounded-full border px-3 py-1.5 text-sm font-semibold',
-                  draftBranchMode === id
-                    ? 'border-chp-red bg-chp-muted text-chp-redDark'
-                    : 'border-neutral-200'
+                  'chp-chip',
+                  draftBranchMode === id && 'chp-chip-active'
                 )}>
                 {label}
               </button>
@@ -212,10 +215,8 @@ export default function FeedPage() {
                     type="button"
                     onClick={() => setDraftBranch(b.id)}
                     className={clsx(
-                      'rounded-full border px-3 py-1.5 text-sm font-semibold',
-                      draftBranch === b.id
-                        ? 'border-chp-red bg-chp-muted text-chp-redDark'
-                        : 'border-neutral-200'
+                      'chp-chip',
+                      draftBranch === b.id && 'chp-chip-active'
                     )}>
                     {b.label}
                   </button>
@@ -223,7 +224,7 @@ export default function FeedPage() {
               </div>
               {draftBranch === 'komisyon' ? (
                 <select
-                  className="mb-4 w-full rounded-xl border border-neutral-200 px-3 py-2"
+                  className="chp-input mb-4"
                   value={draftCommissionId ?? ''}
                   onChange={(e) =>
                     setDraftCommissionId(
@@ -241,7 +242,7 @@ export default function FeedPage() {
             </>
           ) : null}
 
-          <p className="mb-2 text-xs font-bold uppercase text-neutral-500">İlçe</p>
+          <p className="chp-section-label">İlçe</p>
           <div className="mb-4 flex flex-wrap gap-2">
             {DISTRICT_FILTER_OPTIONS.map((d) => (
               <button
@@ -251,17 +252,15 @@ export default function FeedPage() {
                   setDraftDistricts((prev) => toggle(prev, d.id))
                 }
                 className={clsx(
-                  'rounded-full border px-3 py-1.5 text-sm font-semibold',
-                  draftDistricts.includes(d.id)
-                    ? 'border-chp-red bg-chp-muted text-chp-redDark'
-                    : 'border-neutral-200'
+                  'chp-chip',
+                  draftDistricts.includes(d.id) && 'chp-chip-active'
                 )}>
                 {d.label}
               </button>
             ))}
           </div>
 
-          <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Kategori</p>
+          <p className="chp-section-label">Kategori</p>
           <div className="mb-4 flex flex-wrap gap-2">
             {EVENT_CATEGORIES.map((c) => (
               <button
@@ -271,27 +270,19 @@ export default function FeedPage() {
                   setDraftCategories((prev) => toggle(prev, c.id))
                 }
                 className={clsx(
-                  'rounded-full border px-3 py-1.5 text-sm font-semibold',
-                  draftCategories.includes(c.id)
-                    ? 'border-chp-red bg-chp-muted text-chp-redDark'
-                    : 'border-neutral-200'
+                  'chp-chip',
+                  draftCategories.includes(c.id) && 'chp-chip-active'
                 )}>
                 {c.label}
               </button>
             ))}
           </div>
 
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="flex-1 rounded-xl border border-neutral-200 py-2.5 font-semibold text-neutral-700">
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+            <button type="button" onClick={clearFilters} className="chp-btn-secondary flex-1">
               Temizle
             </button>
-            <button
-              type="button"
-              onClick={applyFilters}
-              className="flex-1 rounded-xl bg-chp-red py-2.5 font-bold text-white">
+            <button type="button" onClick={applyFilters} className="chp-btn-primary flex-1">
               Uygula
             </button>
           </div>
@@ -299,29 +290,29 @@ export default function FeedPage() {
       ) : null}
 
       {loading ? (
-        <p className="text-center text-neutral-500">Yükleniyor…</p>
+        <p className="text-center text-sm font-medium text-chp-inkMuted">Yükleniyor…</p>
       ) : null}
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         {posts.map((post) => {
           const when = formatEventWhen(post.eventStartAt);
           return (
             <article
               key={post.id}
-              className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
-              <div className="flex items-start justify-between gap-2 border-b border-neutral-100 p-4">
-                <div className="min-w-0 space-y-1">
+              className="chp-card-elevated overflow-hidden transition-shadow hover:shadow-chp-lg">
+              <div className="flex items-start justify-between gap-3 border-b border-chp-border/80 bg-slate-50/50 px-5 py-4">
+                <div className="min-w-0 space-y-1.5">
                   <BranchBadge kind={post.branch} label={post.branchLabel} />
-                  <p className="text-xs text-neutral-500">{post.orgPath}</p>
-                  <p className="font-semibold text-neutral-900">{post.authorLabel}</p>
+                  <p className="text-xs font-medium text-chp-inkMuted">{post.orgPath}</p>
+                  <p className="font-semibold text-chp-ink">{post.authorLabel}</p>
                 </div>
                 <Link
                   href={`/post/${post.id}`}
-                  className="shrink-0 text-sm font-bold text-chp-red hover:underline">
+                  className="shrink-0 text-sm font-semibold text-chp-red transition-colors hover:text-chp-redDark">
                   Detay →
                 </Link>
               </div>
-              <div className="relative aspect-[4/3] bg-neutral-200">
+              <div className="relative aspect-[4/3] bg-slate-200/80">
                 {post.imageUrls[0] ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -332,33 +323,33 @@ export default function FeedPage() {
                 ) : null}
               </div>
               {(post.eventTitle || post.eventDescription || when) && (
-                <div className="space-y-1 border-b border-neutral-100 p-4">
+                <div className="space-y-2 border-b border-chp-border/80 px-5 py-4">
                   {post.eventTitle ? (
-                    <h2 className="font-display text-lg font-bold text-neutral-900">
+                    <h2 className="font-display text-lg font-bold leading-snug text-chp-ink">
                       {post.eventTitle}
                     </h2>
                   ) : null}
                   {when ? (
-                    <p className="text-sm font-semibold text-neutral-600">{when}</p>
+                    <p className="text-sm font-semibold text-chp-inkMuted">{when}</p>
                   ) : null}
                   {post.eventDescription ? (
-                    <p className="text-sm text-neutral-600 line-clamp-4">
+                    <p className="text-sm leading-relaxed text-chp-inkMuted line-clamp-4">
                       {post.eventDescription}
                     </p>
                   ) : null}
                 </div>
               )}
-              <div className="flex items-center justify-between p-4">
+              <div className="flex items-center justify-between px-5 py-4">
                 <button
                   type="button"
                   onClick={() => onLike(post)}
-                  className="text-sm font-bold text-neutral-800">
+                  className="text-sm font-semibold text-chp-ink transition-colors hover:text-chp-red">
                   {post.liked ? '♥ Beğenildi' : '♡ Beğen'} · {post.likes}
                 </button>
-                <span className="text-xs text-neutral-500">{post.timeLabel}</span>
+                <span className="text-xs font-medium text-chp-inkMuted">{post.timeLabel}</span>
               </div>
               {post.caption ? (
-                <p className="border-t border-neutral-100 px-4 py-3 text-sm text-neutral-800">
+                <p className="border-t border-chp-border/80 bg-slate-50/40 px-5 py-3.5 text-sm leading-relaxed text-chp-ink">
                   {post.caption}
                 </p>
               ) : null}
@@ -368,7 +359,9 @@ export default function FeedPage() {
       </div>
 
       {!loading && posts.length === 0 ? (
-        <p className="text-center text-neutral-500">Gönderi yok.</p>
+        <div className="chp-card rounded-2xl px-6 py-12 text-center">
+          <p className="text-sm font-medium text-chp-inkMuted">Henüz gönderi yok.</p>
+        </div>
       ) : null}
     </div>
   );

@@ -9,6 +9,7 @@ import {
   parseApiErrorMessage,
 } from '@/lib/api';
 import type { NotificationItem } from '@/lib/types';
+import clsx from 'clsx';
 
 export default function NotificationsPage() {
   const [items, setItems] = useState<NotificationItem[]>([]);
@@ -52,40 +53,43 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="font-display text-3xl font-bold text-neutral-900">Bildirimler</h1>
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="chp-page-title">Bildirimler</h1>
         {items.some((n) => n.unread) ? (
           <button
             type="button"
             onClick={() => void onReadAll()}
-            className="text-sm font-bold text-chp-red hover:underline">
+            className="text-sm font-semibold text-chp-red underline decoration-chp-borderStrong underline-offset-4 hover:text-chp-redDark">
             Tümünü okundu işaretle
           </button>
         ) : null}
       </div>
 
-      {err ? <p className="text-amber-800">{err}</p> : null}
-      {loading ? <p className="text-neutral-500">Yükleniyor…</p> : null}
+      {err ? <p className="text-sm font-medium text-amber-800">{err}</p> : null}
+      {loading ? (
+        <p className="text-sm font-medium text-chp-inkMuted">Yükleniyor…</p>
+      ) : null}
 
       <ul className="space-y-3">
         {items.map((n) => (
           <li
             key={n.id}
-            className={
+            className={clsx(
+              'rounded-2xl border p-5 transition-shadow',
               n.unread
-                ? 'rounded-2xl border border-chp-muted bg-white p-4 shadow-sm'
-                : 'rounded-2xl border border-neutral-200 bg-neutral-50 p-4'
-            }>
-            <p className="font-bold text-neutral-900">{n.title}</p>
-            <p className="mt-1 text-sm text-neutral-700">{n.body}</p>
-            <div className="mt-2 flex items-center justify-between">
-              <span className="text-xs text-neutral-500">{n.timeLabel}</span>
+                ? 'border-chp-red/20 bg-white shadow-chp ring-1 ring-chp-red/10'
+                : 'chp-card'
+            )}>
+            <p className="font-bold text-chp-ink">{n.title}</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-chp-inkMuted">{n.body}</p>
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <span className="text-xs font-medium text-chp-inkMuted">{n.timeLabel}</span>
               {n.unread ? (
                 <button
                   type="button"
                   onClick={() => void onRead(n.id)}
-                  className="text-xs font-bold text-chp-red hover:underline">
+                  className="text-xs font-semibold text-chp-red hover:text-chp-redDark">
                   Okundu
                 </button>
               ) : null}
@@ -95,7 +99,9 @@ export default function NotificationsPage() {
       </ul>
 
       {!loading && items.length === 0 ? (
-        <p className="text-neutral-500">Bildirim yok.</p>
+        <div className="chp-card rounded-2xl px-6 py-12 text-center">
+          <p className="text-sm font-medium text-chp-inkMuted">Bildirim yok.</p>
+        </div>
       ) : null}
     </div>
   );
