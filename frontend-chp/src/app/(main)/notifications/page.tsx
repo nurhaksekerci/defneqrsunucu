@@ -57,7 +57,6 @@ export default function NotificationsPage() {
       <CrmPageHeader
         kicker="İletişim"
         title="Bildirimler"
-        description="GET /notifications/, okundu işaretleme ve read-all uçları mobil uygulama ile aynıdır."
         action={
           items.some((n) => n.unread) ? (
             <button

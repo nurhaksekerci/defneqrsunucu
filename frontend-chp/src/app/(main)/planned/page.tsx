@@ -125,11 +125,7 @@ export default function PlannedPage() {
 
   return (
     <div className="space-y-6">
-      <CrmPageHeader
-        kicker="Planlama"
-        title="Planlanan etkinlikler"
-        description="Mobil uygulamadaki Planlanan sekmesi ile aynı veri: yaklaşan ve tamamlanan kayıtlar, filtreler ve plan düzenleme / tamamlama bağlantıları."
-      />
+      <CrmPageHeader kicker="Planlama" title="Planlanan etkinlikler" />
 
       {filtersActive ? (
         <p className="-mt-2 inline-block rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900">

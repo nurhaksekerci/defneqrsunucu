@@ -149,7 +149,6 @@ export default function PostDetailPage() {
       <CrmPageHeader
         kicker="Gönderi"
         title={post.eventTitle || post.authorLabel || 'Etkinlik detayı'}
-        description={`${post.authorLabel} · GET /posts/${id}/ · PATCH/DELETE yetkisi mobil ile aynı.`}
         action={
           <div className="flex flex-wrap items-center justify-end gap-2">
             <Link href="/feed" className="crm-toolbar-btn text-sm no-underline">
@@ -281,7 +280,7 @@ export default function PostDetailPage() {
               ))}
             </select>
             <p className="mb-5 text-xs leading-relaxed text-slate-500">
-              Görsel değişiklikleri için mobil uygulamayı kullanabilirsiniz.
+              Bu ekranda yalnızca metin ve etkinlik alanları güncellenir.
             </p>
             <div className="flex gap-2">
               <button

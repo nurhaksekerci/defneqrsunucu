@@ -1,7 +1,5 @@
 import type { SVGProps } from 'react';
 
-/** Sidebar: mobil uygulama modülleriyle aynı işlevler (Akış, Planlanan, Planla, Rapor, Bildirim, Profil). */
-
 export function IconFeed(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} {...props}>

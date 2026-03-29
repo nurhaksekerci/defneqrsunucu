@@ -7,7 +7,6 @@ import { BranchBadge } from '@/components/BranchBadge';
 import { CrmPageHeader } from '@/components/crm/CrmPageHeader';
 import { FeedPostImageGallery } from '@/components/FeedPostImageGallery';
 import {
-  API_BASE_URL,
   type CommissionOption,
   type FeedQueryParams,
   fetchCommissions,
@@ -146,7 +145,6 @@ export default function FeedPage() {
       <CrmPageHeader
         kicker="Etkinlik paylaşımları"
         title="Akış"
-        description="Mobil uygulamadaki akış ile aynı API; çoklu görselleri detaya girmeden önizleyebilir, beğeni ve detay için sunucu uçlarını kullanırsınız."
         action={
           <button
             type="button"
@@ -172,7 +170,6 @@ export default function FeedPage() {
       {err ? (
         <div className="chp-alert">
           <p className="font-medium">{err}</p>
-          <span className="mt-2 block text-xs text-amber-800/80">API: {API_BASE_URL}</span>
         </div>
       ) : null}
 

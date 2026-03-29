@@ -96,11 +96,7 @@ export default function PlanPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <CrmPageHeader
-        kicker="Planlama"
-        title="Etkinlik planla"
-        description="Mobil uygulamadaki Planla sekmesi ile aynı işlem: POST /planned/ (createPlannedEvent)."
-      />
+      <CrmPageHeader kicker="Planlama" title="Etkinlik planla" />
 
       <form onSubmit={onSubmit} className="crm-panel space-y-5 p-6 sm:p-8">
         <div>

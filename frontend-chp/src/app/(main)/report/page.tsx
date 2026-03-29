@@ -136,11 +136,8 @@ export default function ReportPage() {
 
   return (
     <div className="space-y-6">
-      <CrmPageHeader
-        kicker="Analiz"
-        title="Planlama raporu"
-        description={`Mobil uygulamadaki Rapor sekmesi ile aynı uç: GET planned/ kırılımı. Kapsam: ${scopeSubtitle}.`}
-      />
+      <CrmPageHeader kicker="Analiz" title="Planlama raporu" />
+      <p className="-mt-2 text-sm font-medium text-slate-700">{scopeSubtitle}</p>
       {filtersActive ? (
         <p className="-mt-2 inline-block rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900">
           Filtre aktif
@@ -180,10 +177,6 @@ export default function ReportPage() {
           <p className="mt-1 text-3xl font-bold tabular-nums text-slate-800">{sum(plan)}</p>
         </div>
       </div>
-
-      <p className="text-xs leading-relaxed text-slate-500">
-        Toplamlar etkinlik başlangıç zamanına göre; kategori satırları sunucu yanıtıyla uyumludur.
-      </p>
 
       <Breakdown title="Tamamlanan — kategori dağılımı" rows={tam} />
       <Breakdown title="Planlanan — kategori dağılımı" rows={plan} />

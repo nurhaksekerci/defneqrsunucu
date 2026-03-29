@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
 import { BranchBadge } from '@/components/BranchBadge';
-import { CrmPageHeader } from '@/components/crm/CrmPageHeader';
 import { deletePlannedEvent, fetchPlannedDetail, parseApiErrorMessage } from '@/lib/api';
 import type { PlannedEvent } from '@/lib/types';
 

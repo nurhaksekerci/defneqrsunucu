@@ -8,11 +8,7 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <CrmPageHeader
-        kicker="Hesap"
-        title="Profil"
-        description="GET /auth/me ile oturum bilgisi; üyelikler örgüt kayıtlarıyla aynıdır."
-      />
+      <CrmPageHeader kicker="Hesap" title="Profil" />
       {user ? (
         <div className="crm-panel space-y-5 p-6 sm:p-8">
           <div>

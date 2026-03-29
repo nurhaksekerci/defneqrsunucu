@@ -143,7 +143,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           <p className="line-clamp-3 text-[11px] leading-snug text-slate-500">
             {orgLabel || 'Örgüt bağlamı yükleniyor…'}
           </p>
-          <p className="mt-2 text-[10px] text-slate-600">Web · API ile mobil uygulama özellikleri</p>
         </div>
       </aside>
 

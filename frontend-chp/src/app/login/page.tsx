@@ -85,8 +85,7 @@ export default function LoginPage() {
           <form onSubmit={onSubmit} className="chp-card p-6 shadow-lift sm:p-8">
             <h2 className="font-display text-xl font-bold text-slate-900">Güvenli giriş</h2>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              Mobil uygulama ile aynı hesabı kullanın. Giriş için kullanıcı adı veya e-posta
-              deneyebilirsiniz.
+              Kullanıcı adı veya e-posta ve şifrenizle giriş yapın.
             </p>
 
             <div className="mt-8 space-y-5">
