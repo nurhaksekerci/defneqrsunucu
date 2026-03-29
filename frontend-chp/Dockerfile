@@ -8,6 +8,9 @@ RUN npm ci
 
 COPY . .
 
+# Next.js projede public yoksa build aşamasında oluştur (stage-1 COPY için gerekli)
+RUN mkdir -p public
+
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_SITE_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
