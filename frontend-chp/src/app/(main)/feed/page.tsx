@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { BranchBadge } from '@/components/BranchBadge';
+import { FeedPostImageGallery } from '@/components/FeedPostImageGallery';
 import {
   API_BASE_URL,
   type CommissionOption,
@@ -140,14 +141,17 @@ export default function FeedPage() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="chp-page-title">Akış</h1>
-          <p className="chp-page-sub">Etkinlik paylaşımları ve örgüt duyuruları</p>
+          <p className="crm-page-heading">Etkinlikler</p>
+          <h1 className="crm-h1 mt-1">Akış</h1>
+          <p className="mt-1 max-w-xl text-sm text-slate-600">
+            Tüm görselleri burada önizleyebilir; ayrıntı ve düzenleme için detaya gidebilirsiniz.
+          </p>
           {filtersActive ? (
-            <p className="mt-3 inline-flex items-center rounded-lg bg-red-50 px-3 py-1 text-xs font-semibold text-chp-redDark ring-1 ring-chp-red/15">
-              Filtre uygulanıyor
+            <p className="mt-2 inline-block rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900">
+              Filtre aktif
             </p>
           ) : null}
         </div>
@@ -161,8 +165,8 @@ export default function FeedPage() {
             setDraftCommissionId(query.commissionId ?? null);
             setFilterOpen(true);
           }}
-          className="chp-btn-secondary shrink-0">
-          Filtrele
+          className="crm-toolbar-btn shrink-0">
+          Filtreler
         </button>
       </div>
 
@@ -174,8 +178,8 @@ export default function FeedPage() {
       ) : null}
 
       {filterOpen ? (
-        <div className="chp-card p-5 sm:p-6">
-          <h3 className="font-display text-lg font-bold text-slate-900">Akış filtresi</h3>
+        <div className="crm-panel p-4 sm:p-5">
+          <h3 className="text-sm font-bold text-slate-900">Akış filtresi</h3>
           <p className="chp-page-sub !mt-1 !mb-5">Kol, ilçe ve etkinlik kategorisi seçin</p>
 
           <p className="chp-section-label">Kol</p>
@@ -269,11 +273,11 @@ export default function FeedPage() {
             ))}
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <button type="button" onClick={clearFilters} className="chp-btn-secondary flex-1">
+          <div className="flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row">
+            <button type="button" onClick={clearFilters} className="crm-toolbar-btn flex-1 justify-center sm:flex-none">
               Temizle
             </button>
-            <button type="button" onClick={applyFilters} className="chp-btn-primary flex-1">
+            <button type="button" onClick={applyFilters} className="crm-toolbar-btn-primary flex-1 sm:flex-none">
               Uygula
             </button>
           </div>
@@ -290,71 +294,72 @@ export default function FeedPage() {
         </div>
       ) : null}
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         {posts.map((post) => {
           const when = formatEventWhen(post.eventStartAt);
           return (
-            <article
-              key={post.id}
-              className="chp-card-interactive overflow-hidden">
-              <div className="flex items-start justify-between gap-3 border-b border-slate-100 p-4 sm:p-5">
-                <div className="min-w-0 space-y-2">
-                  <BranchBadge kind={post.branch} label={post.branchLabel} />
-                  <p className="text-xs font-medium text-slate-500">{post.orgPath}</p>
-                  <p className="font-semibold text-slate-900">{post.authorLabel}</p>
-                </div>
-                <Link href={`/post/${post.id}`} className="chp-link shrink-0">
-                  Detay →
-                </Link>
-              </div>
-              <div className="relative aspect-[4/3] bg-slate-100">
-                {post.imageUrls[0] ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={post.imageUrls[0]}
-                    alt=""
-                    className="h-full w-full object-cover"
+            <article key={post.id} className="crm-panel overflow-hidden">
+              <div className="flex flex-col lg:flex-row lg:items-stretch">
+                <div className="min-w-0 lg:w-[52%] xl:w-[50%] lg:max-w-3xl lg:shrink-0">
+                  <FeedPostImageGallery
+                    imageUrls={post.imageUrls}
+                    alt={post.eventTitle ?? post.caption ?? 'Gönderi görseli'}
                   />
-                ) : null}
-              </div>
-              {(post.eventTitle || post.eventDescription || when) && (
-                <div className="space-y-2 border-b border-slate-100 p-4 sm:p-5">
-                  {post.eventTitle ? (
-                    <h2 className="font-display text-lg font-bold text-slate-900">
-                      {post.eventTitle}
-                    </h2>
-                  ) : null}
-                  {when ? (
-                    <p className="text-sm font-semibold text-slate-600">{when}</p>
-                  ) : null}
-                  {post.eventDescription ? (
-                    <p className="text-sm leading-relaxed text-slate-600 line-clamp-4">
-                      {post.eventDescription}
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col border-t border-slate-200 lg:border-l lg:border-t-0">
+                  <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 p-4">
+                    <div className="min-w-0 space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <BranchBadge kind={post.branch} label={post.branchLabel} />
+                        <span className="text-[11px] font-medium text-slate-400">
+                          #{post.id.slice(0, 8)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500">{post.orgPath}</p>
+                      <p className="text-sm font-semibold text-slate-900">{post.authorLabel}</p>
+                    </div>
+                    <Link href={`/post/${post.id}`} className="crm-toolbar-btn-primary shrink-0">
+                      Detay
+                    </Link>
+                  </div>
+                  {(post.eventTitle || post.eventDescription || when) && (
+                    <div className="space-y-1.5 border-b border-slate-100 p-4">
+                      {post.eventTitle ? (
+                        <h2 className="text-base font-bold text-slate-900">{post.eventTitle}</h2>
+                      ) : null}
+                      {when ? (
+                        <p className="text-xs font-medium text-slate-600">{when}</p>
+                      ) : null}
+                      {post.eventDescription ? (
+                        <p className="text-sm leading-relaxed text-slate-600 line-clamp-5">
+                          {post.eventDescription}
+                        </p>
+                      ) : null}
+                    </div>
+                  )}
+                  {post.caption ? (
+                    <p className="border-b border-slate-100 bg-slate-50 p-4 text-sm text-slate-800">
+                      {post.caption}
                     </p>
                   ) : null}
+                  <div className="mt-auto flex items-center justify-between p-4">
+                    <button
+                      type="button"
+                      onClick={() => onLike(post)}
+                      className="text-sm font-medium text-slate-700 hover:text-chp-red">
+                      {post.liked ? '♥ Beğenildi' : '♡ Beğen'} · {post.likes}
+                    </button>
+                    <span className="text-xs text-slate-500">{post.timeLabel}</span>
+                  </div>
                 </div>
-              )}
-              <div className="flex items-center justify-between px-4 py-3 sm:px-5">
-                <button
-                  type="button"
-                  onClick={() => onLike(post)}
-                  className="text-sm font-semibold text-slate-800 transition hover:text-chp-red">
-                  {post.liked ? '♥ Beğenildi' : '♡ Beğen'} · {post.likes}
-                </button>
-                <span className="text-xs font-medium text-slate-500">{post.timeLabel}</span>
               </div>
-              {post.caption ? (
-                <p className="border-t border-slate-100 bg-slate-50/60 px-4 py-3 text-sm leading-relaxed text-slate-800 sm:px-5">
-                  {post.caption}
-                </p>
-              ) : null}
             </article>
           );
         })}
       </div>
 
       {!loading && posts.length === 0 ? (
-        <div className="chp-card py-16 text-center">
+        <div className="crm-panel py-16 text-center">
           <p className="font-medium text-slate-600">Bu filtrelerle gösterilecek gönderi yok.</p>
           <p className="mt-2 text-sm text-slate-500">Filtreleri temizleyerek tekrar deneyin.</p>
         </div>

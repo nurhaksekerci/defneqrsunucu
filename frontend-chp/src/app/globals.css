@@ -16,10 +16,7 @@
 
   body {
     color: var(--foreground);
-    background: var(--background);
-    background-image:
-      radial-gradient(ellipse 120% 80% at 50% -40%, rgba(227, 10, 23, 0.06), transparent),
-      linear-gradient(180deg, #eef2f7 0%, #e8ecf3 100%);
+    background: #f1f5f9;
     min-height: 100vh;
   }
 
@@ -96,5 +93,26 @@
 
   .chp-back-link {
     @apply chp-link inline-flex items-center gap-1;
+  }
+
+  /* Masaüstü CRM panelleri — daha az yuvarlak, veri odaklı */
+  .crm-panel {
+    @apply rounded border border-slate-200 bg-white shadow-sm;
+  }
+
+  .crm-page-heading {
+    @apply text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .crm-h1 {
+    @apply text-xl font-bold tracking-tight text-slate-900 lg:text-2xl;
+  }
+
+  .crm-toolbar-btn {
+    @apply rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50;
+  }
+
+  .crm-toolbar-btn-primary {
+    @apply inline-flex items-center justify-center rounded border border-chp-red bg-chp-red px-3 py-1.5 text-sm font-semibold text-white no-underline hover:bg-chp-redDark;
   }
 }

@@ -10,18 +10,18 @@ import { hasPresidentMembershipRole } from '@/lib/userRoles';
 import clsx from 'clsx';
 
 const nav = [
-  { href: '/feed', label: 'Akış' },
-  { href: '/planned', label: 'Planlanan' },
-  { href: '/plan', label: 'Planla' },
-  { href: '/report', label: 'Rapor' },
-  { href: '/notifications', label: 'Bildirimler' },
-  { href: '/profile', label: 'Profil' },
+  { href: '/feed', label: 'Akış', icon: '◇' },
+  { href: '/planned', label: 'Planlanan', icon: '▤' },
+  { href: '/plan', label: 'Planla', icon: '＋' },
+  { href: '/report', label: 'Rapor', icon: '▦' },
+  { href: '/notifications', label: 'Bildirimler', icon: '◉' },
+  { href: '/profile', label: 'Profil', icon: '◎' },
 ];
 
 function MenuIcon({ open }: { open: boolean }) {
   return (
     <svg
-      className="h-5 w-5 text-slate-700"
+      className="h-5 w-5"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -41,7 +41,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const [orgLabel, setOrgLabel] = useState('');
   const [unread, setUnread] = useState(0);
-  const [navOpen, setNavOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const hidePlan = hasPresidentMembershipRole(user);
 
   useEffect(() => {
@@ -58,78 +58,104 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
   const filteredNav = nav.filter((n) => !(hidePlan && n.href === '/plan'));
 
+  const closeSidebar = () => setSidebarOpen(false);
+
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-slate-200/90 bg-white/95 shadow-header backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 lg:px-6">
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <button
-              type="button"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50/80 md:hidden"
-              onClick={() => setNavOpen((o) => !o)}
-              aria-expanded={navOpen}
-              aria-label={navOpen ? 'Menüyü kapat' : 'Menüyü aç'}>
-              <MenuIcon open={navOpen} />
-            </button>
-            <Link href="/feed" className="group flex min-w-0 items-center gap-3">
-              <span
-                className="hidden h-10 w-1 shrink-0 rounded-full bg-chp-red shadow-sm shadow-chp-red/30 sm:block"
-                aria-hidden
-              />
-              <span className="min-w-0">
-                <span className="block font-display text-lg font-bold leading-tight tracking-tight text-slate-900 sm:text-xl">
-                  CHP İstanbul
-                </span>
-                <span className="block text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">
-                  İl Başkanlığı
-                </span>
-              </span>
+    <div className="flex min-h-screen bg-slate-100">
+      {sidebarOpen ? (
+        <button
+          type="button"
+          className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden"
+          aria-label="Menüyü kapat"
+          onClick={closeSidebar}
+        />
+      ) : null}
+
+      <aside
+        className={clsx(
+          'fixed inset-y-0 left-0 z-50 flex w-56 flex-col border-r border-slate-700 bg-slate-800 transition-transform duration-200 lg:static lg:z-0 lg:translate-x-0',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        )}>
+        <div className="flex h-14 items-center gap-2 border-b border-slate-700 px-4 lg:h-[3.25rem]">
+          <span className="h-8 w-1 rounded-sm bg-chp-red" aria-hidden />
+          <div className="min-w-0">
+            <Link
+              href="/feed"
+              onClick={closeSidebar}
+              className="block truncate text-sm font-bold tracking-tight text-white">
+              CHP İstanbul
             </Link>
+            <p className="truncate text-[10px] font-medium uppercase tracking-wider text-slate-400">
+              Örgüt paneli
+            </p>
           </div>
-          <div className="hidden max-w-md flex-1 px-4 text-center sm:block">
-            <p className="truncate text-xs font-medium text-slate-500">Örgüt bağlamı</p>
+        </div>
+
+        <nav className="flex-1 space-y-0.5 overflow-y-auto p-2">
+          {filteredNav.map((item) => {
+            const on =
+              pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const isNotif = item.href === '/notifications';
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={closeSidebar}
+                className={clsx(
+                  'relative flex items-center gap-2 rounded-r-md border-l-4 py-2.5 pl-3 pr-2 text-sm font-medium transition-colors',
+                  on
+                    ? 'border-chp-red bg-slate-900/70 text-white'
+                    : 'border-transparent text-slate-300 hover:bg-slate-700/60 hover:text-white'
+                )}>
+                <span className="w-4 text-center text-xs opacity-70" aria-hidden>
+                  {item.icon}
+                </span>
+                <span className="flex-1 truncate">{item.label}</span>
+                {isNotif && unread > 0 ? (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded bg-chp-red px-1 text-[10px] font-bold text-white">
+                    {unread > 99 ? '99+' : unread}
+                  </span>
+                ) : null}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="border-t border-slate-700 p-3 text-xs text-slate-500">
+          <p className="line-clamp-2 leading-snug">{orgLabel || 'Örgüt bağlamı yükleniyor…'}</p>
+        </div>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col lg:min-h-screen">
+        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-3 lg:px-5">
+          <button
+            type="button"
+            className="flex h-9 w-9 items-center justify-center rounded border border-slate-200 text-slate-700 lg:hidden"
+            onClick={() => setSidebarOpen((o) => !o)}
+            aria-expanded={sidebarOpen}
+            aria-label={sidebarOpen ? 'Menüyü kapat' : 'Menüyü aç'}>
+            <MenuIcon open={sidebarOpen} />
+          </button>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs text-slate-500">Aktif örgüt</p>
             <p className="truncate text-sm font-semibold text-slate-800">{orgLabel || '—'}</p>
+          </div>
+          <div className="hidden text-right sm:block">
+            <p className="truncate text-xs text-slate-500">Oturum</p>
+            <p className="max-w-[10rem] truncate text-sm font-medium text-slate-800">
+              {user?.displayName ?? user?.username ?? '—'}
+            </p>
           </div>
           <button
             type="button"
             onClick={() => logout()}
-            className="shrink-0 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900">
+            className="shrink-0 rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
             Çıkış
           </button>
-        </div>
-        <nav
-          className={clsx(
-            'border-t border-slate-100 bg-slate-50/50 md:block',
-            navOpen ? 'block' : 'hidden'
-          )}>
-          <div className="mx-auto flex max-w-6xl flex-wrap gap-1 px-2 py-2 md:flex-nowrap md:gap-0.5 md:px-4 lg:px-6">
-            {filteredNav.map((item) => {
-              const on = pathname === item.href || pathname.startsWith(`${item.href}/`);
-              const isNotif = item.href === '/notifications';
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setNavOpen(false)}
-                  className={clsx(
-                    'relative rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors md:px-4',
-                    on
-                      ? 'bg-white text-chp-red shadow-sm ring-1 ring-slate-200/80'
-                      : 'text-slate-600 hover:bg-white/80 hover:text-slate-900'
-                  )}>
-                  {item.label}
-                  {isNotif && unread > 0 ? (
-                    <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-chp-red px-1 text-[10px] font-bold text-white shadow-sm">
-                      {unread > 99 ? '99+' : unread}
-                    </span>
-                  ) : null}
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
-      </header>
-      <main className="mx-auto max-w-6xl px-4 py-8 lg:px-6 lg:py-10">{children}</main>
+        </header>
+
+        <main className="flex-1 overflow-auto p-4 lg:p-6">{children}</main>
+      </div>
     </div>
   );
 }
