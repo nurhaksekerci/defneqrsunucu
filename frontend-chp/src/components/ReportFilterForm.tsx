@@ -37,7 +37,7 @@ export function ReportFilterForm({
   );
 
   return (
-    <div className="chp-card p-5 sm:p-6">
+    <div className="crm-panel p-4 sm:p-5">
       <h3 className="mb-5 font-display text-lg font-bold text-slate-900">{title}</h3>
       <p className="chp-section-label">Zaman aralığı</p>
       <div className="mb-5 flex flex-wrap gap-2">

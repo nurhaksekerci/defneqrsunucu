@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { CrmPageHeader } from '@/components/crm/CrmPageHeader';
 import { ReportFilterForm } from '@/components/ReportFilterForm';
 import {
   type CommissionOption,
@@ -134,16 +135,17 @@ export default function ReportPage() {
   }, [filters, commissions]);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="chp-page-title">Rapor</h1>
-        <p className="chp-page-sub font-semibold text-slate-700">{scopeSubtitle}</p>
-        {filtersActive ? (
-          <p className="mt-3 inline-flex items-center rounded-lg bg-red-50 px-3 py-1 text-xs font-semibold text-chp-redDark ring-1 ring-chp-red/15">
-            Filtre uygulanıyor
-          </p>
-        ) : null}
-      </div>
+    <div className="space-y-6">
+      <CrmPageHeader
+        kicker="Analiz"
+        title="Planlama raporu"
+        description={`Mobil uygulamadaki Rapor sekmesi ile aynı uç: GET planned/ kırılımı. Kapsam: ${scopeSubtitle}.`}
+      />
+      {filtersActive ? (
+        <p className="-mt-2 inline-block rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900">
+          Filtre aktif
+        </p>
+      ) : null}
 
       <ReportFilterForm
         value={filters}
@@ -164,29 +166,27 @@ export default function ReportPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="chp-card border-t-4 border-t-chp-red p-6">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Tamamlanan
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="crm-panel border-l-4 border-l-chp-red p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            Tamamlanan etkinlik
           </p>
-          <p className="mt-2 font-display text-4xl font-bold text-chp-red">{sum(tam)}</p>
-          <p className="mt-2 text-xs text-slate-500">Etkinlik sayısı</p>
+          <p className="mt-1 text-3xl font-bold tabular-nums text-chp-red">{sum(tam)}</p>
         </div>
-        <div className="chp-card border-t-4 border-t-slate-400 p-6">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Planlanan
+        <div className="crm-panel border-l-4 border-l-slate-400 p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            Planlanan etkinlik
           </p>
-          <p className="mt-2 font-display text-4xl font-bold text-slate-800">{sum(plan)}</p>
-          <p className="mt-2 text-xs text-slate-500">Etkinlik sayısı</p>
+          <p className="mt-1 text-3xl font-bold tabular-nums text-slate-800">{sum(plan)}</p>
         </div>
       </div>
 
-      <p className="text-center text-xs leading-relaxed text-slate-500">
-        Sayılar etkinlik başlangıç tarihine göre; sunucu kategori kırılımı ile uyumludur.
+      <p className="text-xs leading-relaxed text-slate-500">
+        Toplamlar etkinlik başlangıç zamanına göre; kategori satırları sunucu yanıtıyla uyumludur.
       </p>
 
-      <Breakdown title="Tamamlanan · kategori" rows={tam} />
-      <Breakdown title="Planlanan · kategori" rows={plan} />
+      <Breakdown title="Tamamlanan — kategori dağılımı" rows={tam} />
+      <Breakdown title="Planlanan — kategori dağılımı" rows={plan} />
     </div>
   );
 }
@@ -199,20 +199,36 @@ function Breakdown({
   rows: PlannedCategoryBreakdownRow[];
 }) {
   return (
-    <div>
-      <h2 className="mb-3 font-display text-lg font-bold text-slate-900">{title}</h2>
-      <div className="chp-card overflow-hidden p-0">
-        {rows.map((row, i) => (
-          <div
-            key={row.eventCategoryId}
-            className={i < rows.length - 1 ? 'border-b border-slate-100' : ''}>
-            <div className="flex items-center justify-between px-5 py-3.5">
-              <span className="font-semibold text-slate-800">{row.label}</span>
-              <span className="font-display text-lg font-bold text-chp-redDark">{row.count}</span>
-            </div>
-          </div>
-        ))}
+    <section>
+      <h2 className="mb-2 text-sm font-bold text-slate-900">{title}</h2>
+      <div className="crm-table-wrap">
+        <table className="crm-table crm-table-compact">
+          <thead>
+            <tr>
+              <th>Kategori</th>
+              <th className="w-28 text-right">Adet</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={2} className="py-8 text-center text-sm text-slate-500">
+                  Veri yok
+                </td>
+              </tr>
+            ) : (
+              rows.map((row) => (
+                <tr key={row.eventCategoryId}>
+                  <td className="font-medium text-slate-800">{row.label}</td>
+                  <td className="text-right font-mono text-sm font-semibold tabular-nums text-chp-redDark">
+                    {row.count}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
-    </div>
+    </section>
   );
 }

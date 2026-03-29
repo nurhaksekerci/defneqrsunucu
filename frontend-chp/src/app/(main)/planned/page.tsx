@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { BranchBadge } from '@/components/BranchBadge';
+import { CrmPageHeader } from '@/components/crm/CrmPageHeader';
 import { ReportFilterForm } from '@/components/ReportFilterForm';
 import {
   type CommissionOption,
@@ -123,25 +124,25 @@ export default function PlannedPage() {
   const list = tab === 'upcoming' ? upcoming : completed;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="chp-page-title">Planlanan etkinlikler</h1>
-        <p className="chp-page-sub">
-          Tamamlanan kayıtlar akışta görünür; burada yaklaşan ve geçmiş planları yönetirsiniz.
+    <div className="space-y-6">
+      <CrmPageHeader
+        kicker="Planlama"
+        title="Planlanan etkinlikler"
+        description="Mobil uygulamadaki Planlanan sekmesi ile aynı veri: yaklaşan ve tamamlanan kayıtlar, filtreler ve plan düzenleme / tamamlama bağlantıları."
+      />
+
+      {filtersActive ? (
+        <p className="-mt-2 inline-block rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900">
+          Filtre aktif
         </p>
-        {filtersActive ? (
-          <p className="mt-3 inline-flex items-center rounded-lg bg-red-50 px-3 py-1 text-xs font-semibold text-chp-redDark ring-1 ring-chp-red/15">
-            Filtre uygulanıyor
-          </p>
-        ) : null}
-      </div>
+      ) : null}
 
       <ReportFilterForm
         value={filters}
         onChange={setFilters}
         commissions={commissions}
         defaultsForClear={PLANNED_LIST_DEFAULT_FILTERS}
-        title="Planlanan filtre"
+        title="Liste filtresi"
       />
 
       <div className="flex flex-wrap gap-2">
@@ -149,8 +150,8 @@ export default function PlannedPage() {
           type="button"
           onClick={() => setTab('upcoming')}
           className={clsx(
-            'chp-tab',
-            tab === 'upcoming' ? 'chp-tab-active' : 'chp-tab-inactive'
+            'crm-tab px-4 py-2 text-sm font-semibold',
+            tab === 'upcoming' ? 'crm-tab-active' : 'crm-tab-inactive'
           )}>
           Yaklaşan ({upcoming.length})
         </button>
@@ -158,8 +159,8 @@ export default function PlannedPage() {
           type="button"
           onClick={() => setTab('completed')}
           className={clsx(
-            'chp-tab',
-            tab === 'completed' ? 'chp-tab-active' : 'chp-tab-inactive'
+            'crm-tab px-4 py-2 text-sm font-semibold',
+            tab === 'completed' ? 'crm-tab-active' : 'crm-tab-inactive'
           )}>
           Tamamlanan ({completed.length})
         </button>
@@ -167,65 +168,91 @@ export default function PlannedPage() {
 
       {err ? <div className="chp-alert font-medium">{err}</div> : null}
       {loading ? (
-        <div className="flex flex-col items-center justify-center gap-3 py-12">
+        <div className="flex flex-col items-center justify-center gap-3 py-16">
           <div
             className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-chp-red"
             aria-hidden
           />
-          <p className="text-sm font-medium text-slate-600">Liste yükleniyor…</p>
+          <p className="text-sm font-medium text-slate-600">Kayıtlar yükleniyor…</p>
         </div>
       ) : null}
 
-      <div className="space-y-4">
-        {list.map((ev) => {
-          const done = ev.status === 'completed';
-          return (
-            <div
-              key={ev.id}
-              className={clsx(
-                'chp-card p-5 transition-opacity',
-                done && 'opacity-[0.92]'
-              )}>
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <BranchBadge kind={ev.branch} label={ev.branchLabel} />
-                {done ? (
-                  <span className="rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                    Tamamlandı
-                  </span>
-                ) : null}
-              </div>
-              <h2 className="font-display text-lg font-bold text-slate-900">{ev.title}</h2>
-              {ev.description ? (
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">{ev.description}</p>
-              ) : null}
-              <p className="mt-3 text-xs font-medium text-slate-500">{ev.orgPath}</p>
-              <p className="mt-1 text-sm font-medium text-slate-700">📅 {ev.startLabel}</p>
-              <p className="text-sm font-medium text-slate-700">📍 {ev.location}</p>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Link href={`/planned/${ev.id}`} className="chp-link">
-                  Detay
-                </Link>
-                {ev.isMine && !done ? (
-                  <>
-                    <Link href={`/planned/${ev.id}/edit`} className="chp-link">
-                      Düzenle
-                    </Link>
-                    <Link
-                      href={`/planned/${ev.id}/complete`}
-                      className="chp-btn-primary !py-2 text-sm">
-                      Tamamla
-                    </Link>
-                  </>
-                ) : null}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {!loading && list.length > 0 ? (
+        <div className="crm-table-wrap">
+          <table className="crm-table">
+            <thead>
+              <tr>
+                <th>Durum</th>
+                <th>Kol</th>
+                <th>Başlık</th>
+                <th>Başlangıç</th>
+                <th>Konum</th>
+                <th className="text-right">İşlemler</th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((ev) => {
+                const done = ev.status === 'completed';
+                return (
+                  <tr key={ev.id}>
+                    <td>
+                      {done ? (
+                        <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                          Tamamlandı
+                        </span>
+                      ) : (
+                        <span className="rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+                          Planlandı
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <BranchBadge kind={ev.branch} label={ev.branchLabel} />
+                    </td>
+                    <td>
+                      <p className="max-w-[240px] font-semibold text-slate-900 lg:max-w-md">
+                        {ev.title}
+                      </p>
+                      <p className="crm-mono mt-0.5">{ev.id.slice(0, 12)}…</p>
+                    </td>
+                    <td className="whitespace-nowrap text-slate-700">{ev.startLabel}</td>
+                    <td>
+                      <p className="max-w-[200px] truncate text-slate-600 lg:max-w-xs">
+                        {ev.location}
+                      </p>
+                    </td>
+                    <td className="text-right">
+                      <div className="flex flex-wrap justify-end gap-1.5">
+                        <Link href={`/planned/${ev.id}`} className="crm-toolbar-btn !py-1.5 text-xs">
+                          Detay
+                        </Link>
+                        {ev.isMine && !done ? (
+                          <>
+                            <Link
+                              href={`/planned/${ev.id}/edit`}
+                              className="crm-toolbar-btn !py-1.5 text-xs">
+                              Düzenle
+                            </Link>
+                            <Link
+                              href={`/planned/${ev.id}/complete`}
+                              className="crm-toolbar-btn-primary !py-1.5 text-xs">
+                              Tamamla
+                            </Link>
+                          </>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
 
       {!loading && list.length === 0 ? (
-        <div className="chp-card py-14 text-center">
-          <p className="font-medium text-slate-600">Bu dönem ve filtrelerle kayıt yok.</p>
+        <div className="crm-panel py-14 text-center text-sm text-slate-600">
+          Bu dönem ve filtrelerle kayıt bulunmuyor.
         </div>
       ) : null}
     </div>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
 import { BranchBadge } from '@/components/BranchBadge';
+import { CrmPageHeader } from '@/components/crm/CrmPageHeader';
 import { deletePlannedEvent, fetchPlannedDetail, parseApiErrorMessage } from '@/lib/api';
 import type { PlannedEvent } from '@/lib/types';
 
@@ -74,9 +75,7 @@ export default function PlannedDetailPage() {
             </span>
           ) : null}
         </div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-          {ev.title}
-        </h1>
+        <p className="crm-mono">{ev.id}</p>
         {ev.description ? (
           <p className="text-sm leading-relaxed text-slate-600">{ev.description}</p>
         ) : null}
@@ -88,11 +87,13 @@ export default function PlannedDetailPage() {
 
         {ev.isMine ? (
           <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-5">
-            <Link href={`/planned/${id}/edit`} className="chp-btn-secondary !py-2.5 text-sm">
+            <Link href={`/planned/${id}/edit`} className="crm-toolbar-btn text-sm no-underline">
               Düzenle
             </Link>
             {!done ? (
-              <Link href={`/planned/${id}/complete`} className="chp-btn-primary !py-2.5 text-sm">
+              <Link
+                href={`/planned/${id}/complete`}
+                className="crm-toolbar-btn-primary text-sm no-underline">
                 Tamamla ve görselleri yükle
               </Link>
             ) : null}

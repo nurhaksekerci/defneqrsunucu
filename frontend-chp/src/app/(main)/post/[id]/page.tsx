@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
 import { BranchBadge } from '@/components/BranchBadge';
+import { CrmPageHeader } from '@/components/crm/CrmPageHeader';
+import { FeedPostImageGallery } from '@/components/FeedPostImageGallery';
 import {
   deletePost,
   fetchEventCategories,
@@ -49,7 +51,6 @@ export default function PostDetailPage() {
   const [categories, setCategories] = useState<EventCategoryOption[]>([]);
   const [orgId, setOrgId] = useState('');
   const [catId, setCatId] = useState('');
-  const [imgIdx, setImgIdx] = useState(0);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -145,61 +146,50 @@ export default function PostDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/feed" className="chp-back-link">
-          ← Akışa dön
-        </Link>
-        {canManage ? (
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setEditOpen(true)}
-              className="chp-btn-secondary !py-2 text-sm">
-              Düzenle
-            </button>
-            <button
-              type="button"
-              onClick={onDelete}
-              className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-100">
-              Sil
-            </button>
+      <CrmPageHeader
+        kicker="Gönderi"
+        title={post.eventTitle || post.authorLabel || 'Etkinlik detayı'}
+        description={`${post.authorLabel} · GET /posts/${id}/ · PATCH/DELETE yetkisi mobil ile aynı.`}
+        action={
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Link href="/feed" className="crm-toolbar-btn text-sm no-underline">
+              ← Akış
+            </Link>
+            {canManage ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setEditOpen(true)}
+                  className="crm-toolbar-btn text-sm">
+                  Düzenle
+                </button>
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  className="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-semibold text-amber-900 hover:bg-amber-100">
+                  Sil
+                </button>
+              </>
+            ) : null}
           </div>
-        ) : null}
+        }
+      />
+
+      <div className="crm-panel overflow-hidden p-0">
+        <FeedPostImageGallery
+          imageUrls={urls}
+          alt={post.eventTitle ?? post.caption ?? ''}
+        />
       </div>
 
       <div className="space-y-2">
         <BranchBadge kind={post.branch} label={post.branchLabel} />
         <p className="text-sm font-medium text-slate-600">{post.orgPath}</p>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-          {post.authorLabel}
-        </h1>
+        <p className="crm-mono">ID {post.id}</p>
       </div>
-
-      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200/80">
-        {urls[imgIdx] ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={urls[imgIdx]} alt="" className="h-full w-full object-cover" />
-        ) : null}
-      </div>
-      {urls.length > 1 ? (
-        <div className="flex gap-2">
-          {urls.map((u, i) => (
-            <button
-              key={u}
-              type="button"
-              onClick={() => setImgIdx(i)}
-              className={
-                i === imgIdx ? 'rounded-lg ring-2 ring-chp-red ring-offset-2' : 'rounded-lg'
-              }>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={u} alt="" className="h-16 w-16 rounded-lg object-cover" />
-            </button>
-          ))}
-        </div>
-      ) : null}
 
       {(post.eventTitle || when || post.eventLocation || post.eventDescription) && (
-        <div className="chp-card space-y-3 p-5 sm:p-6">
+        <div className="crm-panel space-y-3 p-5 sm:p-6">
           {post.eventTitle ? (
             <h2 className="font-display text-xl font-bold text-slate-900">{post.eventTitle}</h2>
           ) : null}
@@ -213,7 +203,7 @@ export default function PostDetailPage() {
         </div>
       )}
 
-      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
+      <div className="crm-panel flex items-center justify-between px-4 py-3">
         <button
           type="button"
           onClick={async () => {

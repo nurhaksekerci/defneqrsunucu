@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { CrmPageHeader } from '@/components/crm/CrmPageHeader';
 import { useAuth } from '@/components/AuthProvider';
 import {
   createPlannedEvent,
@@ -94,13 +95,14 @@ export default function PlanPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-8">
-      <div>
-        <h1 className="chp-page-title">Etkinlik planla</h1>
-        <p className="chp-page-sub">Yeni planlanan etkinlik kaydı oluşturun.</p>
-      </div>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <CrmPageHeader
+        kicker="Planlama"
+        title="Etkinlik planla"
+        description="Mobil uygulamadaki Planla sekmesi ile aynı işlem: POST /planned/ (createPlannedEvent)."
+      />
 
-      <form onSubmit={onSubmit} className="chp-card space-y-5 p-6 sm:p-8">
+      <form onSubmit={onSubmit} className="crm-panel space-y-5 p-6 sm:p-8">
         <div>
           <label className="chp-section-label !mb-1.5">Başlık</label>
           <input

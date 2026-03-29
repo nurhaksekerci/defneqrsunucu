@@ -115,4 +115,52 @@
   .crm-toolbar-btn-primary {
     @apply inline-flex items-center justify-center rounded border border-chp-red bg-chp-red px-3 py-1.5 text-sm font-semibold text-white no-underline hover:bg-chp-redDark;
   }
+
+  .crm-table-wrap {
+    @apply overflow-x-auto rounded border border-slate-200 bg-white;
+  }
+
+  .crm-table {
+    @apply w-full min-w-[640px] border-collapse text-left text-sm;
+  }
+
+  .crm-table.crm-table-compact {
+    min-width: 0;
+  }
+
+  .crm-table thead {
+    @apply border-b border-slate-200 bg-slate-50;
+  }
+
+  .crm-table th {
+    @apply whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .crm-table td {
+    @apply border-b border-slate-100 px-4 py-3 text-slate-800;
+  }
+
+  .crm-table tbody tr:hover {
+    @apply bg-slate-50/80;
+  }
+
+  .crm-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .crm-mono {
+    @apply font-mono text-xs text-slate-500;
+  }
+
+  .crm-tab {
+    @apply rounded-md transition-colors;
+  }
+
+  .crm-tab-active {
+    @apply border border-chp-red bg-chp-red text-white shadow-sm;
+  }
+
+  .crm-tab-inactive {
+    @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+  }
 }

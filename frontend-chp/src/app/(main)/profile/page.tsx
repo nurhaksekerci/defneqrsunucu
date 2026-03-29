@@ -1,18 +1,20 @@
 'use client';
 
+import { CrmPageHeader } from '@/components/crm/CrmPageHeader';
 import { useAuth } from '@/components/AuthProvider';
 
 export default function ProfilePage() {
   const { user, logout, refreshUser } = useAuth();
 
   return (
-    <div className="mx-auto max-w-lg space-y-8">
-      <div>
-        <h1 className="chp-page-title">Profil</h1>
-        <p className="chp-page-sub">Hesap bilgileriniz ve örgüt üyelikleriniz</p>
-      </div>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <CrmPageHeader
+        kicker="Hesap"
+        title="Profil"
+        description="GET /auth/me ile oturum bilgisi; üyelikler örgüt kayıtlarıyla aynıdır."
+      />
       {user ? (
-        <div className="chp-card space-y-5 p-6 sm:p-8">
+        <div className="crm-panel space-y-5 p-6 sm:p-8">
           <div>
             <p className="chp-section-label !mb-1">Görünen ad</p>
             <p className="text-lg font-bold text-slate-900">{user.displayName}</p>
@@ -45,7 +47,7 @@ export default function ProfilePage() {
           </div>
         </div>
       ) : (
-        <div className="chp-card py-12 text-center text-slate-600">Profil yüklenemedi.</div>
+        <div className="crm-panel py-12 text-center text-slate-600">Profil yüklenemedi.</div>
       )}
       <button
         type="button"

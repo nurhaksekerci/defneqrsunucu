@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { BranchBadge } from '@/components/BranchBadge';
+import { CrmPageHeader } from '@/components/crm/CrmPageHeader';
 import { FeedPostImageGallery } from '@/components/FeedPostImageGallery';
 import {
   API_BASE_URL,
@@ -141,34 +142,32 @@ export default function FeedPage() {
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-4">
-        <div>
-          <p className="crm-page-heading">Etkinlikler</p>
-          <h1 className="crm-h1 mt-1">Akış</h1>
-          <p className="mt-1 max-w-xl text-sm text-slate-600">
-            Tüm görselleri burada önizleyebilir; ayrıntı ve düzenleme için detaya gidebilirsiniz.
-          </p>
-          {filtersActive ? (
-            <p className="mt-2 inline-block rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900">
-              Filtre aktif
-            </p>
-          ) : null}
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setDraftDistricts([...query.districts]);
-            setDraftCategories([...query.categories]);
-            setDraftBranchMode(query.branchMode);
-            setDraftBranch(query.branchMode === 'explicit' ? query.branch ?? null : null);
-            setDraftCommissionId(query.commissionId ?? null);
-            setFilterOpen(true);
-          }}
-          className="crm-toolbar-btn shrink-0">
-          Filtreler
-        </button>
-      </div>
+    <div className="space-y-6">
+      <CrmPageHeader
+        kicker="Etkinlik paylaşımları"
+        title="Akış"
+        description="Mobil uygulamadaki akış ile aynı API; çoklu görselleri detaya girmeden önizleyebilir, beğeni ve detay için sunucu uçlarını kullanırsınız."
+        action={
+          <button
+            type="button"
+            onClick={() => {
+              setDraftDistricts([...query.districts]);
+              setDraftCategories([...query.categories]);
+              setDraftBranchMode(query.branchMode);
+              setDraftBranch(query.branchMode === 'explicit' ? query.branch ?? null : null);
+              setDraftCommissionId(query.commissionId ?? null);
+              setFilterOpen(true);
+            }}
+            className="crm-toolbar-btn">
+            Filtreler
+          </button>
+        }
+      />
+      {filtersActive ? (
+        <p className="-mt-2 inline-block rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900">
+          Filtre aktif
+        </p>
+      ) : null}
 
       {err ? (
         <div className="chp-alert">
@@ -311,9 +310,7 @@ export default function FeedPage() {
                     <div className="min-w-0 space-y-1.5">
                       <div className="flex flex-wrap items-center gap-2">
                         <BranchBadge kind={post.branch} label={post.branchLabel} />
-                        <span className="text-[11px] font-medium text-slate-400">
-                          #{post.id.slice(0, 8)}
-                        </span>
+                        <span className="crm-mono">#{post.id.slice(0, 10)}</span>
                       </div>
                       <p className="text-xs text-slate-500">{post.orgPath}</p>
                       <p className="text-sm font-semibold text-slate-900">{post.authorLabel}</p>

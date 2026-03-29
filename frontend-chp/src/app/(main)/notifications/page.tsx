@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { CrmPageHeader } from '@/components/crm/CrmPageHeader';
 import {
   fetchNotifications,
   markAllNotificationsRead,
@@ -52,21 +53,22 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="chp-page-title">Bildirimler</h1>
-          <p className="chp-page-sub">Örgüt ve sistem bildirimleri</p>
-        </div>
-        {items.some((n) => n.unread) ? (
-          <button
-            type="button"
-            onClick={() => void onReadAll()}
-            className="chp-btn-secondary !py-2 text-sm">
-            Tümünü okundu işaretle
-          </button>
-        ) : null}
-      </div>
+    <div className="space-y-6">
+      <CrmPageHeader
+        kicker="İletişim"
+        title="Bildirimler"
+        description="GET /notifications/, okundu işaretleme ve read-all uçları mobil uygulama ile aynıdır."
+        action={
+          items.some((n) => n.unread) ? (
+            <button
+              type="button"
+              onClick={() => void onReadAll()}
+              className="crm-toolbar-btn text-sm">
+              Tümünü okundu işaretle
+            </button>
+          ) : null
+        }
+      />
 
       {err ? <div className="chp-alert font-medium">{err}</div> : null}
       {loading ? (
@@ -85,8 +87,8 @@ export default function NotificationsPage() {
             key={n.id}
             className={
               n.unread
-                ? 'chp-card border-l-4 border-l-chp-red p-5'
-                : 'chp-card bg-slate-50/50 p-5 opacity-95'
+                ? 'crm-panel border-l-4 border-l-chp-red p-5'
+                : 'crm-panel bg-slate-50/80 p-5'
             }>
             <p className="font-semibold text-slate-900">{n.title}</p>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">{n.body}</p>
@@ -106,7 +108,7 @@ export default function NotificationsPage() {
       </ul>
 
       {!loading && items.length === 0 ? (
-        <div className="chp-card py-14 text-center text-slate-600">Bildirim yok.</div>
+        <div className="crm-panel py-14 text-center text-sm text-slate-600">Bildirim yok.</div>
       ) : null}
     </div>
   );

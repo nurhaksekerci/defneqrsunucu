@@ -1,3 +1,8 @@
+/**
+ * CHP İstanbul API istemcisi.
+ * Uç noktalar ve sözleşme `mobile-chp/lib/api.ts` ile aynıdır: akış, gönderi, plan,
+ * tamamlama (multipart), bildirim, rapor kırılımı, org birimleri, komisyonlar vb.
+ */
 import type { EventCategoryId } from '@/lib/constants/eventCategories';
 import type { DistrictId } from '@/lib/constants/districts';
 import { getToken } from '@/lib/token';
