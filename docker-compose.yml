@@ -189,7 +189,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
-      CORS_ALLOWED_ORIGINS: ${CHP_CORS_ALLOWED_ORIGINS:-https://chp.defneqr.com,https://api-chp.defneqr.com}
+      CORS_ALLOWED_ORIGINS: ${CHP_CORS_ALLOWED_ORIGINS:-https://chp.defneqr.com,https://api-chp.defneqr.com,http://localhost:3010}
       CSRF_TRUSTED_ORIGINS: ${CHP_CSRF_TRUSTED_ORIGINS:-https://api-chp.defneqr.com}
     volumes:
       - chp_backend_media:/app/media
@@ -198,6 +198,23 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - defneqr-network
+
+  # CHP İstanbul web — chp.defneqr.com (Next.js)
+  frontend-chp:
+    build:
+      context: ./frontend-chp
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${CHP_NEXT_PUBLIC_API_URL:-https://api-chp.defneqr.com/api}
+        NEXT_PUBLIC_SITE_URL: ${CHP_NEXT_PUBLIC_SITE_URL:-https://chp.defneqr.com}
+    container_name: defneqr-frontend-chp
+    ports:
+      - "127.0.0.1:3010:3000"
+    depends_on:
+      - backend-chp
     restart: unless-stopped
     networks:
       - defneqr-network
@@ -218,6 +235,7 @@ services:
       - frontend
       - frontend-randevu
       - frontend-admin
+      - frontend-chp
       - backend-common
       - backend-qr
       - backend-randevu
